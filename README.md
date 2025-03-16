@@ -29,6 +29,11 @@ The server provides the following tools for note management:
 
 ## Development
 
+Git clone this repo:
+```bash
+git clone https://github.com/tan-yong-sheng/triliumnext-mcp.git
+```
+
 Install dependencies:
 ```bash
 npm install
