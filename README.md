@@ -1,4 +1,4 @@
-# triliumnext-mcp MCP Server
+# TriliumNext Notes' MCP Server
 
 ⚠️ **DISCLAIMER: This is a prototype for https://github.com/TriliumNext/Notes/issues/705. Suggested only for developer use. Please backup your Trilium notes before using this tool.** ⚠️
 
