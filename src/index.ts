@@ -10,7 +10,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import axios from "axios";
 
-const TRILIUM_API_URL = process.env.TRILIUM_API_URL || "http://localhost:37740/etapi";
+const TRILIUM_API_URL = process.env.TRILIUM_API_URL;
 const TRILIUM_API_TOKEN = process.env.TRILIUM_API_TOKEN;
 
 if (!TRILIUM_API_TOKEN) {
@@ -52,9 +52,23 @@ class TriliumServer {
 
   private setupToolHandlers() {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
-      tools: [
-        {
-          name: "create_note",
+              tools: [
+                {
+                  name: "get_note_content",
+                  description: "Get the content of a note by its ID",
+                  inputSchema: {
+                    type: "object",
+                    properties: {
+                      noteId: {
+                        type: "string",
+                        description: "ID of the note to retrieve content for"
+                      }
+                    },
+                    required: ["noteId"]
+                  }
+                },
+                {
+                  name: "create_note",
           description: "Create a new note in TriliumNext",
           inputSchema: {
             type: "object",
@@ -264,6 +278,26 @@ class TriliumServer {
                 type: "text",
                 text: `Deleted note: ${noteId}`,
               }],
+            };
+          }
+
+          case "get_note_content": {
+            if (typeof request.params.arguments?.noteId !== "string") {
+              throw new McpError(ErrorCode.InvalidParams, "Note ID must be a string");
+            }
+            const noteId = request.params.arguments.noteId;
+            const noteInfo = await this.axiosInstance.get(`/notes/${noteId}`);
+            const { data } = await this.axiosInstance.get(`/notes/${noteId}/content`, {
+              responseType: 'text',
+              headers: {
+                'Accept': noteInfo.data.mime || 'text/plain'
+              }
+            });
+            return {
+              content: [{
+                type: "text",
+                text: typeof data === 'string' ? data : JSON.stringify(data, null, 2)
+              }]
             };
           }
 
