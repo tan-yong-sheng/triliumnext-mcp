@@ -1,6 +1,6 @@
 # triliumnext-mcp MCP Server
 
-⚠️ **DISCLAIMER: This is a prototype. Please backup your Trilium notes before using this tool.** ⚠️
+⚠️ **DISCLAIMER: This is a prototype for https://github.com/TriliumNext/Notes/issues/705. Suggested only for developer use. Please backup your Trilium notes before using this tool.** ⚠️
 
 A model context protocol server for TriliumNext Notes. This server provides tools to interact with your Trilium Notes instance through MCP.
 
