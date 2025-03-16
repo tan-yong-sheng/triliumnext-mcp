@@ -20,6 +20,9 @@ The server provides the following tools for note management:
 - `get_note` - Retrieve a note by ID
   - Requires: note ID
 
+- `get_note_content` - Get the content of a note by its ID
+  - Requires: note ID
+
 - `update_note` - Update an existing note
   - Requires: note ID
   - Optional: new title, new content
