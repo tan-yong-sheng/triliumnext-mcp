@@ -55,7 +55,15 @@ On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 {
   "mcpServers": {
     "triliumnext-mcp": {
-      "command": "/path/to/triliumnext-mcp/build/index.js"
+
+      "command": "node",
+      "args": [
+        "/path/to/triliumnext-mcp/build/index.js"
+      ],
+      "env": {
+        "TRILIUM_API_URL": "http://localhost:8080/etapi",
+        "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>"
+      }
     }
   }
 }
