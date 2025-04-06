@@ -9,6 +9,7 @@ import {
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
 import axios from "axios";
+import { marked } from "marked";
 
 const TRILIUM_API_URL = process.env.TRILIUM_API_URL;
 const TRILIUM_API_TOKEN = process.env.TRILIUM_API_TOKEN;
@@ -158,6 +159,20 @@ class TriliumServer {
             required: ["noteId"],
           },
         },
+        {
+          name: "markdown_to_html",
+          description: "Convert Markdown text to HTML",
+          inputSchema: {
+            type: "object",
+            properties: {
+              markdown: {
+                type: "string",
+                description: "Markdown content to convert"
+              }
+            },
+            required: ["markdown"]
+          }
+        }
       ],
     }));
 
@@ -178,11 +193,25 @@ class TriliumServer {
               throw new McpError(ErrorCode.InvalidParams, "Invalid parameters for create_note");
             }
 
+            let content = request.params.arguments.content;
+
+            // Attempt to detect Markdown content heuristically
+            const markdownIndicators = ["#", "*", "-", "`", "[", "]", "(", ")", "_", ">"];
+            const isLikelyMarkdown = markdownIndicators.some(indicator => content.includes(indicator));
+
+            if (isLikelyMarkdown) {
+              try {
+                content = await marked.parse(content);
+              } catch (e) {
+                console.error("Markdown parsing failed, saving original content:", e);
+              }
+            }
+
             const response = await this.axiosInstance.post("/create-note", {
               parentNoteId: request.params.arguments.parentNoteId,
               title: request.params.arguments.title,
               type: request.params.arguments.type,
-              content: request.params.arguments.content,
+              content: content,
               mime: request.params.arguments.mime,
             });
             return {
@@ -269,9 +298,24 @@ class TriliumServer {
           }
 
           case "update_note": {
-            const { noteId, content } = request.params.arguments;
-            if (typeof noteId !== "string" || typeof content !== "string") {
+            const { noteId } = request.params.arguments;
+            const contentRaw = request.params.arguments.content;
+            if (typeof noteId !== "string" || typeof contentRaw !== "string") {
               throw new McpError(ErrorCode.InvalidParams, "noteId and content are required and must be strings");
+            }
+
+            let content = contentRaw;
+
+            // Attempt to detect Markdown content heuristically
+            const markdownIndicators = ["#", "*", "-", "`", "[", "]", "(", ")", "_", ">"];
+            const isLikelyMarkdown = markdownIndicators.some(indicator => content.includes(indicator));
+
+            if (isLikelyMarkdown) {
+              try {
+                content = await marked.parse(content);
+              } catch (e) {
+                console.error("Markdown parsing failed, saving original content:", e);
+              }
             }
 
             const url = `/notes/${noteId}/content`;
@@ -296,6 +340,20 @@ class TriliumServer {
                 }]
               };
             }
+          }
+
+          case "markdown_to_html": {
+            const { markdown } = request.params.arguments;
+            if (typeof markdown !== "string") {
+              throw new McpError(ErrorCode.InvalidParams, "markdown must be a string");
+            }
+            const html = marked.parse(markdown);
+            return {
+              content: [{
+                type: "text",
+                text: html
+              }]
+            };
           }
 
           default:

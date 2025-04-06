@@ -47,7 +47,7 @@ Add the following configuration to the `mcpServers` object in your Claude config
 }
 ```
 
-#### For Development (on Windows)
+#### For Local Installation (on Windows)
 
 ```json
 "triliumnext-mcp": {
