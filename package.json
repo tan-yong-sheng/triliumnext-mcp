@@ -1,5 +1,5 @@
 {
-  "name": "triliumnext-mcp",
+  "name": "@tan-yong-sheng/triliumnext-mcp",
   "version": "0.2.0",
   "description": "A model context protocol server for TriliumNext Notes",
   "type": "module",
@@ -23,5 +23,8 @@
   "devDependencies": {
     "@types/node": "^20.11.24",
     "typescript": "^5.3.3"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
   }
 }
