@@ -93,17 +93,17 @@ triliumnext-mcp
 
 The server provides the following tools for note management:
 
-- `create_note` - Create a new note
-  - Requires: parent note ID, title, type, content
-  - Optional: MIME type for code/file/image notes
-  - Supported note types: text, code, file, image, search, book, relationMap, render
-
 - `search_notes` - Search through notes
   - Requires: search query
   - Optional: fastSearch (fulltext search toggle), includeArchivedNotes
 
 - `get_note` - Retrieve a note content by ID
   - Requires: note ID
+
+- `create_note` - Create a new note
+  - Requires: parent note ID, title, type, content
+  - Optional: MIME type for code/file/image notes
+  - Supported note types: text, code, file, image, search, book, relationMap, render
 
 - `update_note` - Update an existing note
   - Requires: note ID
