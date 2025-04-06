@@ -159,20 +159,6 @@ class TriliumServer {
             required: ["noteId"],
           },
         },
-        {
-          name: "markdown_to_html",
-          description: "Convert Markdown text to HTML",
-          inputSchema: {
-            type: "object",
-            properties: {
-              markdown: {
-                type: "string",
-                description: "Markdown content to convert"
-              }
-            },
-            required: ["markdown"]
-          }
-        }
       ],
     }));
 
@@ -340,20 +326,6 @@ class TriliumServer {
                 }]
               };
             }
-          }
-
-          case "markdown_to_html": {
-            const { markdown } = request.params.arguments;
-            if (typeof markdown !== "string") {
-              throw new McpError(ErrorCode.InvalidParams, "markdown must be a string");
-            }
-            const html = marked.parse(markdown);
-            return {
-              content: [{
-                type: "text",
-                text: html
-              }]
-            };
           }
 
           default:
