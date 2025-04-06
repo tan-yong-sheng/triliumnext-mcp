@@ -9,12 +9,6 @@ A model context protocol server for TriliumNext Notes. This server provides tool
 
 ## Quick Start
 
-You can run this MCP server directly using npx:
-
-```bash
-npx triliumnext-mcp
-```
-
 Make sure to set up your environment variables first:
 - `TRILIUM_API_URL` (default: http://localhost:8080/etapi)
 - `TRILIUM_API_TOKEN` (required, get this from your Trilium Notes settings)
