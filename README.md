@@ -4,6 +4,9 @@
 
 A model context protocol server for TriliumNext Notes. This server provides tools to interact with your Trilium Notes instance through MCP.
 
+
+> Update: support latest version of TriliumNext v0.92.6
+
 ## Quick Start
 
 You can run this MCP server directly using npx:
@@ -25,25 +28,40 @@ Add the server config to your Claude Desktop configuration file:
 Add the following configuration to the `mcpServers` object in your Claude configuration file:
 
 
-#### For Development (on Windows)
+#### For Development (on Windows / Linux)
 
 ```json
 "triliumnext-mcp": {
   "autoApprove": [],
   "disabled": false,
   "timeout": 60,
-  "command": "cmd",
+  "command": "node",
   "args": [
-    "/k",
-    "npx",
-    "-y",
-    "triliumnext-mcp"
+        "/path/to/triliumnext-mcp/build/index.js"
   ],
   "env": {
     "TRILIUM_API_URL": "http://localhost:8080/etapi",
     "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>"
-  },
-  "transportType": "stdio"
+  }
+}
+```
+
+#### For Local installation (on Linux)
+
+```json
+"triliumnext-mcp": {
+  "autoApprove": [],
+  "disabled": false,
+  "timeout": 60,
+      "command": "npx",
+      "args": [
+        "-y",
+        "triliumnext-mcp"
+      ],
+  "env": {
+    "TRILIUM_API_URL": "http://localhost:8080/etapi",
+    "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>"
+  }
 }
 ```
 
@@ -54,40 +72,25 @@ Add the following configuration to the `mcpServers` object in your Claude config
   "autoApprove": [],
   "disabled": false,
   "timeout": 60,
-  "command": "cmd",
-  "args": [
-    "/k",
-    "npx",
-    "-y",
-    "triliumnext-mcp"
-  ],
+      "command": "cmd",
+      "args": [
+        "/k",
+        "npx",
+        "-y",
+        "triliumnext-mcp"
+      ],
   "env": {
     "TRILIUM_API_URL": "http://localhost:8080/etapi",
     "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>"
-  },
-  "transportType": "stdio"
+  }
 }
 ```
-
-
 
 Location of the configuration file:
 - Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 - MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
-### 2. Global Installation (Optional)
 
-If you prefer, you can install the package globally:
-
-```bash
-npm install -g triliumnext-mcp
-```
-
-Then run it directly:
-
-```bash
-triliumnext-mcp
-```
 
 ## Available Tools
 
@@ -130,16 +133,3 @@ npm run build
 npm run watch
 ```
 
-### Debugging
-
-Since MCP servers communicate over stdio, debugging can be challenging. We recommend using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector):
-
-```bash
-npm run inspector
-```
-
-The Inspector will provide a URL to access debugging tools in your browser.
-
-## License
-
-[License information here]
