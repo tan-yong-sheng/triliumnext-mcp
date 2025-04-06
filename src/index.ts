@@ -9,6 +9,7 @@ import {
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
 import axios from "axios";
+import { marked } from "marked";
 
 const TRILIUM_API_URL = process.env.TRILIUM_API_URL;
 const TRILIUM_API_TOKEN = process.env.TRILIUM_API_TOKEN;
@@ -37,8 +38,8 @@ class TriliumServer {
     this.axiosInstance = axios.create({
       baseURL: TRILIUM_API_URL,
       headers: {
-        Authorization: TRILIUM_API_TOKEN,
-      },
+        Authorization: TRILIUM_API_TOKEN
+      }
     });
 
     this.setupToolHandlers();
@@ -54,20 +55,6 @@ class TriliumServer {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
               tools: [
                 {
-                  name: "get_note_content",
-                  description: "Get the content of a note by its ID",
-                  inputSchema: {
-                    type: "object",
-                    properties: {
-                      noteId: {
-                        type: "string",
-                        description: "ID of the note to retrieve content for"
-                      }
-                    },
-                    required: ["noteId"]
-                  }
-                },
-                {
                   name: "create_note",
           description: "Create a new note in TriliumNext",
           inputSchema: {
@@ -76,6 +63,7 @@ class TriliumServer {
               parentNoteId: {
                 type: "string",
                 description: "ID of the parent note",
+                default: "root"
               },
               title: {
                 type: "string",
@@ -97,6 +85,24 @@ class TriliumServer {
             },
             required: ["parentNoteId", "title", "type", "content"],
           },
+        },
+        {
+          name: "update_note",
+          description: "Update the content of an existing note",
+          inputSchema: {
+            type: "object",
+            properties: {
+              noteId: {
+                type: "string",
+                description: "ID of the note to update"
+              },
+              content: {
+                type: "string",
+                description: "New content for the note"
+              }
+            },
+            required: ["noteId", "content"]
+          }
         },
         {
           name: "search_notes",
@@ -122,7 +128,7 @@ class TriliumServer {
         },
         {
           name: "get_note",
-          description: "Get a note by ID",
+          description: "Get a note and its content by ID",
           inputSchema: {
             type: "object",
             properties: {
@@ -130,28 +136,11 @@ class TriliumServer {
                 type: "string",
                 description: "ID of the note to retrieve",
               },
-            },
-            required: ["noteId"],
-          },
-        },
-        {
-          name: "update_note",
-          description: "Update an existing note",
-          inputSchema: {
-            type: "object",
-            properties: {
-              noteId: {
-                type: "string",
-                description: "ID of the note to update",
-              },
-              title: {
-                type: "string",
-                description: "New title for the note",
-              },
-              content: {
-                type: "string",
-                description: "New content for the note",
-              },
+              includeContent: {
+                type: "boolean",
+                description: "Whether to include the note's content in the response",
+                default: true
+              }
             },
             required: ["noteId"],
           },
@@ -190,11 +179,25 @@ class TriliumServer {
               throw new McpError(ErrorCode.InvalidParams, "Invalid parameters for create_note");
             }
 
+            let content = request.params.arguments.content;
+
+            // Attempt to detect Markdown content heuristically
+            const markdownIndicators = ["#", "*", "-", "`", "[", "]", "(", ")", "_", ">"];
+            const isLikelyMarkdown = markdownIndicators.some(indicator => content.includes(indicator));
+
+            if (isLikelyMarkdown) {
+              try {
+                content = await marked.parse(content);
+              } catch (e) {
+                console.error("Markdown parsing failed, saving original content:", e);
+              }
+            }
+
             const response = await this.axiosInstance.post("/create-note", {
               parentNoteId: request.params.arguments.parentNoteId,
               title: request.params.arguments.title,
               type: request.params.arguments.type,
-              content: request.params.arguments.content,
+              content: content,
               mime: request.params.arguments.mime,
             });
             return {
@@ -235,37 +238,36 @@ class TriliumServer {
               throw new McpError(ErrorCode.InvalidParams, "Note ID must be a string");
             }
             const noteId = request.params.arguments.noteId;
-            const response = await this.axiosInstance.get(`/notes/${noteId}`);
-            return {
-              content: [{
-                type: "text",
-                text: JSON.stringify(response.data, null, 2),
-              }],
-            };
-          }
-
-          case "update_note": {
-            if (typeof request.params.arguments.noteId !== "string") {
-              throw new McpError(ErrorCode.InvalidParams, "Note ID must be a string");
-            }
+            const includeContent = request.params.arguments.includeContent !== false;
             
-            const updates: Record<string, string> = {};
-            if (typeof request.params.arguments.title === "string") {
-              updates.title = request.params.arguments.title;
-            }
-            if (typeof request.params.arguments.content === "string") {
-              updates.content = request.params.arguments.content;
+            const noteResponse = await this.axiosInstance.get(`/notes/${noteId}`);
+            
+            if (!includeContent) {
+              return {
+                content: [{
+                  type: "text",
+                  text: JSON.stringify(noteResponse.data, null, 2),
+                }],
+              };
             }
 
-            const noteId = request.params.arguments.noteId;
-            const response = await this.axiosInstance.patch(`/notes/${noteId}`, updates);
+            const { data: noteContent } = await this.axiosInstance.get(`/notes/${noteId}/content`, {
+              responseType: 'text'
+            });
+
+            const noteData = {
+              ...noteResponse.data
+            };
+            noteData.content = noteContent;
+
             return {
               content: [{
                 type: "text",
-                text: `Updated note: ${noteId}`,
-              }],
+                text: JSON.stringify(noteData, null, 2)
+              }]
             };
           }
+
 
           case "delete_note": {
             if (typeof request.params.arguments.noteId !== "string") {
@@ -281,24 +283,49 @@ class TriliumServer {
             };
           }
 
-          case "get_note_content": {
-            if (typeof request.params.arguments?.noteId !== "string") {
-              throw new McpError(ErrorCode.InvalidParams, "Note ID must be a string");
+          case "update_note": {
+            const { noteId } = request.params.arguments;
+            const contentRaw = request.params.arguments.content;
+            if (typeof noteId !== "string" || typeof contentRaw !== "string") {
+              throw new McpError(ErrorCode.InvalidParams, "noteId and content are required and must be strings");
             }
-            const noteId = request.params.arguments.noteId;
-            const noteInfo = await this.axiosInstance.get(`/notes/${noteId}`);
-            const { data } = await this.axiosInstance.get(`/notes/${noteId}/content`, {
-              responseType: 'text',
+
+            let content = contentRaw;
+
+            // Attempt to detect Markdown content heuristically
+            const markdownIndicators = ["#", "*", "-", "`", "[", "]", "(", ")", "_", ">"];
+            const isLikelyMarkdown = markdownIndicators.some(indicator => content.includes(indicator));
+
+            if (isLikelyMarkdown) {
+              try {
+                content = await marked.parse(content);
+              } catch (e) {
+                console.error("Markdown parsing failed, saving original content:", e);
+              }
+            }
+
+            const url = `/notes/${noteId}/content`;
+            const response = await this.axiosInstance.put(url, content, {
               headers: {
-                'Accept': noteInfo.data.mime || 'text/plain'
+                "Content-Type": "text/plain"
               }
             });
-            return {
-              content: [{
-                type: "text",
-                text: typeof data === 'string' ? data : JSON.stringify(data, null, 2)
-              }]
-            };
+
+            if (response.status === 204) {
+              return {
+                content: [{
+                  type: "text",
+                  text: `Note ${noteId} updated successfully`
+                }]
+              };
+            } else {
+              return {
+                content: [{
+                  type: "text",
+                  text: `Unexpected response status: ${response.status}`
+                }]
+              };
+            }
           }
 
           default:
