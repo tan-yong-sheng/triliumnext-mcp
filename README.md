@@ -42,8 +42,7 @@ Add the following configuration to the `mcpServers` object in your Claude config
   "env": {
     "TRILIUM_API_URL": "http://localhost:8080/etapi",
     "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>"
-  },
-  "transportType": "stdio"
+  }
 }
 ```
 
@@ -54,22 +53,16 @@ Add the following configuration to the `mcpServers` object in your Claude config
   "autoApprove": [],
   "disabled": false,
   "timeout": 60,
-  "command": "cmd",
-  "args": [
-    "/k",
-    "npx",
-    "-y",
-    "triliumnext-mcp"
-  ],
+      "command": "node",
+      "args": [
+        "/path/to/triliumnext-mcp/build/index.js"
+      ],
   "env": {
     "TRILIUM_API_URL": "http://localhost:8080/etapi",
     "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>"
-  },
-  "transportType": "stdio"
+  }
 }
 ```
-
-
 
 Location of the configuration file:
 - Windows: `%APPDATA%/Claude/claude_desktop_config.json`
