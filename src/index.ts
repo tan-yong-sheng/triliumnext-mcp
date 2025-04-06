@@ -37,8 +37,8 @@ class TriliumServer {
     this.axiosInstance = axios.create({
       baseURL: TRILIUM_API_URL,
       headers: {
-        Authorization: TRILIUM_API_TOKEN,
-      },
+        Authorization: TRILIUM_API_TOKEN
+      }
     });
 
     this.setupToolHandlers();
@@ -53,20 +53,6 @@ class TriliumServer {
   private setupToolHandlers() {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
               tools: [
-                {
-                  name: "get_note_content",
-                  description: "Get the content of a note by its ID",
-                  inputSchema: {
-                    type: "object",
-                    properties: {
-                      noteId: {
-                        type: "string",
-                        description: "ID of the note to retrieve content for"
-                      }
-                    },
-                    required: ["noteId"]
-                  }
-                },
                 {
                   name: "create_note",
           description: "Create a new note in TriliumNext",
@@ -122,7 +108,7 @@ class TriliumServer {
         },
         {
           name: "get_note",
-          description: "Get a note by ID",
+          description: "Get a note and its content by ID",
           inputSchema: {
             type: "object",
             properties: {
@@ -130,28 +116,11 @@ class TriliumServer {
                 type: "string",
                 description: "ID of the note to retrieve",
               },
-            },
-            required: ["noteId"],
-          },
-        },
-        {
-          name: "update_note",
-          description: "Update an existing note",
-          inputSchema: {
-            type: "object",
-            properties: {
-              noteId: {
-                type: "string",
-                description: "ID of the note to update",
-              },
-              title: {
-                type: "string",
-                description: "New title for the note",
-              },
-              content: {
-                type: "string",
-                description: "New content for the note",
-              },
+              includeContent: {
+                type: "boolean",
+                description: "Whether to include the note's content in the response",
+                default: true
+              }
             },
             required: ["noteId"],
           },
@@ -235,37 +204,36 @@ class TriliumServer {
               throw new McpError(ErrorCode.InvalidParams, "Note ID must be a string");
             }
             const noteId = request.params.arguments.noteId;
-            const response = await this.axiosInstance.get(`/notes/${noteId}`);
-            return {
-              content: [{
-                type: "text",
-                text: JSON.stringify(response.data, null, 2),
-              }],
-            };
-          }
-
-          case "update_note": {
-            if (typeof request.params.arguments.noteId !== "string") {
-              throw new McpError(ErrorCode.InvalidParams, "Note ID must be a string");
-            }
+            const includeContent = request.params.arguments.includeContent !== false;
             
-            const updates: Record<string, string> = {};
-            if (typeof request.params.arguments.title === "string") {
-              updates.title = request.params.arguments.title;
-            }
-            if (typeof request.params.arguments.content === "string") {
-              updates.content = request.params.arguments.content;
+            const noteResponse = await this.axiosInstance.get(`/notes/${noteId}`);
+            
+            if (!includeContent) {
+              return {
+                content: [{
+                  type: "text",
+                  text: JSON.stringify(noteResponse.data, null, 2),
+                }],
+              };
             }
 
-            const noteId = request.params.arguments.noteId;
-            const response = await this.axiosInstance.patch(`/notes/${noteId}`, updates);
+            const { data: noteContent } = await this.axiosInstance.get(`/notes/${noteId}/content`, {
+              responseType: 'text'
+            });
+
+            const noteData = {
+              ...noteResponse.data
+            };
+            noteData.content = noteContent;
+
             return {
               content: [{
                 type: "text",
-                text: `Updated note: ${noteId}`,
-              }],
+                text: JSON.stringify(noteData, null, 2)
+              }]
             };
           }
+
 
           case "delete_note": {
             if (typeof request.params.arguments.noteId !== "string") {
@@ -278,26 +246,6 @@ class TriliumServer {
                 type: "text",
                 text: `Deleted note: ${noteId}`,
               }],
-            };
-          }
-
-          case "get_note_content": {
-            if (typeof request.params.arguments?.noteId !== "string") {
-              throw new McpError(ErrorCode.InvalidParams, "Note ID must be a string");
-            }
-            const noteId = request.params.arguments.noteId;
-            const noteInfo = await this.axiosInstance.get(`/notes/${noteId}`);
-            const { data } = await this.axiosInstance.get(`/notes/${noteId}/content`, {
-              responseType: 'text',
-              headers: {
-                'Accept': noteInfo.data.mime || 'text/plain'
-              }
-            });
-            return {
-              content: [{
-                type: "text",
-                text: typeof data === 'string' ? data : JSON.stringify(data, null, 2)
-              }]
             };
           }
 

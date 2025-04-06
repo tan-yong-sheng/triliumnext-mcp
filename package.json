@@ -2,7 +2,6 @@
   "name": "triliumnext-mcp",
   "version": "0.1.0",
   "description": "A model context protocol server for TriliumNext Notes",
-  "private": true,
   "type": "module",
   "bin": {
     "triliumnext-mcp": "./build/index.js"
