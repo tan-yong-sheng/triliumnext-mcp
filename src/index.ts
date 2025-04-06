@@ -62,6 +62,7 @@ class TriliumServer {
               parentNoteId: {
                 type: "string",
                 description: "ID of the parent note",
+                default: "root"
               },
               title: {
                 type: "string",
@@ -83,6 +84,24 @@ class TriliumServer {
             },
             required: ["parentNoteId", "title", "type", "content"],
           },
+        },
+        {
+          name: "update_note",
+          description: "Update the content of an existing note",
+          inputSchema: {
+            type: "object",
+            properties: {
+              noteId: {
+                type: "string",
+                description: "ID of the note to update"
+              },
+              content: {
+                type: "string",
+                description: "New content for the note"
+              }
+            },
+            required: ["noteId", "content"]
+          }
         },
         {
           name: "search_notes",
@@ -247,6 +266,36 @@ class TriliumServer {
                 text: `Deleted note: ${noteId}`,
               }],
             };
+          }
+
+          case "update_note": {
+            const { noteId, content } = request.params.arguments;
+            if (typeof noteId !== "string" || typeof content !== "string") {
+              throw new McpError(ErrorCode.InvalidParams, "noteId and content are required and must be strings");
+            }
+
+            const url = `/notes/${noteId}/content`;
+            const response = await this.axiosInstance.put(url, content, {
+              headers: {
+                "Content-Type": "text/plain"
+              }
+            });
+
+            if (response.status === 204) {
+              return {
+                content: [{
+                  type: "text",
+                  text: `Note ${noteId} updated successfully`
+                }]
+              };
+            } else {
+              return {
+                content: [{
+                  type: "text",
+                  text: `Unexpected response status: ${response.status}`
+                }]
+              };
+            }
           }
 
           default:
