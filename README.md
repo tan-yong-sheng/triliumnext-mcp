@@ -24,6 +24,11 @@ Add the following configuration to the `mcpServers` object in your Claude config
 
 #### For Development (on Windows / Linux)
 
+```bash
+cd /path/to/triliumnext-mcp
+npm run build
+```
+
 ```json
 "triliumnext-mcp": {
   "autoApprove": [],
