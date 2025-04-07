@@ -6,6 +6,7 @@ A model context protocol server for TriliumNext Notes. This server provides tool
 
 
 > Update: support latest version of TriliumNext v0.92.6
+
 > Note: Suggest to use with Cline extension in VSCode, instead of Claude Desktop
 
 ## Quick Start
