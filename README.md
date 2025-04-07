@@ -31,9 +31,6 @@ npm run build
 
 ```json
 "triliumnext-mcp": {
-  "autoApprove": [],
-  "disabled": false,
-  "timeout": 60,
   "command": "node",
   "args": [
         "/path/to/triliumnext-mcp/build/index.js"
@@ -49,15 +46,12 @@ npm run build
 
 ```json
 "triliumnext-mcp": {
-  "autoApprove": [],
-  "disabled": false,
-  "timeout": 60,
-      "command": "npx",
-      "args": [
+  "command": "npx",
+  "args": [
         "-y",
         "triliumnext-mcp"
       ],
-  "env": {
+   "env": {
     "TRILIUM_API_URL": "http://localhost:8080/etapi",
     "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>"
   }
@@ -68,17 +62,14 @@ npm run build
 
 ```json
 "triliumnext-mcp": {
-  "autoApprove": [],
-  "disabled": false,
-  "timeout": 60,
-      "command": "cmd",
-      "args": [
+  "command": "cmd",
+  "args": [
         "/k",
         "npx",
         "-y",
         "triliumnext-mcp"
       ],
-  "env": {
+   "env": {
     "TRILIUM_API_URL": "http://localhost:8080/etapi",
     "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>"
   }
