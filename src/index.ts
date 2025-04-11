@@ -230,8 +230,9 @@ class TriliumServer {
             }
 
             const includeContent = request.params.arguments.includeContent || false;
+            const fullContextEnabled = process.env.TRILIUM_FULL_CONTEXT_ENABLED === "true";
             const response = await this.axiosInstance.get(`/notes?${params.toString()}`);
-            if (includeContent && process.env.TRILIUM_FULL_CONTEXT_ENABLED === 'true') {
+            if (includeContent && fullContextEnabled) {
               const results = response.data.results;
               for (let note of results) {
                 if (note.noteId) {  // Assuming note structure has noteId
@@ -249,13 +250,6 @@ class TriliumServer {
                 content: [{
                   type: "text",
                   text: markdownResults,
-                }],
-              };
-            } else {
-              return {
-                content: [{
-                  type: "text",
-                  text: "Full content not enabled. Set TRILIUM_FULL_CONTEXT_ENABLED to true for full details.",
                 }],
               };
             } else {

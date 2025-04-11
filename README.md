@@ -14,6 +14,7 @@ A model context protocol server for TriliumNext Notes. This server provides tool
 Make sure to set up your environment variables first:
 - `TRILIUM_API_URL` (default: http://localhost:8080/etapi)
 - `TRILIUM_API_TOKEN` (required, get this from your Trilium Notes settings)
+- `TRILIUM_FULL_CONTEXT_ENABLED` (optional, if you're using large language model with higher window context length, then set to "true" in string form) 
 
 ## Installation
 
@@ -39,7 +40,8 @@ npm run build
   ],
   "env": {
     "TRILIUM_API_URL": "http://localhost:8080/etapi",
-    "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>"
+    "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>",
+    "TRILIUM_FULL_CONTEXT_ENABLED": "false"
   }
 }
 ```
@@ -55,7 +57,8 @@ npm run build
       ],
    "env": {
     "TRILIUM_API_URL": "http://localhost:8080/etapi",
-    "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>"
+    "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>",
+    "TRILIUM_FULL_CONTEXT_ENABLED": "false"
   }
 }
 ```
@@ -73,7 +76,8 @@ npm run build
       ],
    "env": {
     "TRILIUM_API_URL": "http://localhost:8080/etapi",
-    "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>"
+    "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>",
+    "TRILIUM_FULL_CONTEXT_ENABLED": "false"
   }
 }
 ```
