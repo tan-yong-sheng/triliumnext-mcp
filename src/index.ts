@@ -122,6 +122,11 @@ class TriliumServer {
                 type: "boolean",
                 description: "Include archived notes in search results",
               },
+              includeContent: {
+                type: "boolean",
+                description: "Whether to include the note's content in the response",
+                default: false
+              },
             },
             required: ["query"],
           },
@@ -224,13 +229,43 @@ class TriliumServer {
               params.append("includeArchivedNotes", request.params.arguments.includeArchivedNotes.toString());
             }
 
+            const includeContent = request.params.arguments.includeContent || false;
             const response = await this.axiosInstance.get(`/notes?${params.toString()}`);
-            return {
-              content: [{
-                type: "text",
-                text: JSON.stringify(response.data.results, null, 2),
-              }],
-            };
+            if (includeContent && process.env.TRILIUM_FULL_CONTEXT_ENABLED === 'true') {
+              const results = response.data.results;
+              for (let note of results) {
+                if (note.noteId) {  // Assuming note structure has noteId
+                  const contentResponse = await this.axiosInstance.get(`/notes/${note.noteId}/content`, { responseType: 'text' });
+                  note.content = contentResponse.data;  // Add content to the note object
+                }
+              }
+              let markdownResults = "# Search Results\n";
+              for (let note of results) {
+                if (note.noteId) {
+                  markdownResults += `## Note: ${note.noteId}\nContent: ${note.content}\n[This content is from note ${note.noteId}]\n\n`;
+                }
+              }
+              return {
+                content: [{
+                  type: "text",
+                  text: markdownResults,
+                }],
+              };
+            } else {
+              return {
+                content: [{
+                  type: "text",
+                  text: "Full content not enabled. Set TRILIUM_FULL_CONTEXT_ENABLED to true for full details.",
+                }],
+              };
+            } else {
+              return {
+                content: [{
+                  type: "text",
+                  text: JSON.stringify(response.data.results, null, 2),
+                }],
+              };
+            }
           }
 
           case "get_note": {
