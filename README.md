@@ -94,10 +94,11 @@ The server provides the following tools for note management:
 
 - `search_notes` - Search through notes
   - Requires: search query
-  - Optional: fastSearch (fulltext search toggle), includeArchivedNotes
+  - Optional: fastSearch (fulltext search toggle), includeArchivedNotes, includeContent (whether to include the note's content in the response, default: false)
 
 - `get_note` - Retrieve a note content by ID
   - Requires: note ID
+  - Optional: includeContent (whether to include the note's content in the response, default: true)
 
 - `create_note` - Create a new note
   - Requires: parent note ID, title, type, content
@@ -128,4 +129,3 @@ npm run build
 # For development with auto-rebuild
 npm run watch
 ```
-
