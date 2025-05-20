@@ -24,20 +24,18 @@ Add the server config to your Claude Desktop configuration file:
 Add the following configuration to the `mcpServers` object in your Claude configuration file:
 
 
-#### For Development (on Windows / Linux)
-
-```bash
-cd /path/to/triliumnext-mcp
-npm run build
-```
+#### For Local Installation (on Windows)
 
 ```json
 "triliumnext-mcp": {
-  "command": "node",
+  "command": "cmd",
   "args": [
-        "/path/to/triliumnext-mcp/build/index.js"
-  ],
-  "env": {
+        "/k",
+        "npx",
+        "-y",
+        "triliumnext-mcp"
+      ],
+   "env": {
     "TRILIUM_API_URL": "http://localhost:8080/etapi",
     "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>"
   }
@@ -60,23 +58,26 @@ npm run build
 }
 ```
 
-#### For Local Installation (on Windows)
+#### For Development (on Windows / Linux)
+
+```bash
+cd /path/to/triliumnext-mcp
+npm run build
+```
 
 ```json
 "triliumnext-mcp": {
-  "command": "cmd",
+  "command": "node",
   "args": [
-        "/k",
-        "npx",
-        "-y",
-        "triliumnext-mcp"
-      ],
-   "env": {
+        "/path/to/triliumnext-mcp/build/index.js"
+  ],
+  "env": {
     "TRILIUM_API_URL": "http://localhost:8080/etapi",
     "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>"
   }
 }
 ```
+
 
 Location of the configuration file:
 - Windows: `%APPDATA%/Claude/claude_desktop_config.json`
