@@ -13,6 +13,7 @@ import { marked } from "marked";
 
 const TRILIUM_API_URL = process.env.TRILIUM_API_URL;
 const TRILIUM_API_TOKEN = process.env.TRILIUM_API_TOKEN;
+const PERMISSIONS = process.env.PERMISSIONS || "READ;WRITE";
 
 if (!TRILIUM_API_TOKEN) {
   throw new Error("TRILIUM_API_TOKEN environment variable is required");
@@ -21,8 +22,11 @@ if (!TRILIUM_API_TOKEN) {
 class TriliumServer {
   private server: Server;
   private axiosInstance;
+  private allowedPermissions: string[];
 
   constructor() {
+    this.allowedPermissions = PERMISSIONS.split(';');
+
     this.server = new Server(
       {
         name: "triliumnext-mcp",
@@ -51,11 +55,17 @@ class TriliumServer {
     });
   }
 
+  private hasPermission(permission: string): boolean {
+    return this.allowedPermissions.includes(permission);
+  }
+
   private setupToolHandlers() {
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
-              tools: [
-                {
-                  name: "create_note",
+    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+      const tools = [];
+
+      if (this.hasPermission("WRITE")) {
+        tools.push({
+          name: "create_note",
           description: "Create a new note in TriliumNext",
           inputSchema: {
             type: "object",
@@ -85,8 +95,8 @@ class TriliumServer {
             },
             required: ["parentNoteId", "title", "type", "content"],
           },
-        },
-        {
+        });
+        tools.push({
           name: "update_note",
           description: "Update the content of an existing note",
           inputSchema: {
@@ -103,8 +113,25 @@ class TriliumServer {
             },
             required: ["noteId", "content"]
           }
-        },
-        {
+        });
+        tools.push({
+          name: "delete_note",
+          description: "Delete a note",
+          inputSchema: {
+            type: "object",
+            properties: {
+              noteId: {
+                type: "string",
+                description: "ID of the note to delete",
+              },
+            },
+            required: ["noteId"],
+          },
+        });
+      }
+
+      if (this.hasPermission("READ")) {
+        tools.push({
           name: "search_notes",
           description: "Search notes in TriliumNext",
           inputSchema: {
@@ -125,8 +152,8 @@ class TriliumServer {
             },
             required: ["query"],
           },
-        },
-        {
+        });
+        tools.push({
           name: "get_note",
           description: "Get a note and its content by ID",
           inputSchema: {
@@ -144,23 +171,11 @@ class TriliumServer {
             },
             required: ["noteId"],
           },
-        },
-        {
-          name: "delete_note",
-          description: "Delete a note",
-          inputSchema: {
-            type: "object",
-            properties: {
-              noteId: {
-                type: "string",
-                description: "ID of the note to delete",
-              },
-            },
-            required: ["noteId"],
-          },
-        },
-      ],
-    }));
+        });
+      }
+
+      return { tools };
+    });
 
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       if (!request.params.arguments) {
@@ -170,6 +185,9 @@ class TriliumServer {
       try {
         switch (request.params.name) {
           case "create_note": {
+            if (!this.hasPermission("WRITE")) {
+              throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to create notes.");
+            }
             if (
               typeof request.params.arguments.parentNoteId !== "string" ||
               typeof request.params.arguments.title !== "string" ||
@@ -209,6 +227,9 @@ class TriliumServer {
           }
 
           case "search_notes": {
+            if (!this.hasPermission("READ")) {
+              throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to search notes.");
+            }
             if (typeof request.params.arguments.query !== "string") {
               throw new McpError(ErrorCode.InvalidParams, "Search query must be a string");
             }
@@ -234,6 +255,9 @@ class TriliumServer {
           }
 
           case "get_note": {
+            if (!this.hasPermission("READ")) {
+              throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to get notes.");
+            }
             if (typeof request.params.arguments.noteId !== "string") {
               throw new McpError(ErrorCode.InvalidParams, "Note ID must be a string");
             }
@@ -270,6 +294,9 @@ class TriliumServer {
 
 
           case "delete_note": {
+            if (!this.hasPermission("WRITE")) {
+              throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to delete notes.");
+            }
             if (typeof request.params.arguments.noteId !== "string") {
               throw new McpError(ErrorCode.InvalidParams, "Note ID must be a string");
             }
@@ -284,6 +311,9 @@ class TriliumServer {
           }
 
           case "update_note": {
+            if (!this.hasPermission("WRITE")) {
+              throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to update notes.");
+            }
             const { noteId } = request.params.arguments;
             const contentRaw = request.params.arguments.content;
             if (typeof noteId !== "string" || typeof contentRaw !== "string") {

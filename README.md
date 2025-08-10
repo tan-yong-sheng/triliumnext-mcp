@@ -14,6 +14,7 @@ A model context protocol server for TriliumNext Notes. This server provides tool
 Make sure to set up your environment variables first:
 - `TRILIUM_API_URL` (default: http://localhost:8080/etapi)
 - `TRILIUM_API_TOKEN` (required, get this from your Trilium Notes settings)
+- `PERMISSIONS` (optional, default='READ;WRITE', where READ let this MCP has permissions to perform `search_notes` and `get_note` operation and WRITE let this MCP has permissions to perform `create_note`, `update_note` and `delete_note` operations) 
 
 ## Installation
 
@@ -37,7 +38,8 @@ Add the following configuration to the `mcpServers` object in your Claude config
       ],
    "env": {
     "TRILIUM_API_URL": "http://localhost:8080/etapi",
-    "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>"
+    "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>",
+    "PERMISSIONS": "READ;WRITE"
   }
 }
 ```
@@ -53,7 +55,8 @@ Add the following configuration to the `mcpServers` object in your Claude config
       ],
    "env": {
     "TRILIUM_API_URL": "http://localhost:8080/etapi",
-    "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>"
+    "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>",
+    "PERMISSIONS": "READ;WRITE"
   }
 }
 ```
@@ -73,7 +76,8 @@ npm run build
   ],
   "env": {
     "TRILIUM_API_URL": "http://localhost:8080/etapi",
-    "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>"
+    "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>",
+    "PERMISSIONS": "READ;WRITE"
   }
 }
 ```
