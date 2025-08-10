@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/tan-yong-sheng-triliumnext-mcp-badge.png)](https://mseep.ai/app/tan-yong-sheng-triliumnext-mcp)
+
 # TriliumNext Notes' MCP Server
 
 ⚠️ **DISCLAIMER: This is a prototype for https://github.com/TriliumNext/Notes/issues/705. Suggested only for developer use. Please backup your Trilium notes before using this tool.** ⚠️
