@@ -3,7 +3,8 @@
     "allow": [
       "mcp__tavily-mcp__tavily_search",
       "mcp__tavily-mcp__tavily_extract",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(npm run build)"
     ],
     "deny": [],
     "ask": []

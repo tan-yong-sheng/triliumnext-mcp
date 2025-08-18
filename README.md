@@ -93,9 +93,17 @@ Location of the configuration file:
 
 The server provides the following tools for note management:
 
-- `search_notes` - Search through notes
+### Search Tools
+
+- `search_notes` - Fast full-text search for finding notes by keywords
   - Requires: search query
-  - Optional: fastSearch (fulltext search toggle), includeArchivedNotes
+  - Optional: includeArchivedNotes
+
+- `search_notes_advanced` - Advanced filtered search with date ranges and text search
+  - Optional: created_date_start, created_date_end, modified_date_start, modified_date_end
+  - Optional: text (full-text search token), limit, includeArchivedNotes
+
+### Note Management Tools
 
 - `get_note` - Retrieve a note content by ID
   - Requires: note ID
