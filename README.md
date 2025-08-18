@@ -99,10 +99,9 @@ The server provides the following tools for note management:
   - Requires: search query
   - Optional: includeArchivedNotes
 
-- `search_notes_advanced` - Advanced filtered search with date ranges and field targeting
+- `search_notes_advanced` - Advanced filtered search with date ranges and text search
   - Optional: created_date_start, created_date_end, modified_date_start, modified_date_end
-  - Optional: text (full-text search token), searchFields (content/title substring search)
-  - Optional: limit, includeArchivedNotes
+  - Optional: text (full-text search token), limit, includeArchivedNotes
 
 ### Note Management Tools
 

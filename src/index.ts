@@ -134,13 +134,13 @@ class TriliumServer {
       if (this.hasPermission("READ")) {
         tools.push({
           name: "search_notes",
-          description: "Fast full-text search for finding notes by keywords. Use for simple searches when you need quick results. Automatically uses fastSearch=true for optimal performance with indexed content.",
+          description: "Fast full-text search using simple keyword searches.",
           inputSchema: {
             type: "object",
             properties: {
               query: {
                 type: "string",
-                description: "Search query",
+                description: "Full text search query string (e.g., 'kubernetes', 'docker')",
               },
               includeArchivedNotes: {
                 type: "boolean",
@@ -171,7 +171,7 @@ class TriliumServer {
         });
         tools.push({
           name: "search_notes_advanced",
-          description: "Advanced filtered search with date ranges, substring matching, and precise field targeting. Use when you need to filter by creation/modification dates, search within specific fields (title/content), or find partial text matches. Automatically uses fastSearch=false for comprehensive content search.",
+          description: "Advanced filtered search using parameters such as created_date, modified_date, text keyword etc. Use when you need date filtering, field-specific searches for comprehensive search",
           inputSchema: {
             type: "object",
             properties: {
@@ -193,25 +193,15 @@ class TriliumServer {
               },
               text: {
                 type: "string",
-                description: "Full-text search token for indexed content (faster than searchFields)",
-              },
-              searchFields: {
-                type: "object",
-                properties: {
-                  content: {
-                    type: "string",
-                    description: "Find substring within note content (slower but finds partial matches)",
-                  },
-                  title: {
-                    type: "string", 
-                    description: "Find substring within note title (slower but finds partial matches)",
-                  },
-                },
-                description: "Precise substring search within specific fields. Use when you need to find partial text matches that full-text search might miss.",
+                description: "Simple text search token for full-text search (NOT a query string - just plain text like 'kubernetes')",
               },
               limit: {
                 type: "number",
                 description: "Maximum number of results to return",
+              },
+              orderBy: {
+                type: "string",
+                description: "Sort order for results (e.g., 'note.dateCreated desc', 'note.dateModified asc', 'note.title')",
               },
               includeArchivedNotes: {
                 type: "boolean",
@@ -320,10 +310,18 @@ class TriliumServer {
             }
 
             const response = await this.axiosInstance.get(`/notes?${params.toString()}`);
+            
+            // Prepare verbose debug info if enabled
+            const isVerbose = process.env.VERBOSE === "true";
+            const verboseInfo = isVerbose ? 
+              `\n--- Query Debug ---\nBuilt Query: ${query}\nInput Params: ${JSON.stringify(request.params.arguments, null, 2)}\n--- End Debug ---\n\n` : "";
+            
+            const results = JSON.stringify(response.data.results, null, 2);
+            
             return {
               content: [{
                 type: "text",
-                text: JSON.stringify(response.data.results, null, 2),
+                text: `${verboseInfo}${results}`,
               }],
             };
           }
