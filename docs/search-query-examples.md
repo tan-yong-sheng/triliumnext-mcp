@@ -293,3 +293,4 @@ search_notes_advanced({
 - **Important**: orderBy field must also be used as a filter in the query
 - Valid orderBy examples: `note.dateCreated desc`, `note.dateModified asc`
 - The searchQueryBuilder validates that orderBy fields are present in filters
+

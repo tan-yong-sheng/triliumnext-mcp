@@ -77,7 +77,8 @@ npm run build
   "env": {
     "TRILIUM_API_URL": "http://localhost:8080/etapi",
     "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>",
-    "PERMISSIONS": "READ;WRITE"
+    "PERMISSIONS": "READ;WRITE",
+    "VERBOSE": "true"
   }
 }
 ```
@@ -119,6 +120,15 @@ The server provides the following tools for note management:
 
 - `delete_note` - Delete a note
   - Requires: note ID
+
+## Sample User Queries
+
+- Find my most recent 10 notes about 'n8n' since the beginning of 2020.
+- Show me notes I've edited in the last 7 days.
+- What are the 5 most recently modified notes about 'docker' from last year?
+- Find notes created in the last week.
+- Search for 'kubernetes' in notes created between January and June of this year.
+- List all notes I worked on in the last week, either created or modified.
 
 ## Development
 
