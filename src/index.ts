@@ -10,6 +10,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import axios from "axios";
 import { marked } from "marked";
+import { buildSearchQuery } from "./modules/searchQueryBuilder.js";
 
 const TRILIUM_API_URL = process.env.TRILIUM_API_URL;
 const TRILIUM_API_TOKEN = process.env.TRILIUM_API_TOKEN;
@@ -133,17 +134,13 @@ class TriliumServer {
       if (this.hasPermission("READ")) {
         tools.push({
           name: "search_notes",
-          description: "Search notes in TriliumNext",
+          description: "Fast full-text search for finding notes by keywords. Use for simple searches when you need quick results. Automatically uses fastSearch=true for optimal performance with indexed content.",
           inputSchema: {
             type: "object",
             properties: {
               query: {
                 type: "string",
                 description: "Search query",
-              },
-              fastSearch: {
-                type: "boolean",
-                description: "Enable fast search (fulltext doesn't look into content)",
               },
               includeArchivedNotes: {
                 type: "boolean",
@@ -170,6 +167,57 @@ class TriliumServer {
               }
             },
             required: ["noteId"],
+          },
+        });
+        tools.push({
+          name: "search_notes_advanced",
+          description: "Advanced filtered search with date ranges, substring matching, and precise field targeting. Use when you need to filter by creation/modification dates, search within specific fields (title/content), or find partial text matches. Automatically uses fastSearch=false for comprehensive content search.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              created_date_start: {
+                type: "string",
+                description: "ISO date for created date start (e.g., '2024-01-01')",
+              },
+              created_date_end: {
+                type: "string", 
+                description: "ISO date for created date end, exclusive (e.g., '2024-12-31')",
+              },
+              modified_date_start: {
+                type: "string",
+                description: "ISO date for modified date start (e.g., '2024-01-01')",
+              },
+              modified_date_end: {
+                type: "string",
+                description: "ISO date for modified date end, exclusive (e.g., '2024-12-31')",
+              },
+              text: {
+                type: "string",
+                description: "Full-text search token for indexed content (faster than searchFields)",
+              },
+              searchFields: {
+                type: "object",
+                properties: {
+                  content: {
+                    type: "string",
+                    description: "Find substring within note content (slower but finds partial matches)",
+                  },
+                  title: {
+                    type: "string", 
+                    description: "Find substring within note title (slower but finds partial matches)",
+                  },
+                },
+                description: "Precise substring search within specific fields. Use when you need to find partial text matches that full-text search might miss.",
+              },
+              limit: {
+                type: "number",
+                description: "Maximum number of results to return",
+              },
+              includeArchivedNotes: {
+                type: "boolean",
+                description: "Include archived notes in search results",
+              },
+            },
           },
         });
       }
@@ -236,10 +284,36 @@ class TriliumServer {
 
             const params = new URLSearchParams();
             params.append("search", request.params.arguments.query);
+            params.append("fastSearch", "true"); // Always use fastSearch=true for basic queries
             
-            if (typeof request.params.arguments.fastSearch === "boolean") {
-              params.append("fastSearch", request.params.arguments.fastSearch.toString());
+            if (typeof request.params.arguments.includeArchivedNotes === "boolean") {
+              params.append("includeArchivedNotes", request.params.arguments.includeArchivedNotes.toString());
             }
+
+            const response = await this.axiosInstance.get(`/notes?${params.toString()}`);
+            return {
+              content: [{
+                type: "text",
+                text: JSON.stringify(response.data.results, null, 2),
+              }],
+            };
+          }
+
+          case "search_notes_advanced": {
+            if (!this.hasPermission("READ")) {
+              throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to search notes.");
+            }
+
+            // Build query from structured parameters
+            const query = buildSearchQuery(request.params.arguments);
+            
+            if (!query.trim()) {
+              throw new McpError(ErrorCode.InvalidParams, "At least one search parameter must be provided");
+            }
+
+            const params = new URLSearchParams();
+            params.append("search", query);
+            params.append("fastSearch", "false"); // Always use fastSearch=false for content search
             
             if (typeof request.params.arguments.includeArchivedNotes === "boolean") {
               params.append("includeArchivedNotes", request.params.arguments.includeArchivedNotes.toString());

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__tavily-mcp__tavily_search",
+      "mcp__tavily-mcp__tavily_extract",
+      "Bash(mkdir:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
