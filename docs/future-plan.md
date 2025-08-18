@@ -1,3 +1,95 @@
+# TriliumNext MCP: Future Development Plans
+
+## Immediate Next Features
+
+### 1. Append Note Function
+- **Function**: `append_note`
+- **Purpose**: Add content to existing notes without replacing entire content
+- **Parameters**:
+  - `noteId`: Target note ID
+  - `content`: Text content to append
+  - `revision`: boolean (default: false) - Whether to create revision before appending
+- **Implementatiowrn**: 
+  - Read current note content via GET `/notes/{noteId}/content`
+  - Concatenate new content to existing content
+  - Update note content via PUT `/notes/{noteId}/content`
+  - Optionally create revision via POST `/notes/{noteId}/revision` if `revision=true`
+
+### 2. Enhanced Update Note Function
+- **Enhancement**: Add `revision` parameter to existing `update_note` function
+- **Purpose**: Allow users to control whether revisions are created during updates
+- **Parameters**: 
+  - Add `revision`: boolean (default: false) - Whether to create revision before updating
+- **Implementation**: Call POST `/notes/{noteId}/revision` before update if `revision=true`
+
+### 3. List Children Note Function (`list_children_notes`)
+- **Function**: `list_children_notes` - Separate function for tree navigation
+- **Purpose**: Provide simple directory listing capabilities without complicating search
+- **Parameters**:
+  - `parentNoteId`: string (required) - List direct children of this note
+  - `orderBy`: string (optional) - Sort order (e.g., 'note.title', 'note.dateCreated desc')
+  - `limit`: number (optional) - Maximum results to return
+  - `includeArchivedNotes`: boolean (optional, default: false)
+- **Implementation**: 
+  - Use ETAPI search with `ancestorNoteId` and `ancestorDepth=eq1`
+  - Empty search query to match all children
+  - Single API call efficiency (avoid N+1 problem)
+  - Returns full Note objects with metadata
+- **Usage Examples**:
+  ```javascript
+  // List all direct children of a note
+  list_children({ parentNoteId: "abc123" })
+  
+  // List children sorted by creation date
+  list_children({ 
+    parentNoteId: "abc123", 
+    orderBy: "note.dateCreated desc",
+    limit: 20
+  })
+  ```
+- **Benefits**: 
+  - Keeps `search_notes_advanced` focused on search functionality
+  - Simple, intuitive API for tree navigation
+  - Essential for file explorer-like workflows
+
+#### Common Workflow Patterns:
+**`list_children` → `search_notes_advanced` → Action**
+
+- **Project Status Check**: List project folders → Search for status notes in each → Generate report
+- **Learning Progress**: List subject areas → Find recent activity in each → Track progress  
+- **Documentation Gaps**: List code modules → Check doc coverage in each → Identify missing docs
+- **Meeting Summary**: List monthly folders → Search meetings in each → Compile summary
+- **Knowledge Navigation**: List topic folders → Search related content → Discover connections
+
+### 4. List Parents Function (`list_parents`)
+- **Function**: `list_parents` - Get parent notes for tree navigation
+- **Purpose**: Provide upward tree navigation and breadcrumb functionality
+- **Parameters**:
+  - `noteId`: string (required) - Get parents of this note
+  - `includeBranchInfo`: boolean (optional, default: false) - Include branch details (prefix, position)
+- **Implementation**: 
+  - Use note's `parentNoteIds` property from GET `/notes/{noteId}`
+  - Fetch each parent note for full details (N+1 calls, but typically few parents)
+  - Optionally include branch information via `parentBranchIds`
+- **Usage Examples**:
+  ```javascript
+  // Get all parent notes
+  list_parents({ noteId: "child123" })
+  
+  // Get parents with branch details (prefix, position, etc.)
+  list_parents({ 
+    noteId: "child123", 
+    includeBranchInfo: true 
+  })
+  ```
+- **Use Cases**:
+  - **Breadcrumb Navigation**: Show path from root to current note
+  - **Context Discovery**: "Where is this note referenced?"
+  - **Multiple Parent Analysis**: Notes cloned to multiple locations
+  - **Orphan Detection**: Notes with no parents
+
+---
+
 # TriliumNext MCP: Search Enhancements PRD (Trilium ETAPI only)
 
 ## 1. Goals
