@@ -65,7 +65,7 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
   }
   
   // Build main query
-  let query = queryParts.join(' AND ');
+  let query = queryParts.join(' ');
   
   // Add orderBy with validation
   if (params.orderBy) {
