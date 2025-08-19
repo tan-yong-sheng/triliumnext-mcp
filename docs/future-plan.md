@@ -2,7 +2,7 @@
 
 ## Immediate Next Features
 
-### 3. List Children Note Function (`list_children_notes`)
+### 1. List Children Note Function (`list_children_notes`)
 - **Function**: `list_children_notes` - Separate function for tree navigation
 - **Purpose**: Provide simple directory listing capabilities without complicating search
 - **Parameters**:
