@@ -1,8 +1,48 @@
 # TriliumNext MCP: Future Development Plans
 
+## Recently Implemented ✅
+
+### 1. List All Notes Function (`list_all_notes`) ✅ **COMPLETED**
+- **Function**: `list_all_notes` - Complete note inventory functionality
+- **Purpose**: List ALL notes in Trilium database or within a specific subtree with filtering and sorting
+- **Parameters**:
+  - `parentNoteId`: string (optional) - List notes within specific subtree, omit for entire database
+  - `orderBy`: string (optional) - Sort field (e.g., 'title', 'dateCreated', 'dateModified')
+  - `orderDirection`: 'asc' | 'desc' (optional, default: 'desc')
+  - `limit`: number (optional, default: 500) - Maximum results
+  - `includeArchivedNotes`: boolean (optional, default: false)
+  - `includeProtectedNotes`: boolean (optional, default: false)
+- **Implementation**: 
+  - Uses ETAPI search with universal match query `note.noteId != ''`
+  - Uses `ancestorNoteId` parameter when parentNoteId is provided for subtree listing
+  - Client-side filtering for protected notes
+  - Returns trimmed note objects with essential fields
+  - Provides summary with count and scope info
+- **Usage Examples**:
+  ```javascript
+  // Get all notes in entire database
+  list_all_notes()
+  
+  // Get all notes within a specific parent note
+  list_all_notes({ parentNoteId: "abc123" })
+  
+  // Get oldest notes first in a subtree
+  list_all_notes({ 
+    parentNoteId: "abc123", 
+    orderBy: "dateCreated", 
+    orderDirection: "asc" 
+  })
+  ```
+- **Benefits**: 
+  - Complete note inventory and discovery (entire database or subtree)
+  - Bulk operations and data analysis
+  - AI assistant knowledge base overview
+  - Simple alternative to complex search queries
+  - Consistent with list_children_notes parentNoteId pattern
+
 ## Immediate Next Features
 
-### 3. List Children Note Function (`list_children_notes`)
+### 1. List Children Note Function (`list_children_notes`) ✅ **COMPLETED**
 - **Function**: `list_children_notes` - Separate function for tree navigation
 - **Purpose**: Provide simple directory listing capabilities without complicating search
 - **Parameters**:

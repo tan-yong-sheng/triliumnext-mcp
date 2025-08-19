@@ -9,8 +9,12 @@ import {
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
 import axios from "axios";
-import { marked } from "marked";
 import { buildSearchQuery } from "./modules/searchQueryBuilder.js";
+import { buildListChildQuery } from "./modules/listChildHelper.js";
+import { buildListDescendantNotesQuery } from "./modules/listDescendantNotesHelper.js";
+import { processContent } from "./modules/contentProcessor.js";
+import { trimNoteResults, formatNotesForListing } from "./modules/noteFormatter.js";
+import { createSearchDebugInfo, createListChildDebugInfo, createListSummary } from "./modules/responseUtils.js";
 
 const TRILIUM_API_URL = process.env.TRILIUM_API_URL;
 const TRILIUM_API_TOKEN = process.env.TRILIUM_API_TOKEN;
@@ -145,6 +149,12 @@ class TriliumServer {
               includeArchivedNotes: {
                 type: "boolean",
                 description: "Include archived notes in search results",
+                default: false
+              },
+              includeProtectedNotes: {
+                type: "boolean",
+                description: "Include protected notes in search results",
+                default: false
               },
             },
             required: ["query"],
@@ -206,8 +216,93 @@ class TriliumServer {
               includeArchivedNotes: {
                 type: "boolean",
                 description: "Include archived notes in search results",
+                default: false
+              },
+              includeProtectedNotes: {
+                type: "boolean",
+                description: "Include protected notes in search results",
+                default: false
               },
             },
+          },
+        });
+        tools.push({
+          name: "list_descendant_notes",
+          description: "List ALL descendant notes recursively in database or subtree (like Unix 'find' command). PREFERRED for 'list all notes' requests - provides complete note inventory. Use when user wants to see everything, discovery, or bulk operations, especially for 'list all notes' or 'show me everything at my note' requests",
+          inputSchema: {
+            type: "object",
+            properties: {
+              parentNoteId: {
+                type: "string",
+                description: "Optional parent note ID to search within specific subtree. Use 'root' to search entire note tree, or omit to search entire database. RECOMMENDED: Use 'root' or omit this parameter when user asks to 'list all notes'.",
+                default: "root"
+              },
+              orderBy: {
+                type: "string",
+                description: "Sort order for results (e.g., 'title', 'dateCreated', 'dateModified')",
+                default: "dateModified"
+              },
+              orderDirection: {
+                type: "string",
+                enum: ["asc", "desc"],
+                description: "Sort direction - ascending or descending",
+                default: "desc"
+              },
+              limit: {
+                type: "number",
+                description: "Maximum number of notes to return",
+                default: 500
+              },
+              includeArchivedNotes: {
+                type: "boolean",
+                description: "Include archived notes in results",
+                default: false
+              },
+              includeProtectedNotes: {
+                type: "boolean",
+                description: "Include protected notes in results",
+                default: false
+              },
+            },
+          },
+        });
+        tools.push({
+          name: "list_child_notes",
+          description: "List direct child notes of a parent note (like Unix 'ls' command). Use for browsing/navigating note hierarchy or when user specifically wants only direct children.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              parentNoteId: {
+                type: "string",
+                description: "ID of the parent note to list children from. Use 'root' for top-level notes. For 'list all notes' requests, consider using list_descendant_notes instead.",
+                default: "root"
+              },
+              orderBy: {
+                type: "string",
+                description: "Sort order for results (e.g., 'title', 'dateCreated', 'dateModified')",
+              },
+              orderDirection: {
+                type: "string",
+                enum: ["asc", "desc"],
+                description: "Sort direction - ascending or descending",
+                default: "asc"
+              },
+              limit: {
+                type: "number",
+                description: "Maximum number of children to return",
+              },
+              includeArchivedNotes: {
+                type: "boolean",
+                description: "Include archived notes in results",
+                default: false
+              },
+              includeProtectedNotes: {
+                type: "boolean",
+                description: "Include protected notes in results",
+                default: false
+              },
+            },
+            required: [],
           },
         });
       }
@@ -237,17 +332,8 @@ class TriliumServer {
 
             let content = request.params.arguments.content;
 
-            // Attempt to detect Markdown content heuristically
-            const markdownIndicators = ["#", "*", "-", "`", "[", "]", "(", ")", "_", ">"];
-            const isLikelyMarkdown = markdownIndicators.some(indicator => content.includes(indicator));
-
-            if (isLikelyMarkdown) {
-              try {
-                content = await marked.parse(content);
-              } catch (e) {
-                console.error("Markdown parsing failed, saving original content:", e);
-              }
-            }
+            // Process content and convert Markdown to HTML if detected
+            content = await processContent(content);
 
             const response = await this.axiosInstance.post("/create-note", {
               parentNoteId: request.params.arguments.parentNoteId,
@@ -280,11 +366,22 @@ class TriliumServer {
               params.append("includeArchivedNotes", request.params.arguments.includeArchivedNotes.toString());
             }
 
+            // Handle includeProtectedNotes by filtering results if needed
+            const includeProtectedNotes = request.params.arguments.includeProtectedNotes === true;
+
             const response = await this.axiosInstance.get(`/notes?${params.toString()}`);
+            let results = response.data.results || [];
+            
+            // Filter out protected notes if not explicitly included
+            if (!includeProtectedNotes) {
+              results = results.filter((note: any) => !note.isProtected);
+            }
+            
+            const trimmedResults = trimNoteResults(results);
             return {
               content: [{
                 type: "text",
-                text: JSON.stringify(response.data.results, null, 2),
+                text: JSON.stringify(trimmedResults, null, 2),
               }],
             };
           }
@@ -309,19 +406,165 @@ class TriliumServer {
               params.append("includeArchivedNotes", request.params.arguments.includeArchivedNotes.toString());
             }
 
+            // Handle includeProtectedNotes by filtering results if needed
+            const includeProtectedNotes = request.params.arguments.includeProtectedNotes === true;
+
             const response = await this.axiosInstance.get(`/notes?${params.toString()}`);
             
             // Prepare verbose debug info if enabled
-            const isVerbose = process.env.VERBOSE === "true";
-            const verboseInfo = isVerbose ? 
-              `\n--- Query Debug ---\nBuilt Query: ${query}\nInput Params: ${JSON.stringify(request.params.arguments, null, 2)}\n--- End Debug ---\n\n` : "";
+            const verboseInfo = createSearchDebugInfo(query, request.params.arguments);
             
-            const results = JSON.stringify(response.data.results, null, 2);
+            let searchResults = response.data.results || [];
+            
+            // Filter out protected notes if not explicitly included
+            if (!includeProtectedNotes) {
+              searchResults = searchResults.filter((note: any) => !note.isProtected);
+            }
+            
+            const trimmedResults = trimNoteResults(searchResults);
+            const results = JSON.stringify(trimmedResults, null, 2);
             
             return {
               content: [{
                 type: "text",
                 text: `${verboseInfo}${results}`,
+              }],
+            };
+          }
+
+          case "list_child_notes": {
+            if (!this.hasPermission("READ")) {
+              throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to list child notes.");
+            }
+            if (typeof request.params.arguments.parentNoteId !== "string") {
+              // Use default value if not provided
+              request.params.arguments.parentNoteId = "root";
+            }
+
+            // Ensure parentNoteId is a string, use default if not provided
+            const parentNoteId = typeof request.params.arguments.parentNoteId === "string" ? request.params.arguments.parentNoteId : "root";
+
+            // Build query parameters using helper
+            const listChildParams = {
+              parentNoteId: parentNoteId,
+              orderBy: typeof request.params.arguments.orderBy === "string" ? request.params.arguments.orderBy : undefined,
+              orderDirection: typeof request.params.arguments.orderDirection === "string" ? request.params.arguments.orderDirection : undefined,
+              limit: typeof request.params.arguments.limit === "number" ? request.params.arguments.limit : undefined,
+              includeArchivedNotes: typeof request.params.arguments.includeArchivedNotes === "boolean" ? request.params.arguments.includeArchivedNotes : undefined,
+              includeProtectedNotes: typeof request.params.arguments.includeProtectedNotes === "boolean" ? request.params.arguments.includeProtectedNotes : undefined,
+            };
+            
+            const urlParams = buildListChildQuery(listChildParams);
+            
+            const response = await this.axiosInstance.get(`/notes?${urlParams.toString()}`);
+            
+            let notes = response.data.results || [];
+            
+            // Filter out the parent note itself from the results
+            notes = notes.filter((note: any) => note.noteId !== parentNoteId);
+            
+            // Filter out protected notes if not explicitly included
+            const includeProtectedNotes = listChildParams.includeProtectedNotes === true;
+            if (!includeProtectedNotes) {
+              notes = notes.filter((note: any) => !note.isProtected);
+            }
+            
+            if (notes.length === 0) {
+              return {
+                content: [{
+                  type: "text",
+                  text: `No children found for parent note: ${parentNoteId}`,
+                }],
+              };
+            }
+            
+            // Format notes as "date title (noteId)" similar to ls -l output
+            const formattedNotes = formatNotesForListing(notes);
+            
+            // Create ls-like output with count summary
+            const output = formattedNotes.join('\n');
+            const summary = createListSummary(notes.length);
+            
+            // Prepare verbose debug info if enabled
+            const verboseInfo = createListChildDebugInfo(
+              parentNoteId, 
+              urlParams, 
+              notes.length
+            );
+            
+            // Always show the query info for debugging
+            const debugInfo = `[DEBUG] list_child_notes query: ${urlParams.toString()}\n[DEBUG] Result count: ${notes.length}\n\n`;
+            
+            return {
+              content: [{
+                type: "text",
+                text: `${debugInfo}${verboseInfo}${output}${summary}`,
+              }],
+            };
+          }
+
+          case "list_descendant_notes": {
+            if (!this.hasPermission("READ")) {
+              throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to list descendant notes.");
+            }
+
+            // Build query parameters using helper  
+            const listDescendantNotesParams = {
+              parentNoteId: typeof request.params.arguments.parentNoteId === "string" ? request.params.arguments.parentNoteId : "root",
+              orderBy: typeof request.params.arguments.orderBy === "string" ? request.params.arguments.orderBy : undefined,
+              orderDirection: typeof request.params.arguments.orderDirection === "string" ? request.params.arguments.orderDirection : undefined,
+              limit: typeof request.params.arguments.limit === "number" ? request.params.arguments.limit : undefined,
+              includeArchivedNotes: typeof request.params.arguments.includeArchivedNotes === "boolean" ? request.params.arguments.includeArchivedNotes : undefined,
+              includeProtectedNotes: typeof request.params.arguments.includeProtectedNotes === "boolean" ? request.params.arguments.includeProtectedNotes : undefined,
+            };
+            
+            const urlParams = buildListDescendantNotesQuery(listDescendantNotesParams);
+            
+            const response = await this.axiosInstance.get(`/notes?${urlParams.toString()}`);
+            
+            let notes = response.data.results || [];
+            
+            // Filter out the parent note itself from the results (if parentNoteId is provided)
+            if (listDescendantNotesParams.parentNoteId && listDescendantNotesParams.parentNoteId !== "root") {
+              notes = notes.filter((note: any) => note.noteId !== listDescendantNotesParams.parentNoteId);
+            }
+            
+            // Filter out protected notes if not explicitly included
+            const includeProtectedNotes = listDescendantNotesParams.includeProtectedNotes === true;
+            if (!includeProtectedNotes) {
+              notes = notes.filter((note: any) => !note.isProtected);
+            }
+            
+            if (notes.length === 0) {
+              const scopeInfo = listDescendantNotesParams.parentNoteId ? ` within parent note: ${listDescendantNotesParams.parentNoteId}` : ' in the database';
+              return {
+                content: [{
+                  type: "text",
+                  text: `No notes found${scopeInfo}`,
+                }],
+              };
+            }
+            
+            // Use formatted output like list_children_notes (ls-like format)
+            const formattedNotes = formatNotesForListing(notes);
+            const output = formattedNotes.join('\n');
+            
+            // Create summary with scope info
+            const scopeInfo = listDescendantNotesParams.parentNoteId ? ` (within parent: ${listDescendantNotesParams.parentNoteId})` : ' (entire database)';
+            const summary = `\nTotal: ${notes.length} note${notes.length !== 1 ? 's' : ''}${scopeInfo}`;
+            
+            // Prepare verbose debug info if enabled
+            const isVerbose = process.env.VERBOSE === "true";
+            const verboseInfo = isVerbose ? 
+              `--- List Descendant Notes Debug ---\nParent Note ID: ${listDescendantNotesParams.parentNoteId || 'none (entire database)'}\nURL Params: ${urlParams.toString()}\nRaw Result Count: ${notes.length}\n--- End Debug ---\n\n` : "";
+            
+            // Always show the query info for debugging
+            const debugInfo = `[DEBUG] list_descendant_notes query: ${urlParams.toString()}\n[DEBUG] Result count: ${notes.length}\n\n`;
+            
+            return {
+              content: [{
+                type: "text",
+                text: `${debugInfo}${verboseInfo}${output}${summary}`,
               }],
             };
           }
@@ -394,17 +637,8 @@ class TriliumServer {
 
             let content = contentRaw;
 
-            // Attempt to detect Markdown content heuristically
-            const markdownIndicators = ["#", "*", "-", "`", "[", "]", "(", ")", "_", ">"];
-            const isLikelyMarkdown = markdownIndicators.some(indicator => content.includes(indicator));
-
-            if (isLikelyMarkdown) {
-              try {
-                content = await marked.parse(content);
-              } catch (e) {
-                console.error("Markdown parsing failed, saving original content:", e);
-              }
-            }
+            // Process content and convert Markdown to HTML if detected
+            content = await processContent(content);
 
             const url = `/notes/${noteId}/content`;
             const response = await this.axiosInstance.put(url, content, {
