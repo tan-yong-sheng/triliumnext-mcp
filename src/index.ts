@@ -9,24 +9,11 @@ import {
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
 import axios from "axios";
-import { marked } from "marked";
 import { buildSearchQuery } from "./modules/searchQueryBuilder.js";
 import { buildListChildrenQuery } from "./modules/listChildrenHelper.js";
-
-// Helper function to trim note objects to essential fields
-function trimNoteResults(notes: any[]): any[] {
-  return notes.map(note => ({
-    noteId: note.noteId,
-    title: note.title,
-    type: note.type,
-    mime: note.mime,
-    isProtected: note.isProtected,
-    dateCreated: note.dateCreated,
-    dateModified: note.dateModified,
-    utcDateCreated: note.utcDateCreated,
-    utcDateModified: note.utcDateModified
-  }));
-}
+import { processContent } from "./modules/contentProcessor.js";
+import { trimNoteResults, formatNotesForListing } from "./modules/noteFormatter.js";
+import { createSearchDebugInfo, createListChildrenDebugInfo, createListSummary } from "./modules/responseUtils.js";
 
 const TRILIUM_API_URL = process.env.TRILIUM_API_URL;
 const TRILIUM_API_TOKEN = process.env.TRILIUM_API_TOKEN;
@@ -228,13 +215,13 @@ class TriliumServer {
         });
         tools.push({
           name: "list_children_notes",
-          description: "List direct children notes of a parent note for tree navigation",
+          description: "List direct children notes of a parent note for tree navigation. Use parentNoteId='root' to list all top-level notes.",
           inputSchema: {
             type: "object",
             properties: {
               parentNoteId: {
                 type: "string",
-                description: "ID of the parent note to list children from",
+                description: "ID of the parent note to list children from. Use 'root' to list all top-level notes, especially when user is requesting to list all the notes that they have.",
               },
               orderBy: {
                 type: "string",
@@ -286,17 +273,8 @@ class TriliumServer {
 
             let content = request.params.arguments.content;
 
-            // Attempt to detect Markdown content heuristically
-            const markdownIndicators = ["#", "*", "-", "`", "[", "]", "(", ")", "_", ">"];
-            const isLikelyMarkdown = markdownIndicators.some(indicator => content.includes(indicator));
-
-            if (isLikelyMarkdown) {
-              try {
-                content = await marked.parse(content);
-              } catch (e) {
-                console.error("Markdown parsing failed, saving original content:", e);
-              }
-            }
+            // Process content and convert Markdown to HTML if detected
+            content = await processContent(content);
 
             const response = await this.axiosInstance.post("/create-note", {
               parentNoteId: request.params.arguments.parentNoteId,
@@ -362,9 +340,7 @@ class TriliumServer {
             const response = await this.axiosInstance.get(`/notes?${params.toString()}`);
             
             // Prepare verbose debug info if enabled
-            const isVerbose = process.env.VERBOSE === "true";
-            const verboseInfo = isVerbose ? 
-              `\n--- Query Debug ---\nBuilt Query: ${query}\nInput Params: ${JSON.stringify(request.params.arguments, null, 2)}\n--- End Debug ---\n\n` : "";
+            const verboseInfo = createSearchDebugInfo(query, request.params.arguments);
             
             const trimmedResults = trimNoteResults(response.data.results || []);
             const results = JSON.stringify(trimmedResults, null, 2);
@@ -410,43 +386,18 @@ class TriliumServer {
             }
             
             // Format notes as "date title (noteId)" similar to ls -l output
-            const formattedNotes = notes.map((note: any) => {
-              const title = note.title || "Untitled";
-              const noteId = note.noteId || "unknown";
-              const type = note.type || "unknown";
-              
-              // Format date like ls -l (e.g., "2024-08-19 14:30")
-              const dateCreated = note.dateCreated || note.utcDateCreated || "unknown";
-              let formattedDate = "unknown";
-              
-              if (dateCreated !== "unknown") {
-                try {
-                  // Handle both local and UTC date formats
-                  const date = new Date(dateCreated);
-                  if (!isNaN(date.getTime())) {
-                    formattedDate = date.toISOString().slice(0, 16).replace('T', ' ');
-                  }
-                } catch (e) {
-                  formattedDate = "invalid-date";
-                }
-              }
-              
-              // Add type indicator like ls -F (optional enhancement)
-              const typeIndicator = type === 'book' ? '/' : 
-                                   type === 'code' ? '*' : 
-                                   type === 'search' ? '?' : '';
-              
-              return `${formattedDate}  ${title}${typeIndicator} (${noteId})`;
-            });
+            const formattedNotes = formatNotesForListing(notes);
             
             // Create ls-like output with count summary
             const output = formattedNotes.join('\n');
-            const summary = `\nTotal: ${notes.length} note${notes.length !== 1 ? 's' : ''}`;
+            const summary = createListSummary(notes.length);
             
             // Prepare verbose debug info if enabled
-            const isVerbose = process.env.VERBOSE === "true";
-            const verboseInfo = isVerbose ? 
-              `--- List Children Debug ---\nParent Note ID: ${request.params.arguments.parentNoteId}\nURL Params: ${urlParams.toString()}\nRaw Result Count: ${notes.length}\n--- End Debug ---\n\n` : "";
+            const verboseInfo = createListChildrenDebugInfo(
+              request.params.arguments.parentNoteId, 
+              urlParams, 
+              notes.length
+            );
             
             return {
               content: [{
@@ -524,17 +475,8 @@ class TriliumServer {
 
             let content = contentRaw;
 
-            // Attempt to detect Markdown content heuristically
-            const markdownIndicators = ["#", "*", "-", "`", "[", "]", "(", ")", "_", ">"];
-            const isLikelyMarkdown = markdownIndicators.some(indicator => content.includes(indicator));
-
-            if (isLikelyMarkdown) {
-              try {
-                content = await marked.parse(content);
-              } catch (e) {
-                console.error("Markdown parsing failed, saving original content:", e);
-              }
-            }
+            // Process content and convert Markdown to HTML if detected
+            content = await processContent(content);
 
             const url = `/notes/${noteId}/content`;
             const response = await this.axiosInstance.put(url, content, {
