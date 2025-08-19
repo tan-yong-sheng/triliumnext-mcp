@@ -98,11 +98,25 @@ The server provides the following tools for note management:
 
 - `search_notes` - Fast full-text search for finding notes by keywords
   - Requires: search query
-  - Optional: includeArchivedNotes
+  - Optional: includeArchivedNotes, includeProtectedNotes
 
 - `search_notes_advanced` - Advanced filtered search with date ranges and text search
   - Optional: created_date_start, created_date_end, modified_date_start, modified_date_end
-  - Optional: text (full-text search token), limit, includeArchivedNotes
+  - Optional: text (full-text search token), limit, includeArchivedNotes, includeProtectedNotes
+
+### Note Discovery Tools
+
+- `list_child_notes` - List direct children of a parent note (like Unix `ls` command)
+  - Optional: parentNoteId (default: "root" for top-level notes)
+  - Optional: orderBy, orderDirection, limit, includeArchivedNotes, includeProtectedNotes
+  - Use when browsing note hierarchy or listing immediate children only
+
+- `list_descendant_notes` - List ALL descendant notes recursively in database or subtree (like Unix `find` command)
+  - Optional: parentNoteId (default: "root" to search entire note tree, omit for entire database)
+  - Optional: orderBy, orderDirection, limit, includeArchivedNotes, includeProtectedNotes
+  - Use when you need complete note inventory, discovery, or bulk operations
+
+> **Function Comparison**: `list_child_notes` shows only direct children (like `ls`), while `list_descendant_notes` shows ALL descendants recursively (like `find`). Both support security defaults excluding protected and archived notes.
 
 ### Note Management Tools
 
@@ -123,12 +137,23 @@ The server provides the following tools for note management:
 
 ## Sample User Queries
 
+### Search and Discovery
 - Find my most recent 10 notes about 'n8n' since the beginning of 2020.
 - Show me notes I've edited in the last 7 days.
 - What are the 5 most recently modified notes about 'docker' from last year?
 - Find notes created in the last week.
 - Search for 'kubernetes' in notes created between January and June of this year.
 - List all notes I worked on in the last week, either created or modified.
+
+### Note Navigation and Browsing
+- "List all notes" → Uses `list_child_notes` with parentNoteId="root" to show top-level notes
+- "Show me what's in my project folder" → Uses `list_child_notes` with specific parentNoteId
+- "Browse my note hierarchy" → Uses `list_child_notes` for directory-style navigation
+
+### Complete Note Inventory
+- "Show me everything I have" → Uses `list_descendant_notes` to recursively list all notes
+- "Find all notes in my project" → Uses `list_descendant_notes` with parentNoteId for subtree search
+- "Get complete note inventory" → Uses `list_descendant_notes` for bulk operations and analysis
 
 ## Development
 
