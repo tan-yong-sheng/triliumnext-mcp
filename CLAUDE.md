@@ -153,3 +153,26 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - **Numeric properties**: `labelCount`, `ownedLabelCount`, `attributeCount`, `relationCount`, `parentCount`, `childrenCount`, `contentSize`, `revisionCount` - support numeric comparisons (`>`, `<`, `>=`, `<=`, `=`, `!=`) with unquoted numeric values
 - **Automatic type handling**: Query builder properly handles boolean, string, and numeric value formatting
 - **Examples**: `note.labelCount > 5`, `note.type = 'text'`, `note.isArchived = true`
+
+## Attribute OR Logic Support
+
+### Clean Two-Parameter Approach
+- **`attributes` parameter**: For Trilium user-defined metadata (`#book`, `~author.title`)
+  - **Labels**: `#book`, `#author` - user-defined tags and categories  
+  - **Relations**: `~author.title *= 'Tolkien'` - connections between notes (future support)
+  - **Per-item logic**: Each attribute can specify `logic: "OR"` to combine with next attribute
+  - **Trilium syntax**: Automatically handles proper `#` and `~` prefixes, OR grouping with `~(#book OR #author)`
+- **`noteProperties` parameter**: For Trilium built-in note metadata (`note.isArchived`, `note.type`)
+  - **System properties**: Built into every note - `note.isArchived`, `note.type`, `note.labelCount`
+  - **Different namespace**: Always prefixed with `note.` in Trilium DSL  
+  - **Per-item logic**: Each property can specify `logic: "OR"` to combine with next property
+- **Conceptual clarity**: Matches Trilium's architectural separation between user metadata and system metadata
+- **Edge case handling**: Auto-cleanup of logic on last items, OR default logic, proper grouping
+
+## Documentation Status
+
+### Testing Status
+- ⚠️ **UNTESTED**: Attribute search examples in `docs/search-query-examples.md` from "## Attribute Search Examples" section through "### Attribute Search Reference" have not been tested against actual TriliumNext instances
+- ⚠️ **UNTESTED**: Two-parameter approach with per-item logic (examples 30-33) needs validation
+- **Reminder**: These examples need validation to ensure the generated Trilium search strings work correctly with the ETAPI
+- **Priority**: Test both `attributes` (labels/relations) and `noteProperties` (note.*) with per-item OR logic functionality

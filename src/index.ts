@@ -253,49 +253,48 @@ class TriliumServer {
               },
               attributes: {
                 type: "array",
-                description: "Array of attribute-based search conditions for Trilium labels (e.g., #book, #author). Supports existence checks and value-based searches.",
+                description: "Array of attribute-based search conditions for Trilium labels and relations (e.g., #book, #author, ~authorNote). User-defined metadata attached to notes.",
                 items: {
                   type: "object",
                   properties: {
                     type: {
                       type: "string",
-                      enum: ["label"],
-                      description: "Type of attribute (currently only 'label' is supported)"
+                      enum: ["label", "relation"],
+                      description: "Type of attribute: 'label' for #tags, 'relation' for ~relations (future)"
                     },
                     name: {
                       type: "string",
-                      description: "Name of the label (e.g., 'book', 'author', 'archived')"
+                      description: "Name of the label or relation (e.g., 'book', 'author', 'archived')"
                     },
                     op: {
                       type: "string",
                       enum: ["exists", "not_exists", "=", "!=", ">=", "<=", ">", "<", "contains", "starts_with", "ends_with"],
-                      description: "Attribute operator - 'exists' checks for label presence, others compare values",
+                      description: "Attribute operator - 'exists'/'not_exists' for presence checks, others for value comparisons",
                       default: "exists"
                     },
                     value: {
                       type: "string",
-                      description: "Value to compare against (optional for 'exists'/'not_exists' operators)"
+                      description: "Value to compare against (optional for exists/not_exists)"
+                    },
+                    logic: {
+                      type: "string",
+                      enum: ["AND", "OR"],
+                      description: "Logic operator to combine with NEXT attribute. Default is OR if not specified."
                     }
                   },
                   required: ["type", "name"]
                 }
               },
-              attributeLogic: {
-                type: "string",
-                enum: ["and", "or"],
-                description: "Logic operator for combining multiple attributes: 'and' requires all attributes (default), 'or' requires any attribute",
-                default: "and"
-              },
               noteProperties: {
                 type: "array",
-                description: "Array of note property-based search conditions (e.g., note.isArchived, note.isProtected). Supports filtering by built-in note properties.",
+                description: "Array of note property conditions for built-in note metadata (e.g., note.isArchived, note.type). System-level properties with note.* prefix.",
                 items: {
                   type: "object",
                   properties: {
                     property: {
                       type: "string",
                       enum: ["isArchived", "isProtected", "type", "title", "labelCount", "ownedLabelCount", "attributeCount", "relationCount", "parentCount", "childrenCount", "contentSize", "revisionCount"],
-                      description: "Note property to filter on"
+                      description: "Note property name"
                     },
                     op: {
                       type: "string",
@@ -305,7 +304,12 @@ class TriliumServer {
                     },
                     value: {
                       type: "string",
-                      description: "Value to compare against (e.g., 'true', 'false' for boolean properties; 'text', 'code' for type; numeric values like '5', '10' for count properties)"
+                      description: "Value to compare against"
+                    },
+                    logic: {
+                      type: "string",
+                      enum: ["AND", "OR"],
+                      description: "Logic operator to combine with NEXT property. Default is OR if not specified."
                     }
                   },
                   required: ["property", "value"]
@@ -384,49 +388,48 @@ class TriliumServer {
               },
               attributes: {
                 type: "array",
-                description: "Array of attribute-based search conditions for Trilium labels (e.g., #book, #author). Supports existence checks and value-based searches.",
+                description: "Array of attribute-based search conditions for Trilium labels and relations (e.g., #book, #author, ~authorNote). User-defined metadata attached to notes.",
                 items: {
                   type: "object",
                   properties: {
                     type: {
                       type: "string",
-                      enum: ["label"],
-                      description: "Type of attribute (currently only 'label' is supported)"
+                      enum: ["label", "relation"],
+                      description: "Type of attribute: 'label' for #tags, 'relation' for ~relations (future)"
                     },
                     name: {
                       type: "string",
-                      description: "Name of the label (e.g., 'book', 'author', 'archived')"
+                      description: "Name of the label or relation (e.g., 'book', 'author', 'archived')"
                     },
                     op: {
                       type: "string",
                       enum: ["exists", "not_exists", "=", "!=", ">=", "<=", ">", "<", "contains", "starts_with", "ends_with"],
-                      description: "Attribute operator - 'exists' checks for label presence, others compare values",
+                      description: "Attribute operator - 'exists'/'not_exists' for presence checks, others for value comparisons",
                       default: "exists"
                     },
                     value: {
                       type: "string",
-                      description: "Value to compare against (optional for 'exists'/'not_exists' operators)"
+                      description: "Value to compare against (optional for exists/not_exists)"
+                    },
+                    logic: {
+                      type: "string",
+                      enum: ["AND", "OR"],
+                      description: "Logic operator to combine with NEXT attribute. Default is OR if not specified."
                     }
                   },
                   required: ["type", "name"]
                 }
               },
-              attributeLogic: {
-                type: "string",
-                enum: ["and", "or"],
-                description: "Logic operator for combining multiple attributes: 'and' requires all attributes (default), 'or' requires any attribute",
-                default: "and"
-              },
               noteProperties: {
                 type: "array",
-                description: "Array of note property-based search conditions (e.g., note.isArchived, note.isProtected). Supports filtering by built-in note properties.",
+                description: "Array of note property conditions for built-in note metadata (e.g., note.isArchived, note.type). System-level properties with note.* prefix.",
                 items: {
                   type: "object",
                   properties: {
                     property: {
                       type: "string",
                       enum: ["isArchived", "isProtected", "type", "title", "labelCount", "ownedLabelCount", "attributeCount", "relationCount", "parentCount", "childrenCount", "contentSize", "revisionCount"],
-                      description: "Note property to filter on"
+                      description: "Note property name"
                     },
                     op: {
                       type: "string",
@@ -436,7 +439,12 @@ class TriliumServer {
                     },
                     value: {
                       type: "string",
-                      description: "Value to compare against (e.g., 'true', 'false' for boolean properties; 'text', 'code' for type; numeric values like '5', '10' for count properties)"
+                      description: "Value to compare against"
+                    },
+                    logic: {
+                      type: "string",
+                      enum: ["AND", "OR"],
+                      description: "Logic operator to combine with NEXT property. Default is OR if not specified."
                     }
                   },
                   required: ["property", "value"]
@@ -510,49 +518,48 @@ class TriliumServer {
               },
               attributes: {
                 type: "array",
-                description: "Array of attribute-based search conditions for Trilium labels (e.g., #book, #author). Supports existence checks and value-based searches.",
+                description: "Array of attribute-based search conditions for Trilium labels and relations (e.g., #book, #author, ~authorNote). User-defined metadata attached to notes.",
                 items: {
                   type: "object",
                   properties: {
                     type: {
                       type: "string",
-                      enum: ["label"],
-                      description: "Type of attribute (currently only 'label' is supported)"
+                      enum: ["label", "relation"],
+                      description: "Type of attribute: 'label' for #tags, 'relation' for ~relations (future)"
                     },
                     name: {
                       type: "string",
-                      description: "Name of the label (e.g., 'book', 'author', 'archived')"
+                      description: "Name of the label or relation (e.g., 'book', 'author', 'archived')"
                     },
                     op: {
                       type: "string",
                       enum: ["exists", "not_exists", "=", "!=", ">=", "<=", ">", "<", "contains", "starts_with", "ends_with"],
-                      description: "Attribute operator - 'exists' checks for label presence, others compare values",
+                      description: "Attribute operator - 'exists'/'not_exists' for presence checks, others for value comparisons",
                       default: "exists"
                     },
                     value: {
                       type: "string",
-                      description: "Value to compare against (optional for 'exists'/'not_exists' operators)"
+                      description: "Value to compare against (optional for exists/not_exists)"
+                    },
+                    logic: {
+                      type: "string",
+                      enum: ["AND", "OR"],
+                      description: "Logic operator to combine with NEXT attribute. Default is OR if not specified."
                     }
                   },
                   required: ["type", "name"]
                 }
               },
-              attributeLogic: {
-                type: "string",
-                enum: ["and", "or"],
-                description: "Logic operator for combining multiple attributes: 'and' requires all attributes (default), 'or' requires any attribute",
-                default: "and"
-              },
               noteProperties: {
                 type: "array",
-                description: "Array of note property-based search conditions (e.g., note.isArchived, note.isProtected). Supports filtering by built-in note properties.",
+                description: "Array of note property conditions for built-in note metadata (e.g., note.isArchived, note.type). System-level properties with note.* prefix.",
                 items: {
                   type: "object",
                   properties: {
                     property: {
                       type: "string",
                       enum: ["isArchived", "isProtected", "type", "title", "labelCount", "ownedLabelCount", "attributeCount", "relationCount", "parentCount", "childrenCount", "contentSize", "revisionCount"],
-                      description: "Note property to filter on"
+                      description: "Note property name"
                     },
                     op: {
                       type: "string",
@@ -562,7 +569,12 @@ class TriliumServer {
                     },
                     value: {
                       type: "string",
-                      description: "Value to compare against (e.g., 'true', 'false' for boolean properties; 'text', 'code' for type; numeric values like '5', '10' for count properties)"
+                      description: "Value to compare against"
+                    },
+                    logic: {
+                      type: "string",
+                      enum: ["AND", "OR"],
+                      description: "Logic operator to combine with NEXT property. Default is OR if not specified."
                     }
                   },
                   required: ["property", "value"]

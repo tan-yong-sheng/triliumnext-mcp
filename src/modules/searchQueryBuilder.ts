@@ -5,16 +5,19 @@ interface FilterCondition {
 }
 
 interface AttributeCondition {
-  type: string;     // 'label' (relations support could be added later)
-  name: string;     // label name (e.g., 'book', 'author', 'archived')
-  op?: string;      // 'exists', 'not_exists', '=', '!=', '>=', '<=', '>', '<', 'contains', 'starts_with', 'ends_with'
-  value?: string;   // value to compare (optional for existence checks)
+  type: string;     // 'label', 'relation' (future)
+  name: string;     // Name of the label or relation
+  op?: string;      // Operator (exists, not_exists, =, !=, >=, <=, >, <, contains, starts_with, ends_with)
+  value?: string;   // Value to search for (optional for exists/not_exists)
+  logic?: 'AND' | 'OR'; // Logic operator to combine with NEXT item
 }
 
+// NotePropertyCondition interface for note.* properties
 interface NotePropertyCondition {
-  property: string; // 'isArchived', 'isProtected', 'type', 'title', 'labelCount', 'ownedLabelCount', 'attributeCount', 'relationCount', 'parentCount', 'childrenCount', 'contentSize', 'revisionCount'
-  op?: string;      // '=', '!=', '>', '<', '>=', '<='
-  value: string;    // value to compare
+  property: string; // Note property name (isArchived, isProtected, etc.)
+  op?: string;      // Operator (=, !=, >, <, >=, <=)
+  value: string;    // Value to compare
+  logic?: 'AND' | 'OR'; // Logic operator to combine with NEXT item
 }
 
 interface SearchStructuredParams {
@@ -27,7 +30,6 @@ interface SearchStructuredParams {
   orderBy?: string;
   filters?: FilterCondition[];
   attributes?: AttributeCondition[];
-  attributeLogic?: 'and' | 'or';  // Logic operator for combining multiple attributes
   noteProperties?: NotePropertyCondition[];
   hierarchyType?: 'children' | 'descendants';
   parentNoteId?: string;
@@ -53,26 +55,16 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
     }
   }
   
-  // Build attribute-specific filters
-  const attributeFilters: string[] = [];
+  // Build attribute-specific filters (labels and relations with #, ~ syntax)
+  const attributeExpressions: string[] = [];
   if (params.attributes && params.attributes.length > 0) {
-    for (const attribute of params.attributes) {
-      const attributeQuery = buildAttributeQuery(attribute);
-      if (attributeQuery) {
-        attributeFilters.push(attributeQuery);
-      }
-    }
+    attributeExpressions.push(...buildAttributeExpressions(params.attributes));
   }
   
-  // Build note property filters
-  const notePropertyFilters: string[] = [];
+  // Build note property filters (note.* properties - separate concept)
+  const notePropertyExpressions: string[] = [];
   if (params.noteProperties && params.noteProperties.length > 0) {
-    for (const noteProperty of params.noteProperties) {
-      const notePropertyQuery = buildNotePropertyQuery(noteProperty);
-      if (notePropertyQuery) {
-        notePropertyFilters.push(notePropertyQuery);
-      }
-    }
+    notePropertyExpressions.push(...buildNotePropertyExpressions(params.noteProperties));
   }
   
   // Build hierarchy filters
@@ -133,29 +125,14 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
     queryParts.push(...fieldFilters);
   }
   
-  // Add attribute filters
-  if (attributeFilters.length > 0) {
-    if (attributeFilters.length === 1) {
-      // Single attribute, no need for grouping
-      queryParts.push(...attributeFilters);
-    } else {
-      // Multiple attributes - check logic
-      const logic = params.attributeLogic || 'and'; // Default to AND for backward compatibility
-      
-      if (logic === 'or') {
-        // Join with OR and add ~ prefix for Trilium parser compatibility
-        const orExpression = attributeFilters.join(' OR ');
-        queryParts.push(`~(${orExpression})`);
-      } else {
-        // AND logic (default behavior)
-        queryParts.push(...attributeFilters);
-      }
-    }
+  // Add attribute expressions (labels and relations)
+  if (attributeExpressions.length > 0) {
+    queryParts.push(...attributeExpressions);
   }
   
-  // Add note property filters
-  if (notePropertyFilters.length > 0) {
-    queryParts.push(...notePropertyFilters);
+  // Add note property expressions (note.* properties)
+  if (notePropertyExpressions.length > 0) {
+    queryParts.push(...notePropertyExpressions);
   }
   
   // Add hierarchy filters
@@ -172,9 +149,9 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
   let query = queryParts.join(' ');
   
   // If only filters/attributes/noteProperties/hierarchy were provided and no other search criteria, add universal match condition
-  if (query.trim() === '' && (fieldFilters.length > 0 || attributeFilters.length > 0 || notePropertyFilters.length > 0 || hierarchyFilters.length > 0)) {
+  if (query.trim() === '' && (fieldFilters.length > 0 || attributeExpressions.length > 0 || notePropertyExpressions.length > 0 || hierarchyFilters.length > 0)) {
     // For ETAPI compatibility, we need a base search condition when only using filters/attributes/noteProperties/hierarchy
-    const allFilters = [...fieldFilters, ...attributeFilters, ...notePropertyFilters, ...hierarchyFilters];
+    const allFilters = [...fieldFilters, ...attributeExpressions, ...notePropertyExpressions, ...hierarchyFilters];
     query = `note.noteId != '' ${allFilters.join(' ')}`;
   } else if (query.trim() === '') {
     // No search criteria provided at all - this will trigger the validation error in index.ts
@@ -259,87 +236,155 @@ function buildFieldQuery(filter: FilterCondition): string {
 }
 
 /**
- * Builds an attribute-specific query based on the attribute condition
+ * Builds attribute expressions with per-item logic support
+ * Handles labels and relations (# and ~ syntax)
+ */
+function buildAttributeExpressions(attributes: AttributeCondition[]): string[] {
+  const expressions: string[] = [];
+  let currentGroup: string[] = [];
+  let groupLogic: 'AND' | 'OR' = 'OR'; // Default to OR as requested
+  
+  for (let i = 0; i < attributes.length; i++) {
+    const attribute = attributes[i];
+    const query = buildAttributeQuery(attribute);
+    
+    if (!query) continue; // Skip invalid attributes
+    
+    // Auto-clean: Ignore logic on last item (no next item to combine with)
+    const effectiveLogic = (i === attributes.length - 1) ? undefined : attribute.logic;
+    
+    // If this is the first item in a group, or continuing the same logic
+    if (currentGroup.length === 0 || !effectiveLogic || effectiveLogic === groupLogic) {
+      currentGroup.push(query);
+      if (effectiveLogic) {
+        groupLogic = effectiveLogic;
+      }
+    } else {
+      // Logic changed, finalize current group
+      expressions.push(finalizeGroup(currentGroup, groupLogic));
+      
+      // Start new group
+      currentGroup = [query];
+      groupLogic = effectiveLogic;
+    }
+  }
+  
+  // Finalize the last group
+  if (currentGroup.length > 0) {
+    expressions.push(finalizeGroup(currentGroup, groupLogic));
+  }
+  
+  return expressions;
+}
+
+/**
+ * Finalizes a group of attribute queries with the specified logic
+ */
+function finalizeGroup(queries: string[], logic: 'AND' | 'OR'): string {
+  if (queries.length === 1) {
+    return queries[0];
+  }
+  
+  if (logic === 'OR') {
+    // Join with OR and add ~ prefix for Trilium parser compatibility
+    return `~(${queries.join(' OR ')})`;
+  } else {
+    // AND logic - just join with spaces (Trilium's default)
+    return queries.join(' ');
+  }
+}
+
+/**
+ * Builds an attribute query for labels and relations
  * Maps JSON operators to Trilium attribute search syntax
  */
 function buildAttributeQuery(attribute: AttributeCondition): string {
   const { type, name, op = 'exists', value } = attribute;
   
-  // Currently only support labels
+  // Currently only support labels (relations support can be added later)
   if (type !== 'label') {
     return '';
   }
   
-  // Escape the label name (though label names shouldn't contain special characters)
+  // Escape the label name
   const escapedName = name.replace(/'/g, "\\'");
   
   switch (op) {
     case 'exists':
-      // Simple label existence: #book
       return `#${escapedName}`;
-      
     case 'not_exists':
-      // Label does not exist: #!book
       return `#!${escapedName}`;
-      
     case '=':
-      // Label equals value: #publicationYear = 1954
       if (!value) return '';
-      const escapedValueEq = value.replace(/'/g, "\\'");
-      return `#${escapedName} = '${escapedValueEq}'`;
-      
+      return `#${escapedName} = '${value.replace(/'/g, "\\'")}'`;
     case '!=':
-      // Label not equal to value: #status != 'draft'
       if (!value) return '';
-      const escapedValueNe = value.replace(/'/g, "\\'");
-      return `#${escapedName} != '${escapedValueNe}'`;
-      
+      return `#${escapedName} != '${value.replace(/'/g, "\\'")}'`;
     case '>=':
-      // Label greater than or equal: #publicationYear >= 1950
       if (!value) return '';
-      const escapedValueGe = value.replace(/'/g, "\\'");
-      return `#${escapedName} >= '${escapedValueGe}'`;
-      
+      return `#${escapedName} >= '${value.replace(/'/g, "\\'")}'`;
     case '<=':
-      // Label less than or equal: #publicationYear <= 1960
       if (!value) return '';
-      const escapedValueLe = value.replace(/'/g, "\\'");
-      return `#${escapedName} <= '${escapedValueLe}'`;
-      
+      return `#${escapedName} <= '${value.replace(/'/g, "\\'")}'`;
     case '>':
-      // Label greater than: #rating > 5
       if (!value) return '';
-      const escapedValueGt = value.replace(/'/g, "\\'");
-      return `#${escapedName} > '${escapedValueGt}'`;
-      
+      return `#${escapedName} > '${value.replace(/'/g, "\\'")}'`;
     case '<':
-      // Label less than: #rating < 10
       if (!value) return '';
-      const escapedValueLt = value.replace(/'/g, "\\'");
-      return `#${escapedName} < '${escapedValueLt}'`;
-      
+      return `#${escapedName} < '${value.replace(/'/g, "\\'")}'`;
     case 'contains':
-      // Label contains substring: #genre *=* 'sci'
       if (!value) return '';
-      const escapedValueCont = value.replace(/'/g, "\\'");
-      return `#${escapedName} *=* '${escapedValueCont}'`;
-      
+      return `#${escapedName} *=* '${value.replace(/'/g, "\\'")}'`;
     case 'starts_with':
-      // Label starts with: #category =* 'tech'
       if (!value) return '';
-      const escapedValueStart = value.replace(/'/g, "\\'");
-      return `#${escapedName} =* '${escapedValueStart}'`;
-      
+      return `#${escapedName} =* '${value.replace(/'/g, "\\'")}'`;
     case 'ends_with':
-      // Label ends with: #filename *= '.pdf'
       if (!value) return '';
-      const escapedValueEnd = value.replace(/'/g, "\\'");
-      return `#${escapedName} *= '${escapedValueEnd}'`;
-      
+      return `#${escapedName} *= '${value.replace(/'/g, "\\'")}'`;
     default:
-      // Invalid operator, skip this attribute
       return '';
   }
+}
+
+/**
+ * Builds note property expressions with per-item logic support
+ */
+function buildNotePropertyExpressions(noteProperties: NotePropertyCondition[]): string[] {
+  const expressions: string[] = [];
+  let currentGroup: string[] = [];
+  let groupLogic: 'AND' | 'OR' = 'OR'; // Default to OR as requested
+  
+  for (let i = 0; i < noteProperties.length; i++) {
+    const noteProperty = noteProperties[i];
+    const query = buildNotePropertyQuery(noteProperty);
+    
+    if (!query) continue; // Skip invalid properties
+    
+    // Auto-clean: Ignore logic on last item (no next item to combine with)
+    const effectiveLogic = (i === noteProperties.length - 1) ? undefined : noteProperty.logic;
+    
+    // If this is the first item in a group, or continuing the same logic
+    if (currentGroup.length === 0 || !effectiveLogic || effectiveLogic === groupLogic) {
+      currentGroup.push(query);
+      if (effectiveLogic) {
+        groupLogic = effectiveLogic;
+      }
+    } else {
+      // Logic changed, finalize current group
+      expressions.push(finalizeGroup(currentGroup, groupLogic));
+      
+      // Start new group
+      currentGroup = [query];
+      groupLogic = effectiveLogic;
+    }
+  }
+  
+  // Finalize the last group
+  if (currentGroup.length > 0) {
+    expressions.push(finalizeGroup(currentGroup, groupLogic));
+  }
+  
+  return expressions;
 }
 
 /**

@@ -485,7 +485,6 @@ Trilium supports searching by attributes (labels and relations) using the `#` sy
 - `#label = value`: Search for notes with label set to specific value
 - `#label >= value`: Numeric comparison operators (>=, <=, >, <, !=)
 - `#label *=* substring`: String operators (contains, starts_with, ends_with)
-- `~relation.property`: Search through relations
 
 ### 24) Book Label Search
 - Composed query: Find all notes with "book" label
@@ -573,15 +572,14 @@ towers #!book
 ```
 towers ~(#book OR #author)
 ```
-- JSON structure with attributeLogic parameter
+- JSON structure with per-item logic for attributes
 ```json
 {
   "text": "towers",
   "attributes": [
-    { "type": "label", "name": "book" },
+    { "type": "label", "name": "book", "logic": "OR" },
     { "type": "label", "name": "author" }
-  ],
-  "attributeLogic": "or"
+  ]
 }
 ```
 - Use case: Find notes about "towers" that are either books or authored content
@@ -591,37 +589,53 @@ towers ~(#book OR #author)
 ```
 ~(#genre = 'fantasy' OR #genre = 'science fiction')
 ```
-- JSON structure with attributeLogic parameter
+- JSON structure with per-item logic for attributes
 ```json
 {
   "attributes": [
-    { "type": "label", "name": "genre", "op": "=", "value": "fantasy" },
+    { "type": "label", "name": "genre", "op": "=", "value": "fantasy", "logic": "OR" },
     { "type": "label", "name": "genre", "op": "=", "value": "science fiction" }
-  ],
-  "attributeLogic": "or"
+  ]
 }
 ```
 - Use case: Find notes in either of two specific genres
 
-### 32) Attribute OR with Date Filtering
-- Composed query: Find recent notes with book OR article labels
+### 32) Note Properties OR Logic
+- Composed query: Find archived notes OR text notes
 ```
-note.dateCreated >= '2024-01-01' AND ~(#book OR #article)
+~(note.isArchived = true OR note.type = 'text')
 ```
-- JSON structure combining date and attribute OR
+- JSON structure with per-item logic for note properties
 ```json
 {
-  "created_date_start": "2024-01-01",
-  "attributes": [
-    { "type": "label", "name": "book" },
-    { "type": "label", "name": "article" }
-  ],
-  "attributeLogic": "or"
+  "noteProperties": [
+    { "property": "isArchived", "op": "=", "value": "true", "logic": "OR" },
+    { "property": "type", "op": "=", "value": "text" }
+  ]
 }
 ```
-- Use case: Find recent content that's either books or articles
+- Use case: Find notes that are either archived or text type
 
-### 33) Archive Status Search
+### 33) Mixed Attributes AND Note Properties
+- Composed query: Find book notes with high label count
+```
+towers #book AND note.labelCount > 3
+```
+- JSON structure with separate attributes and noteProperties
+```json
+{
+  "text": "towers",
+  "attributes": [
+    { "type": "label", "name": "book" }
+  ],
+  "noteProperties": [
+    { "property": "labelCount", "op": ">", "value": "3" }
+  ]
+}
+```
+- Use case: Find well-tagged book notes about towers
+
+### 34) Archive Status Search
 - Composed query for archived notes
 ```
 note.isArchived = true
@@ -717,7 +731,7 @@ note.isArchived = false
 ```json
 {
   "noteProperties": [
-    { "property": "isArchived", "op": "=", "value": "false" }
+    { "property": "isArchived", "op": "=", "value": "false"}
   ]
 }
 ```
@@ -902,11 +916,17 @@ note.labelCount = 0
   - Supported fields: `title`, `content`
   - Supported operators: `contains` (*=*), `starts_with` (=*), `ends_with` (*=), `not_equal` (!=)
   - **Limitation**: `not_contains` (does not contain) is not reliably supported in Trilium's search DSL
-- `attributes` parameter: Array of attribute-based conditions for label searches
+- `attributes` parameter: Array for Trilium user-defined metadata (labels and relations)
+  - **Labels**: Use `#book`, `#author` syntax - user-defined tags and categories
+  - **Relations**: Use `~author.title` syntax - connections between notes (future support)
   - Supported operators: `exists`, `not_exists`, `=`, `!=`, `>=`, `<=`, `>`, `<`, `contains`, `starts_with`, `ends_with`
-  - **NEW**: `attributeLogic` parameter controls how multiple attributes are combined:
-    - `"and"` (default): Requires ALL attributes to match (backward compatible)
-    - `"or"`: Requires ANY attribute to match (generates `~(#attr1 OR #attr2)` syntax)
+  - **Per-item logic**: Each item can specify `logic: "OR"` to create OR groups with the next item
+- `noteProperties` parameter: Array for Trilium built-in note metadata (note.* properties)
+  - **System properties**: `note.isArchived`, `note.type`, `note.labelCount` - built into every note
+  - **Different namespace**: Always prefixed with `note.` in Trilium DSL
+  - Supported operators: `=`, `!=`, `>`, `<`, `>=`, `<=`
+  - **Per-item logic**: Each item can specify `logic: "OR"` to create OR groups with the next item
+- **Conceptual separation**: Attributes are user-defined, noteProperties are system-defined
 - `orderBy` parameter: Sort results by specified field and direction (asc/desc)  
 - **Important**: orderBy field must also be used as a filter in the query
 - Valid orderBy examples: `note.dateCreated desc`, `note.dateModified asc`
