@@ -93,6 +93,15 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
   // Build main query
   let query = queryParts.join(' ');
   
+  // If only filters were provided and no other search criteria, add universal match condition
+  if (query.trim() === '' && fieldFilters.length > 0) {
+    // For ETAPI compatibility, we need a base search condition when only using filters
+    query = `note.noteId != '' ${fieldFilters.join(' ')}`;
+  } else if (query.trim() === '') {
+    // No search criteria provided at all - this will trigger the validation error in index.ts
+    query = '';
+  }
+  
   // Add orderBy with validation
   if (params.orderBy) {
     // Extract field name from orderBy (e.g., "note.dateCreated desc" -> "note.dateCreated")
