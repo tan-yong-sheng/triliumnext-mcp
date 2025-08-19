@@ -8,11 +8,21 @@ This is a Model Context Protocol (MCP) server for TriliumNext Notes that provide
 
 ## Key Architecture
 
-- **Single TypeScript file**: All server logic is contained in `src/index.ts`
-- **MCP SDK Integration**: Uses `@modelcontextprotocol/sdk` for server implementation
-- **HTTP Client**: Uses `axios` for TriliumNext API communication
-- **Markdown Processing**: Uses `marked` library to parse Markdown content before saving to Trilium
-- **Permission System**: Configurable READ/WRITE permissions via environment variables
+### Modular Structure (Evolved from Single File)
+- **Main Server**: `src/index.ts` - MCP server setup, tool definitions, and request handling
+- **Helper Modules**: `src/modules/` - Specialized functionality split into focused modules:
+  - `searchQueryBuilder.ts` - Builds Trilium search query strings from structured parameters
+  - `listChildHelper.ts` - Handles direct children listing (like Unix `ls`)
+  - `listDescendantNotesHelper.ts` - Handles recursive note listing (like Unix `find`)
+  - `contentProcessor.ts` - Markdown detection and HTML conversion
+  - `noteFormatter.ts` - Output formatting for note listings
+  - `responseUtils.ts` - Debug info and response formatting utilities
+
+### MCP Tool Architecture
+- **Permission-based tools**: READ vs WRITE permissions control available tools
+- **Tool ordering**: `list_descendant_notes` appears before `list_child_notes` to prioritize comprehensive listing
+- **Search hierarchy**: Basic `search_notes` → Advanced `search_notes_advanced` → Listing tools
+- **Critical Trilium syntax handling**: OR queries with parentheses require `~` prefix per Trilium parser requirements
 
 ## Environment Variables
 
@@ -20,6 +30,7 @@ Required environment variables for operation:
 - `TRILIUM_API_TOKEN` (required): Authentication token from TriliumNext settings
 - `TRILIUM_API_URL` (optional): API endpoint, defaults to `http://localhost:8080/etapi`
 - `PERMISSIONS` (optional): Semicolon-separated permissions, defaults to `READ;WRITE`
+- `VERBOSE` (optional): Debug logging, defaults to `false`
 
 ## Development Commands
 
@@ -44,16 +55,31 @@ node build/index.js   # Run the server directly
 
 ## MCP Tools Available
 
-The server exposes different tools based on permissions:
-
-**READ Permission Tools:**
-- `search_notes`: Search through notes with optional filters
+### READ Permission Tools
+- `search_notes`: Fast full-text search using simple keyword searches
+- `search_notes_advanced`: Advanced filtered search with date ranges, field-specific searches
+- `list_descendant_notes`: List ALL descendant notes recursively (like Unix `find`) - **PREFERRED for "list all notes"**
+- `list_child_notes`: List direct child notes only (like Unix `ls`) - for navigation/browsing
 - `get_note`: Retrieve note content by ID
 
-**WRITE Permission Tools:**
+### WRITE Permission Tools
 - `create_note`: Create new notes with various types (text, code, file, image, etc.)
 - `update_note`: Update existing note content
 - `delete_note`: Delete notes by ID
+
+## Search Query Architecture
+
+### Query Builder System
+- **Structured → DSL**: `searchQueryBuilder.ts` converts JSON parameters to Trilium search strings
+- **Critical fix**: OR queries with parentheses automatically get `~` prefix (required by Trilium parser)
+- **Field operators**: `*=*` (contains), `=*` (starts with), `*=` (ends with), `!=` (not equal)
+- **Documentation**: `docs/search-query-examples.md` contains 21+ examples with JSON structure for future filters parameter
+
+### Trilium Search DSL Integration
+- **Parent-child queries**: Uses `note.parents.noteId = 'parentId'` for direct children
+- **Ancestor queries**: Uses `note.ancestors.noteId = 'parentId'` for all descendants
+- **Date filtering**: Supports created/modified date ranges with proper AND/OR logic
+- **Ordering validation**: orderBy fields must also be present in filters
 
 ## Note Types Supported
 
@@ -79,3 +105,16 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - Authentication via Authorization header
 - JSON request/response format
 - RESTful API design following OpenAPI 3.0.3 specification
+- Parent note filtering automatically applied to avoid showing parent in children/descendant lists
+
+## Important Implementation Notes
+
+### Search Query Bugs Fixed
+- **OR parentheses**: Trilium requires `~` prefix for expressions starting with parentheses
+- **Root handling**: Special handling for `parentNoteId="root"` in ancestor/parent queries
+- **Universal search**: Uses `note.noteId != ''` as universal match condition for ETAPI
+
+### Tool Descriptions Optimized for LLM Selection
+- `list_descendant_notes` marked as "PREFERRED for 'list all notes' requests"
+- Clear Unix command analogies: `ls` vs `find` behavior for `list_child_notes` and `list_descendant_notes` respectively
+- Specific guidance on when to use each tool for better LLM decision-making
