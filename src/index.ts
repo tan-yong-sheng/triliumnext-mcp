@@ -538,14 +538,15 @@ class TriliumServer {
             const summary = createListSummary(notes.length);
             
             // Prepare verbose debug info if enabled
+            const isVerbose = process.env.VERBOSE === "true";
             const verboseInfo = createListChildDebugInfo(
               parentNoteId, 
               urlParams, 
               notes.length
             );
             
-            // Always show the query info for debugging
-            const debugInfo = `[DEBUG] list_child_notes query: ${urlParams.toString()}\n[DEBUG] Result count: ${notes.length}\n\n`;
+            // Show debug info only if verbose mode is enabled
+            const debugInfo = isVerbose ? `[DEBUG] list_child_notes query: ${urlParams.toString()}\n[DEBUG] Result count: ${notes.length}\n\n` : "";
             
             return {
               content: [{
@@ -610,8 +611,8 @@ class TriliumServer {
             const verboseInfo = isVerbose ? 
               `--- List Descendant Notes Debug ---\nParent Note ID: ${listDescendantNotesParams.parentNoteId || 'none (entire database)'}\nURL Params: ${urlParams.toString()}\nRaw Result Count: ${notes.length}\n--- End Debug ---\n\n` : "";
             
-            // Always show the query info for debugging
-            const debugInfo = `[DEBUG] list_descendant_notes query: ${urlParams.toString()}\n[DEBUG] Result count: ${notes.length}\n\n`;
+            // Show debug info only if verbose mode is enabled
+            const debugInfo = isVerbose ? `[DEBUG] list_descendant_notes query: ${urlParams.toString()}\n[DEBUG] Result count: ${notes.length}\n\n` : "";
             
             return {
               content: [{
