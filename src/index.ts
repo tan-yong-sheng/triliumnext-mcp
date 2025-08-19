@@ -71,7 +71,7 @@ class TriliumServer {
       if (this.hasPermission("WRITE")) {
         tools.push({
           name: "create_note",
-          description: "Create a new note in TriliumNext",
+          description: "Create a new note in TriliumNext. ONLY use this tool when the user explicitly requests note creation (e.g., 'create a note', 'make a new note'). DO NOT use this tool proactively or when the user is only asking questions about their notes.",
           inputSchema: {
             type: "object",
             properties: {

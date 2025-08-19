@@ -20,58 +20,41 @@ This document provides examples of natural language queries that demonstrate how
 ## Note Navigation and Browsing
 
 ### Hierarchical Navigation
-- "List all notes" → Uses `list_child_notes` with parentNoteId="root" to show top-level notes
-- "Show me what's in my project folder" → Uses `list_child_notes` with specific parentNoteId
-- "Browse my note hierarchy" → Uses `list_child_notes` for directory-style navigation
+- "Show me what's in my 'n8n' note folder " → Uses `list_child_notes` with specific parentNoteId
 - "What are the direct children of this note?" → `list_child_notes` for immediate children only
-
-### Complete Note Inventory
 - "Show me everything I have" → Uses `list_descendant_notes` to recursively list all notes
-- "Find all notes in my project" → Uses `list_descendant_notes` with parentNoteId for subtree search
-- "Get complete note inventory" → Uses `list_descendant_notes` for bulk operations and analysis
-- "List every note in the database" → `list_descendant_notes` for comprehensive overview
+- "Find all notes" → Uses `list_descendant_notes` with parentNoteId for subtree search
 
-## Content Modification Examples
+## Content Modification Examples (Exprimental)
 
 ### Content Addition (append_note)
-- "Add today's progress to my work log"
-- "Append this meeting summary to my notes"
-- "Add a new entry to my journal"
-- "Include this update in my project notes"
-- "Attach this code snippet to my development log"
+- "Add today's progress to my work log" 
+- "Append this meeting summary to my notes" 
 
 ### Content Replacement (update_note)
 - "Update my project plan with this new version"
-- "Replace the entire document with this new content"
 - "Rewrite this note with the corrected information"
-- "Update the entire specification document"
-- "Replace my draft with the final version"
 
 ### Content Retrieval (get_note)
 - "Show me the content of note ABC123"
-- "What's in my meeting notes from yesterday?"
-- "Display the full content of my project plan"
 
 ### Note Creation (create_note)
 - "Create a new note called 'Weekly Review' in my journal folder"
-- "Make a new code note with this Python script"
-- "Add a new text note about the client meeting"
 
 ### Note Management (delete_note)
-- "Delete this old draft note" (⚠️ Permanent operation)
-- "Remove the test note I created" (⚠️ Cannot be undone)
+- "Delete this old draft note named 'n8n Templates'" (⚠️ Permanent operation)
 
-## Function Selection Guide
+## Function Selection Guide (for Developer)
 
 ### When AI Should Use list_child_notes
 - User asks for "direct children", "immediate children", "what's in this folder"
 - Browsing/navigation scenarios
-- When user wants to see folder structure (like `ls` command)
+- When user wants to see folder structure (like `ls` command in Unix)
 
 ### When AI Should Use list_descendant_notes  
-- User asks for "everything", "all notes", "complete inventory"
+- User asks for "everything", "all notes"
 - Discovery and bulk operations
-- When user wants comprehensive search (like `find` command)
+- When user wants comprehensive search (like `find` command in Unix)
 
 ### When AI Should Use append_note
 - User says "add", "append", "include", "attach"
