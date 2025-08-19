@@ -182,6 +182,26 @@ class TriliumServer {
           },
         });
         tools.push({
+          name: "list_labels",
+          description: "Get all unique label names used in the note system. Returns a list of all label names that have been used across all notes, useful for discovering available labels for attribute searches.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              includeValues: {
+                type: "boolean",
+                description: "Include label values along with names (default: false, returns only unique label names)",
+                default: false
+              },
+              sortBy: {
+                type: "string",
+                enum: ["name", "usage"],
+                description: "Sort results by label name alphabetically or by usage count (default: name)",
+                default: "name"
+              }
+            },
+          },
+        });
+        tools.push({
           name: "search_notes",
           description: "Unified search with structured parameters. Supports: full-text search, date filtering, field-specific searches (title/content), attribute searches (#labels), note properties (isArchived), and hierarchy navigation (children/descendants). Automatically optimizes with fast search when only text search is used.",
           inputSchema: {
@@ -260,6 +280,12 @@ class TriliumServer {
                   required: ["type", "name"]
                 }
               },
+              attributeLogic: {
+                type: "string",
+                enum: ["and", "or"],
+                description: "Logic operator for combining multiple attributes: 'and' requires all attributes (default), 'or' requires any attribute",
+                default: "and"
+              },
               noteProperties: {
                 type: "array",
                 description: "Array of note property-based search conditions (e.g., note.isArchived, note.isProtected). Supports filtering by built-in note properties.",
@@ -268,18 +294,18 @@ class TriliumServer {
                   properties: {
                     property: {
                       type: "string",
-                      enum: ["isArchived", "isProtected", "type", "title"],
+                      enum: ["isArchived", "isProtected", "type", "title", "labelCount", "ownedLabelCount", "attributeCount", "relationCount", "parentCount", "childrenCount", "contentSize", "revisionCount"],
                       description: "Note property to filter on"
                     },
                     op: {
                       type: "string",
-                      enum: ["=", "!="],
+                      enum: ["=", "!=", ">", "<", ">=", "<="],
                       description: "Comparison operator",
                       default: "="
                     },
                     value: {
                       type: "string",
-                      description: "Value to compare against (e.g., 'true', 'false', 'text', 'code')"
+                      description: "Value to compare against (e.g., 'true', 'false' for boolean properties; 'text', 'code' for type; numeric values like '5', '10' for count properties)"
                     }
                   },
                   required: ["property", "value"]
@@ -385,6 +411,12 @@ class TriliumServer {
                   required: ["type", "name"]
                 }
               },
+              attributeLogic: {
+                type: "string",
+                enum: ["and", "or"],
+                description: "Logic operator for combining multiple attributes: 'and' requires all attributes (default), 'or' requires any attribute",
+                default: "and"
+              },
               noteProperties: {
                 type: "array",
                 description: "Array of note property-based search conditions (e.g., note.isArchived, note.isProtected). Supports filtering by built-in note properties.",
@@ -393,18 +425,18 @@ class TriliumServer {
                   properties: {
                     property: {
                       type: "string",
-                      enum: ["isArchived", "isProtected", "type", "title"],
+                      enum: ["isArchived", "isProtected", "type", "title", "labelCount", "ownedLabelCount", "attributeCount", "relationCount", "parentCount", "childrenCount", "contentSize", "revisionCount"],
                       description: "Note property to filter on"
                     },
                     op: {
                       type: "string",
-                      enum: ["=", "!="],
+                      enum: ["=", "!=", ">", "<", ">=", "<="],
                       description: "Comparison operator",
                       default: "="
                     },
                     value: {
                       type: "string",
-                      description: "Value to compare against (e.g., 'true', 'false', 'text', 'code')"
+                      description: "Value to compare against (e.g., 'true', 'false' for boolean properties; 'text', 'code' for type; numeric values like '5', '10' for count properties)"
                     }
                   },
                   required: ["property", "value"]
@@ -505,6 +537,12 @@ class TriliumServer {
                   required: ["type", "name"]
                 }
               },
+              attributeLogic: {
+                type: "string",
+                enum: ["and", "or"],
+                description: "Logic operator for combining multiple attributes: 'and' requires all attributes (default), 'or' requires any attribute",
+                default: "and"
+              },
               noteProperties: {
                 type: "array",
                 description: "Array of note property-based search conditions (e.g., note.isArchived, note.isProtected). Supports filtering by built-in note properties.",
@@ -513,18 +551,18 @@ class TriliumServer {
                   properties: {
                     property: {
                       type: "string",
-                      enum: ["isArchived", "isProtected", "type", "title"],
+                      enum: ["isArchived", "isProtected", "type", "title", "labelCount", "ownedLabelCount", "attributeCount", "relationCount", "parentCount", "childrenCount", "contentSize", "revisionCount"],
                       description: "Note property to filter on"
                     },
                     op: {
                       type: "string",
-                      enum: ["=", "!="],
+                      enum: ["=", "!=", ">", "<", ">=", "<="],
                       description: "Comparison operator",
                       default: "="
                     },
                     value: {
                       type: "string",
-                      description: "Value to compare against (e.g., 'true', 'false', 'text', 'code')"
+                      description: "Value to compare against (e.g., 'true', 'false' for boolean properties; 'text', 'code' for type; numeric values like '5', '10' for count properties)"
                     }
                   },
                   required: ["property", "value"]
@@ -829,6 +867,84 @@ class TriliumServer {
               content: [{
                 type: "text",
                 text: JSON.stringify(noteData, null, 2)
+              }]
+            };
+          }
+
+          case "list_labels": {
+            if (!this.hasPermission("READ")) {
+              throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to list labels.");
+            }
+
+            const includeValues = request.params.arguments.includeValues === true;
+            const sortBy = request.params.arguments.sortBy || "name";
+
+            // Get only notes that have labels (more efficient than getting all notes)
+            // Alternative filters: note.attributeCount > 0 (includes relations), note.noteId != '' (all notes)
+            const params = new URLSearchParams();
+            params.append("search", "note.labelCount > 0"); // Only get notes with labels
+            params.append("fastSearch", "false");
+            params.append("includeArchivedNotes", "true");
+
+            const response = await this.axiosInstance.get(`/notes?${params.toString()}`);
+            const allNotes = response.data.results || [];
+
+            // Extract labels from all notes
+            const labelMap = new Map<string, { count: number; values: Set<string> }>();
+
+            allNotes.forEach((note: any) => {
+              if (note.attributes && Array.isArray(note.attributes)) {
+                note.attributes.forEach((attr: any) => {
+                  if (attr.type === 'label') {
+                    const labelName = attr.name;
+                    if (!labelMap.has(labelName)) {
+                      labelMap.set(labelName, { count: 0, values: new Set() });
+                    }
+                    const labelInfo = labelMap.get(labelName)!;
+                    labelInfo.count++;
+                    if (attr.value) {
+                      labelInfo.values.add(attr.value);
+                    }
+                  }
+                });
+              }
+            });
+
+            // Format results
+            let results: any[] = [];
+            
+            if (includeValues) {
+              // Include values for each label
+              results = Array.from(labelMap.entries()).map(([name, info]) => ({
+                name,
+                count: info.count,
+                values: Array.from(info.values).sort()
+              }));
+            } else {
+              // Just label names with usage count
+              results = Array.from(labelMap.entries()).map(([name, info]) => ({
+                name,
+                count: info.count
+              }));
+            }
+
+            // Sort results
+            if (sortBy === "usage") {
+              results.sort((a, b) => b.count - a.count);
+            } else {
+              results.sort((a, b) => a.name.localeCompare(b.name));
+            }
+
+            const summary = `Found ${results.length} unique label${results.length !== 1 ? 's' : ''} across ${allNotes.length} notes with labels`;
+            const output = {
+              summary,
+              labels: results
+            };
+
+            return {
+              content: [{
+                type: "text",
+                text: JSON.stringify(output, null, 2)
               }]
             };
           }

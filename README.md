@@ -102,6 +102,11 @@ The server provides the following tools for note management:
   - Parameters: text, created_date_start/end, modified_date_start/end, filters, attributes, noteProperties, hierarchyType, parentNoteId, limit, orderBy
   - Automatically optimizes with fast search when only text search is used
 
+- `list_labels` - Get all unique label names used in the note system
+  - Returns a list of all label names across all notes with usage counts
+  - Useful for discovering available labels for attribute searches
+  - Optional: includeValues (show label values), sortBy (name or usage count)
+
 ### Note Discovery Tools
 
 - `list_child_notes` - List direct children of a parent note (like Unix `ls` command)

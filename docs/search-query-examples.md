@@ -568,7 +568,60 @@ towers #!book
 ```
 - Use case: Sorted attribute-based searches with secondary ordering
 
-### 30) Archive Status Search
+### 30) Attribute OR Logic - Book OR Author Label
+- Composed query: Find notes containing "towers" with book OR author label
+```
+towers ~(#book OR #author)
+```
+- JSON structure with attributeLogic parameter
+```json
+{
+  "text": "towers",
+  "attributes": [
+    { "type": "label", "name": "book" },
+    { "type": "label", "name": "author" }
+  ],
+  "attributeLogic": "or"
+}
+```
+- Use case: Find notes about "towers" that are either books or authored content
+
+### 31) Multiple OR Attributes with Values
+- Composed query: Find notes with genre fantasy OR science fiction
+```
+~(#genre = 'fantasy' OR #genre = 'science fiction')
+```
+- JSON structure with attributeLogic parameter
+```json
+{
+  "attributes": [
+    { "type": "label", "name": "genre", "op": "=", "value": "fantasy" },
+    { "type": "label", "name": "genre", "op": "=", "value": "science fiction" }
+  ],
+  "attributeLogic": "or"
+}
+```
+- Use case: Find notes in either of two specific genres
+
+### 32) Attribute OR with Date Filtering
+- Composed query: Find recent notes with book OR article labels
+```
+note.dateCreated >= '2024-01-01' AND ~(#book OR #article)
+```
+- JSON structure combining date and attribute OR
+```json
+{
+  "created_date_start": "2024-01-01",
+  "attributes": [
+    { "type": "label", "name": "book" },
+    { "type": "label", "name": "article" }
+  ],
+  "attributeLogic": "or"
+}
+```
+- Use case: Find recent content that's either books or articles
+
+### 33) Archive Status Search
 - Composed query for archived notes
 ```
 note.isArchived = true
@@ -630,6 +683,218 @@ note.dateModified >= '2024-08-01' AND note.ancestors.noteId = 'workspaceId'
 
 ---
 
+## Note Properties Search Examples
+
+Trilium supports searching by built-in note properties using the `noteProperties` parameter. These properties include metadata like archive status, protection status, note type, and various count metrics.
+
+### Note Properties Reference
+- **Boolean properties**: `isArchived`, `isProtected` - use `"true"` or `"false"` values
+- **String properties**: `type`, `title` - use string values like `"text"`, `"code"`, `"book"`
+- **Numeric properties**: `labelCount`, `ownedLabelCount`, `attributeCount`, `relationCount`, `parentCount`, `childrenCount`, `contentSize`, `revisionCount` - use numeric values without quotes
+- **Operators**: `=`, `!=`, `>`, `<`, `>=`, `<=`
+
+### 34) Find archived notes
+- Composed query
+```
+note.isArchived = true
+```
+- JSON structure for noteProperties parameter
+```json
+{
+  "noteProperties": [
+    { "property": "isArchived", "op": "=", "value": "true" }
+  ]
+}
+```
+- Use case: Find all notes that have been archived
+
+### 35) Find non-archived notes
+- Composed query
+```
+note.isArchived = false
+```
+- JSON structure for noteProperties parameter
+```json
+{
+  "noteProperties": [
+    { "property": "isArchived", "op": "=", "value": "false" }
+  ]
+}
+```
+- Use case: Exclude archived notes from search results
+
+### 36) Find protected notes
+- Composed query
+```
+note.isProtected = true
+```
+- JSON structure for noteProperties parameter
+```json
+{
+  "noteProperties": [
+    { "property": "isProtected", "op": "=", "value": "true" }
+  ]
+}
+```
+- Use case: Find all password-protected notes
+
+### 37) Find text notes only
+- Composed query
+```
+note.type = 'text'
+```
+- JSON structure for noteProperties parameter
+```json
+{
+  "noteProperties": [
+    { "property": "type", "op": "=", "value": "text" }
+  ]
+}
+```
+- Use case: Filter to only text-type notes
+
+### 38) Find code notes
+- Composed query
+```
+note.type = 'code'
+```
+- JSON structure for noteProperties parameter
+```json
+{
+  "noteProperties": [
+    { "property": "type", "op": "=", "value": "code" }
+  ]
+}
+```
+- Use case: Find all code notes for development references
+
+### 39) Find notes with many labels (more than 5)
+- Composed query
+```
+note.labelCount > 5
+```
+- JSON structure for noteProperties parameter
+```json
+{
+  "noteProperties": [
+    { "property": "labelCount", "op": ">", "value": "5" }
+  ]
+}
+```
+- Use case: Find heavily tagged notes for content organization review
+
+### 40) Find notes with specific label count
+- Composed query
+```
+note.ownedLabelCount = 3
+```
+- JSON structure for noteProperties parameter
+```json
+{
+  "noteProperties": [
+    { "property": "ownedLabelCount", "op": "=", "value": "3" }
+  ]
+}
+```
+- Use case: Find notes with exactly 3 owned labels
+
+### 41) Find notes with many children (folders/books)
+- Composed query
+```
+note.childrenCount >= 10
+```
+- JSON structure for noteProperties parameter
+```json
+{
+  "noteProperties": [
+    { "property": "childrenCount", "op": ">=", "value": "10" }
+  ]
+}
+```
+- Use case: Find folder-like notes that contain many sub-notes
+
+### 42) Find large content notes
+- Composed query
+```
+note.contentSize > 50000
+```
+- JSON structure for noteProperties parameter
+```json
+{
+  "noteProperties": [
+    { "property": "contentSize", "op": ">", "value": "50000" }
+  ]
+}
+```
+- Use case: Find notes with substantial content (larger than 50KB)
+
+### 43) Find notes with many revisions
+- Composed query
+```
+note.revisionCount >= 5
+```
+- JSON structure for noteProperties parameter
+```json
+{
+  "noteProperties": [
+    { "property": "revisionCount", "op": ">=", "value": "5" }
+  ]
+}
+```
+- Use case: Find frequently edited notes with many revision history
+
+### 44) Combined note properties search
+- Composed query
+```
+note.type = 'text' AND note.labelCount > 0 AND note.isArchived = false
+```
+- JSON structure for noteProperties parameter
+```json
+{
+  "noteProperties": [
+    { "property": "type", "op": "=", "value": "text" },
+    { "property": "labelCount", "op": ">", "value": "0" },
+    { "property": "isArchived", "op": "=", "value": "false" }
+  ]
+}
+```
+- Use case: Find active text notes that have been labeled/tagged
+
+### 45) Complex query with multiple property types
+- Composed query
+```
+kubernetes note.type = 'text' AND note.labelCount >= 2 AND note.contentSize > 1000
+```
+- JSON structure combining text search and note properties
+```json
+{
+  "text": "kubernetes",
+  "noteProperties": [
+    { "property": "type", "op": "=", "value": "text" },
+    { "property": "labelCount", "op": ">=", "value": "2" },
+    { "property": "contentSize", "op": ">", "value": "1000" }
+  ]
+}
+```
+- Use case: Find substantial, well-tagged text notes about kubernetes
+
+### 46) Find notes without labels
+- Composed query
+```
+note.labelCount = 0
+```
+- JSON structure for noteProperties parameter
+```json
+{
+  "noteProperties": [
+    { "property": "labelCount", "op": "=", "value": "0" }
+  ]
+}
+```
+- Use case: Find untagged notes that might need organization
+
+---
+
 ## Notes
 - Quote search terms to handle special characters properly.
 - `text` parameter: Full-text indexed search (bare tokens, faster)
@@ -637,6 +902,11 @@ note.dateModified >= '2024-08-01' AND note.ancestors.noteId = 'workspaceId'
   - Supported fields: `title`, `content`
   - Supported operators: `contains` (*=*), `starts_with` (=*), `ends_with` (*=), `not_equal` (!=)
   - **Limitation**: `not_contains` (does not contain) is not reliably supported in Trilium's search DSL
+- `attributes` parameter: Array of attribute-based conditions for label searches
+  - Supported operators: `exists`, `not_exists`, `=`, `!=`, `>=`, `<=`, `>`, `<`, `contains`, `starts_with`, `ends_with`
+  - **NEW**: `attributeLogic` parameter controls how multiple attributes are combined:
+    - `"and"` (default): Requires ALL attributes to match (backward compatible)
+    - `"or"`: Requires ANY attribute to match (generates `~(#attr1 OR #attr2)` syntax)
 - `orderBy` parameter: Sort results by specified field and direction (asc/desc)  
 - **Important**: orderBy field must also be used as a filter in the query
 - Valid orderBy examples: `note.dateCreated desc`, `note.dateModified asc`

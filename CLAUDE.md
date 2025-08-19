@@ -56,6 +56,7 @@ node build/index.js   # Run the server directly
 
 ### READ Permission Tools
 - `search_notes`: Unified search with comprehensive filtering capabilities including full-text search, date ranges, field-specific searches, attribute searches, note properties, and hierarchy navigation
+- `list_labels`: Get all unique label names used across all notes with usage statistics - useful for discovering available labels for attribute searches
 - `list_descendant_notes`: List ALL descendant notes recursively (like Unix `find`) - uses `search_notes` with `hierarchyType="descendants"` - **PREFERRED for "list all notes"**
 - `list_child_notes`: List direct child notes only (like Unix `ls`) - uses `search_notes` with `hierarchyType="children"` - for navigation/browsing
 - `get_note`: Retrieve note content by ID
@@ -143,3 +144,12 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - `contains` (*=*), `starts_with` (=*), `ends_with` (*=), `not_equal` (!=)
 - **Known limitation**: `not_contains` (does not contain) is not reliably supported in Trilium's search DSL
 - Field-specific searches work on `title` and `content` fields through the `filters` parameter
+
+## Note Properties Search Support
+
+### Enhanced Note Properties Support
+- **Boolean properties**: `isArchived`, `isProtected` - support `=`, `!=` operators with `"true"`/`"false"` values
+- **String properties**: `type`, `title` - support all operators with string values
+- **Numeric properties**: `labelCount`, `ownedLabelCount`, `attributeCount`, `relationCount`, `parentCount`, `childrenCount`, `contentSize`, `revisionCount` - support numeric comparisons (`>`, `<`, `>=`, `<=`, `=`, `!=`) with unquoted numeric values
+- **Automatic type handling**: Query builder properly handles boolean, string, and numeric value formatting
+- **Examples**: `note.labelCount > 5`, `note.type = 'text'`, `note.isArchived = true`

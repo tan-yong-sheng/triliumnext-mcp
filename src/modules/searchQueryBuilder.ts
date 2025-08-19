@@ -12,8 +12,8 @@ interface AttributeCondition {
 }
 
 interface NotePropertyCondition {
-  property: string; // 'isArchived', 'isProtected', 'type', 'title'
-  op?: string;      // '=', '!='
+  property: string; // 'isArchived', 'isProtected', 'type', 'title', 'labelCount', 'ownedLabelCount', 'attributeCount', 'relationCount', 'parentCount', 'childrenCount', 'contentSize', 'revisionCount'
+  op?: string;      // '=', '!=', '>', '<', '>=', '<='
   value: string;    // value to compare
 }
 
@@ -27,6 +27,7 @@ interface SearchStructuredParams {
   orderBy?: string;
   filters?: FilterCondition[];
   attributes?: AttributeCondition[];
+  attributeLogic?: 'and' | 'or';  // Logic operator for combining multiple attributes
   noteProperties?: NotePropertyCondition[];
   hierarchyType?: 'children' | 'descendants';
   parentNoteId?: string;
@@ -134,7 +135,22 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
   
   // Add attribute filters
   if (attributeFilters.length > 0) {
-    queryParts.push(...attributeFilters);
+    if (attributeFilters.length === 1) {
+      // Single attribute, no need for grouping
+      queryParts.push(...attributeFilters);
+    } else {
+      // Multiple attributes - check logic
+      const logic = params.attributeLogic || 'and'; // Default to AND for backward compatibility
+      
+      if (logic === 'or') {
+        // Join with OR and add ~ prefix for Trilium parser compatibility
+        const orExpression = attributeFilters.join(' OR ');
+        queryParts.push(`~(${orExpression})`);
+      } else {
+        // AND logic (default behavior)
+        queryParts.push(...attributeFilters);
+      }
+    }
   }
   
   // Add note property filters
@@ -348,6 +364,30 @@ function buildNotePropertyQuery(noteProperty: NotePropertyCondition): string {
     case 'title':
       triliumProperty = 'note.title';
       break;
+    case 'labelCount':
+      triliumProperty = 'note.labelCount';
+      break;
+    case 'ownedLabelCount':
+      triliumProperty = 'note.ownedLabelCount';
+      break;
+    case 'attributeCount':
+      triliumProperty = 'note.attributeCount';
+      break;
+    case 'relationCount':
+      triliumProperty = 'note.relationCount';
+      break;
+    case 'parentCount':
+      triliumProperty = 'note.parentCount';
+      break;
+    case 'childrenCount':
+      triliumProperty = 'note.childrenCount';
+      break;
+    case 'contentSize':
+      triliumProperty = 'note.contentSize';
+      break;
+    case 'revisionCount':
+      triliumProperty = 'note.revisionCount';
+      break;
     default:
       // Invalid property, skip this filter
       return '';
@@ -361,6 +401,18 @@ function buildNotePropertyQuery(noteProperty: NotePropertyCondition): string {
       break;
     case '!=':
       triliumOperator = '!=';
+      break;
+    case '>':
+      triliumOperator = '>';
+      break;
+    case '<':
+      triliumOperator = '<';
+      break;
+    case '>=':
+      triliumOperator = '>=';
+      break;
+    case '<=':
+      triliumOperator = '<=';
       break;
     default:
       // Invalid operator, skip this filter
@@ -379,6 +431,11 @@ function buildNotePropertyQuery(noteProperty: NotePropertyCondition): string {
       // Invalid boolean value, skip this filter
       return '';
     }
+  } else if (property === 'labelCount' || property === 'ownedLabelCount' || property === 'attributeCount' || 
+             property === 'relationCount' || property === 'parentCount' || property === 'childrenCount' || 
+             property === 'contentSize' || property === 'revisionCount') {
+    // Numeric properties - no quotes needed
+    processedValue = value;
   } else {
     // For other properties, escape quotes and wrap in single quotes
     processedValue = `'${value.replace(/'/g, "\\'")}'`;
