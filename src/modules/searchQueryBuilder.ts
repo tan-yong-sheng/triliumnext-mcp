@@ -1,3 +1,9 @@
+interface FilterCondition {
+  field: string;    // 'title' or 'content'
+  op: string;       // 'contains', 'starts_with', 'ends_with', 'not_equal'
+  value: string;    // search value
+}
+
 interface SearchStructuredParams {
   created_date_start?: string;
   created_date_end?: string;
@@ -7,6 +13,7 @@ interface SearchStructuredParams {
   limit?: number;
   includeArchivedNotes?: boolean;
   orderBy?: string;
+  filters?: FilterCondition[];
 }
 
 export function buildSearchQuery(params: SearchStructuredParams): string {
@@ -16,6 +23,17 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
   const isVerbose = process.env.VERBOSE === "true";
   if (isVerbose) {
     console.error(`[VERBOSE] buildSearchQuery input:`, JSON.stringify(params, null, 2));
+  }
+  
+  // Build field-specific filters
+  const fieldFilters: string[] = [];
+  if (params.filters && params.filters.length > 0) {
+    for (const filter of params.filters) {
+      const fieldQuery = buildFieldQuery(filter);
+      if (fieldQuery) {
+        fieldFilters.push(fieldQuery);
+      }
+    }
   }
   
   // Build date ranges
@@ -62,6 +80,11 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
     }
   }
   
+  // Add field filters
+  if (fieldFilters.length > 0) {
+    queryParts.push(...fieldFilters);
+  }
+  
   // Add full-text search token
   if (params.text) {
     queryParts.unshift(params.text); // Add at beginning for better query structure
@@ -99,4 +122,48 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
   }
   
   return query;
+}
+
+/**
+ * Builds a field-specific query based on the filter condition
+ * Maps JSON operators to Trilium search operators
+ */
+function buildFieldQuery(filter: FilterCondition): string {
+  const { field, op, value } = filter;
+  
+  // Map field names to Trilium note properties
+  let triliumField: string;
+  if (field === 'title') {
+    triliumField = 'note.title';
+  } else if (field === 'content') {
+    triliumField = 'note.content';
+  } else {
+    // Invalid field, skip this filter
+    return '';
+  }
+  
+  // Map operators to Trilium syntax
+  let triliumOperator: string;
+  switch (op) {
+    case 'contains':
+      triliumOperator = '*=*';
+      break;
+    case 'starts_with':
+      triliumOperator = '=*';
+      break;
+    case 'ends_with':
+      triliumOperator = '*=';
+      break;
+    case 'not_equal':
+      triliumOperator = '!=';
+      break;
+    default:
+      // Invalid operator, skip this filter
+      return '';
+  }
+  
+  // Escape quotes in the value and wrap in single quotes
+  const escapedValue = value.replace(/'/g, "\\'");
+  
+  return `${triliumField} ${triliumOperator} '${escapedValue}'`;
 }

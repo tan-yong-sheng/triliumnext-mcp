@@ -383,7 +383,7 @@ note.title =* 'Meeting' AND note.content *=* 'agenda'
 ### 18) Advanced combination: Full-text + field filters + date range
 - Composed query
 ```
-note.dateCreated >= '2024-01-01' AND setup guide note.title =* 'Tutorial' AND note.content *=* 'steps'
+setup guide note.dateCreated >= '2024-01-01' AND note.title =* 'Tutorial' AND note.content *=* 'steps'
 ```
 - JSON structure for future filters parameter
 ```json
@@ -398,61 +398,81 @@ note.dateCreated >= '2024-01-01' AND setup guide note.title =* 'Tutorial' AND no
 ```
 - Use case: Find recent tutorial guides with step-by-step instructions
 
-### 19) Exclude temporary files: Title does not end with "Temp"
+### 19) Content search: Notes containing specific phrases
 - Composed query
 ```
-NOT note.title *= 'Temp'
+note.content *=* 'machine learning'
 ```
 - JSON structure for future filters parameter
 ```json
 {
   "filters": [
-    { "field": "title", "op": "not_ends_with", "value": "Temp" }
+    { "field": "content", "op": "contains", "value": "machine learning" }
   ]
 }
 ```
-- Use case: Filter out all temporary files from search results
+- Use case: Find notes discussing machine learning concepts
 
-### 20) Combined search: Notes about "Tolkien" with specific title patterns
-- Composed query
-```
-Tolkien note.title *=* 'Lord' AND note.content != 'Incomplete'
-```
-- JSON structure for future filters parameter
+### 21) Advanced field-specific search with filters parameter
+- Params (using new filters parameter)
 ```json
 {
-  "text": "Tolkien",
   "filters": [
-    { "field": "title", "op": "contains", "value": "Lord" },
-    { "field": "content", "op": "not_equal", "value": "Incomplete" }
-  ]
+    { "field": "title", "op": "contains", "value": "Tutorial" },
+    { "field": "content", "op": "contains", "value": "steps" }
+  ],
+  "created_date_start": "2024-01-01"
 }
 ```
-- Use case: Find complete Tolkien notes mentioning "Lord" in title
+- Composed query
+```
+note.dateCreated >= '2024-01-01' AND note.title *=* 'Tutorial' AND note.content *=* 'steps'
+```
+- Use case: Find recent tutorials with step-by-step instructions using structured filters
 
-### 21) Complex business logic: Documentation that's not outdated
-- Composed query
-```
-documentation note.title =* 'Guide' AND note.content *=* 'instructions' AND NOT note.content *=* 'outdated'
-```
-- JSON structure for future filters parameter
+### 22) Multiple field filters with different operators
+- Params (using new filters parameter)
 ```json
 {
-  "text": "documentation",
   "filters": [
-    { "field": "title", "op": "starts_with", "value": "Guide" },
-    { "field": "content", "op": "contains", "value": "instructions" },
-    { "field": "content", "op": "not_contains", "value": "outdated" }
+    { "field": "title", "op": "starts_with", "value": "Project" },
+    { "field": "content", "op": "not_equal", "value": "incomplete" },
+    { "field": "content", "op": "contains", "value": "documentation" }
   ]
 }
 ```
-- Use case: Find current (non-outdated) documentation guides
+- Composed query
+```
+note.title =* 'Project' AND note.content != 'incomplete' AND note.content *=* 'documentation'
+```
+- Use case: Find project notes with documentation that are not marked incomplete
+
+### 23) Combined full-text and field filters
+- Params (using new filters parameter)
+```json
+{
+  "text": "machine learning",
+  "filters": [
+    { "field": "title", "op": "ends_with", "value": "Notes" },
+    { "field": "content", "op": "contains", "value": "algorithm" }
+  ],
+  "limit": 10
+}
+```
+- Composed query
+```
+machine learning note.title *= 'Notes' AND note.content *=* 'algorithm' limit 10
+```
+- Use case: Find machine learning notes with algorithms, limited to 10 results
 
 ---
 
 ## Notes
 - Quote search terms to handle special characters properly.
 - `text` parameter: Full-text indexed search (bare tokens, faster)
+- `filters` parameter: Array of field-specific conditions with structured operators
+  - Supported fields: `title`, `content`
+  - Supported operators: `contains` (*=*), `starts_with` (=*), `ends_with` (*=), `not_equal` (!=)
 - `orderBy` parameter: Sort results by specified field and direction (asc/desc)  
 - **Important**: orderBy field must also be used as a filter in the query
 - Valid orderBy examples: `note.dateCreated desc`, `note.dateModified asc`

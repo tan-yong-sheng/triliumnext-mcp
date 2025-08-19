@@ -138,7 +138,7 @@ class TriliumServer {
       if (this.hasPermission("READ")) {
         tools.push({
           name: "search_notes",
-          description: "Fast full-text search using simple keyword searches.",
+          description: "Fast full-text search using simple keyword searches only. If user input any filters for the search such as date ranges, title, content or field-specific conditions, don't trigger this.",
           inputSchema: {
             type: "object",
             properties: {
@@ -181,7 +181,7 @@ class TriliumServer {
         });
         tools.push({
           name: "search_notes_advanced",
-          description: "Advanced filtered search using parameters such as created_date, modified_date, text keyword etc. Use when you need date filtering, field-specific searches for comprehensive search",
+          description: "Advanced filtered search with structured parameters. REQUIRED for: date filtering (created/modified dates), field-specific searches (title/content filters), ordering, limits, or any combination of filters. Use this instead of search_notes when you need anything beyond basic full-text keyword search.",
           inputSchema: {
             type: "object",
             properties: {
@@ -204,6 +204,30 @@ class TriliumServer {
               text: {
                 type: "string",
                 description: "Simple text search token for full-text search (NOT a query string - just plain text like 'kubernetes')",
+              },
+              filters: {
+                type: "array",
+                description: "Array of field-specific filter conditions for precise searches on title and content fields",
+                items: {
+                  type: "object",
+                  properties: {
+                    field: {
+                      type: "string",
+                      enum: ["title", "content"],
+                      description: "Field to filter on"
+                    },
+                    op: {
+                      type: "string", 
+                      enum: ["contains", "starts_with", "ends_with", "not_equal"],
+                      description: "Filter operator"
+                    },
+                    value: {
+                      type: "string",
+                      description: "Value to filter for"
+                    }
+                  },
+                  required: ["field", "op", "value"]
+                }
               },
               limit: {
                 type: "number",
