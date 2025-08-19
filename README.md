@@ -15,6 +15,7 @@ Make sure to set up your environment variables first:
 - `TRILIUM_API_URL` (default: http://localhost:8080/etapi)
 - `TRILIUM_API_TOKEN` (required, get this from your Trilium Notes settings)
 - `PERMISSIONS` (optional, default='READ;WRITE', where READ let this MCP has permissions to perform `search_notes` and `get_note` operation and WRITE let this MCP has permissions to perform `create_note`, `update_note` and `delete_note` operations) 
+- `VERBOSE` (optional, default='false', where if true it will print out some logging response and pass the logs into LLM (such as API call) which is useful for developers to debug this MCP)
 
 ## Installation
 
@@ -121,39 +122,38 @@ The server provides the following tools for note management:
 ### Note Management Tools
 
 - `get_note` - Retrieve a note content by ID
-  - Requires: note ID
+- `create_note` - Create a new note (supports various types: text, code, file, image, etc.)
+- `update_note` - Replace entire note content (⚠️ creates backup by default)  
+- `append_note` - Add content while preserving existing content (📝 optimized for logs/journals)
+- `delete_note` - Permanently delete a note (⚠️ cannot be undone)
 
-- `create_note` - Create a new note
-  - Requires: parent note ID, title, type, content
-  - Optional: MIME type for code/file/image notes
-  - Supported note types: text, code, file, image, search, book, relationMap, render
+> 📖 **Detailed Usage**: See [Content Modification Guide](docs/content-modification-guide.md) for revision control strategy and best practices.
 
-- `update_note` - Update an existing note
-  - Requires: note ID
-  - Optional: new title, new content
+## Example Queries
 
-- `delete_note` - Delete a note
-  - Requires: note ID
+### Search & Discovery
+- "Find my most recent 10 notes about 'n8n' since the beginning of 2020"
+- "Show me notes I've edited in the last 7 days"
+- "Find notes with 'machine learning' in the title created this year"
+- "Search for 'kubernetes' in notes created between January and June"
 
-## Sample User Queries
+### Navigation & Browsing
+- "List all notes" (shows top-level notes)
+- "Show me what's in my project folder" 
+- "Show me everything I have" (complete inventory)
 
-### Search and Discovery
-- Find my most recent 10 notes about 'n8n' since the beginning of 2020.
-- Show me notes I've edited in the last 7 days.
-- What are the 5 most recently modified notes about 'docker' from last year?
-- Find notes created in the last week.
-- Search for 'kubernetes' in notes created between January and June of this year.
-- List all notes I worked on in the last week, either created or modified.
+### Content Management
+- "Add today's update to my work log" (uses `append_note`)
+- "Replace this draft with the final version" (uses `update_note`)
+- "Create a new note called 'Weekly Review' in my journal folder"
 
-### Note Navigation and Browsing
-- "List all notes" → Uses `list_child_notes` with parentNoteId="root" to show top-level notes
-- "Show me what's in my project folder" → Uses `list_child_notes` with specific parentNoteId
-- "Browse my note hierarchy" → Uses `list_child_notes` for directory-style navigation
+> 📖 **More Examples**: See [User Query Examples](docs/user-query-examples.md) for comprehensive usage scenarios.
 
-### Complete Note Inventory
-- "Show me everything I have" → Uses `list_descendant_notes` to recursively list all notes
-- "Find all notes in my project" → Uses `list_descendant_notes` with parentNoteId for subtree search
-- "Get complete note inventory" → Uses `list_descendant_notes` for bulk operations and analysis
+## Documentation
+
+- [Content Modification Guide](docs/content-modification-guide.md) - Safe content editing with revision control
+- [User Query Examples](docs/user-query-examples.md) - Natural language query examples
+- [Search Query Examples](docs/search-query-examples.md) - Advanced search syntax and filters
 
 ## Development
 
@@ -172,4 +172,14 @@ npm run build
 # For development with auto-rebuild
 npm run watch
 ```
+
+## Contributing
+
+Contributions are welcome! If you are looking to improve the server, especially the search functionality, please familiarize yourself with the following resources:
+
+- **Trilium Search DSL**: The [official documentation](https://triliumnext.github.io/Docs/Wiki/search.html) provides the foundation for all search queries.
+- **Internal Search Implementation**: Our [Search Query Examples](docs/search-query-examples.md) document details how `search_notes_advanced` parameters are translated into Trilium search strings. This is crucial for understanding and extending the current implementation.
+
+Please feel free to open an issue or submit a pull request.
+
 

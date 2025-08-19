@@ -71,7 +71,7 @@ class TriliumServer {
       if (this.hasPermission("WRITE")) {
         tools.push({
           name: "create_note",
-          description: "Create a new note in TriliumNext",
+          description: "Create a new note in TriliumNext. ONLY use this tool when the user explicitly requests note creation (e.g., 'create a note', 'make a new note'). DO NOT use this tool proactively or when the user is only asking questions about their notes.",
           inputSchema: {
             type: "object",
             properties: {
@@ -103,7 +103,7 @@ class TriliumServer {
         });
         tools.push({
           name: "update_note",
-          description: "Update the content of an existing note",
+          description: "Update the content of an existing note with optional revision creation. WARNING: This completely replaces the note's content. Consider using 'append_note' for adding content without replacement. STRONGLY RECOMMENDED: Keep revision=true (default) to create a backup before overwriting, unless explicitly instructed otherwise to prevent irreversible data loss.",
           inputSchema: {
             type: "object",
             properties: {
@@ -114,6 +114,34 @@ class TriliumServer {
               content: {
                 type: "string",
                 description: "New content for the note"
+              },
+              revision: {
+                type: "boolean",
+                description: "Whether to create a revision before updating (default: true for safety)",
+                default: true
+              }
+            },
+            required: ["noteId", "content"]
+          }
+        });
+        tools.push({
+          name: "append_note",
+          description: "Appends new content to an existing note without overwriting it. Use this instead of update_note when you want to add text below the existing content (e.g., logs, journals). For full content replacement, use update_note. By default, it avoids creating revisions (revision=false) to improve performance during frequent additions.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              noteId: {
+                type: "string",
+                description: "ID of the note to append content to"
+              },
+              content: {
+                type: "string",
+                description: "Content to append to the existing note"
+              },
+              revision: {
+                type: "boolean",
+                description: "Whether to create a revision before appending (default: false for performance)",
+                default: false
               }
             },
             required: ["noteId", "content"]
@@ -121,7 +149,7 @@ class TriliumServer {
         });
         tools.push({
           name: "delete_note",
-          description: "Delete a note",
+          description: "Delete a note permanently. CAUTION: This action cannot be undone and will permanently remove the note and all its content.",
           inputSchema: {
             type: "object",
             properties: {
@@ -138,7 +166,7 @@ class TriliumServer {
       if (this.hasPermission("READ")) {
         tools.push({
           name: "search_notes",
-          description: "Fast full-text search using simple keyword searches.",
+          description: "Fast full-text search using simple keyword searches only. If user input any filters for the search such as date ranges, title, content or field-specific conditions, don't trigger this.",
           inputSchema: {
             type: "object",
             properties: {
@@ -181,7 +209,7 @@ class TriliumServer {
         });
         tools.push({
           name: "search_notes_advanced",
-          description: "Advanced filtered search using parameters such as created_date, modified_date, text keyword etc. Use when you need date filtering, field-specific searches for comprehensive search",
+          description: "Advanced filtered search with structured parameters. REQUIRED for: date filtering (created/modified dates), field-specific searches (title/content filters), ordering, limits, or any combination of filters. Use this instead of search_notes when you need anything beyond basic full-text keyword search.",
           inputSchema: {
             type: "object",
             properties: {
@@ -204,6 +232,30 @@ class TriliumServer {
               text: {
                 type: "string",
                 description: "Simple text search token for full-text search (NOT a query string - just plain text like 'kubernetes')",
+              },
+              filters: {
+                type: "array",
+                description: "Array of field-specific filter conditions for precise searches on title and content fields",
+                items: {
+                  type: "object",
+                  properties: {
+                    field: {
+                      type: "string",
+                      enum: ["title", "content"],
+                      description: "Field to filter on"
+                    },
+                    op: {
+                      type: "string", 
+                      enum: ["contains", "starts_with", "ends_with", "not_equal"],
+                      description: "Filter operator"
+                    },
+                    value: {
+                      type: "string",
+                      description: "Value to filter for"
+                    }
+                  },
+                  required: ["field", "op", "value"]
+                }
               },
               limit: {
                 type: "number",
@@ -631,8 +683,20 @@ class TriliumServer {
             }
             const { noteId } = request.params.arguments;
             const contentRaw = request.params.arguments.content;
+            const revision = request.params.arguments.revision !== false; // Default to true (safe behavior)
+            
             if (typeof noteId !== "string" || typeof contentRaw !== "string") {
               throw new McpError(ErrorCode.InvalidParams, "noteId and content are required and must be strings");
+            }
+
+            // Create revision if requested (defaults to true for safety)
+            if (revision) {
+              try {
+                await this.axiosInstance.post(`/notes/${noteId}/revision`);
+              } catch (error) {
+                console.error(`Warning: Failed to create revision for note ${noteId}:`, error);
+                // Continue with update even if revision creation fails
+              }
             }
 
             let content = contentRaw;
@@ -648,10 +712,70 @@ class TriliumServer {
             });
 
             if (response.status === 204) {
+              const revisionMsg = revision ? " (revision created)" : " (no revision)";
               return {
                 content: [{
                   type: "text",
-                  text: `Note ${noteId} updated successfully`
+                  text: `Note ${noteId} updated successfully${revisionMsg}`
+                }]
+              };
+            } else {
+              return {
+                content: [{
+                  type: "text",
+                  text: `Unexpected response status: ${response.status}`
+                }]
+              };
+            }
+          }
+
+          case "append_note": {
+            if (!this.hasPermission("WRITE")) {
+              throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to append to notes.");
+            }
+            const { noteId } = request.params.arguments;
+            const contentToAppend = request.params.arguments.content;
+            const revision = request.params.arguments.revision === true; // Default to false (performance behavior)
+            
+            if (typeof noteId !== "string" || typeof contentToAppend !== "string") {
+              throw new McpError(ErrorCode.InvalidParams, "noteId and content are required and must be strings");
+            }
+
+            // Create revision if requested (defaults to false for performance)
+            if (revision) {
+              try {
+                await this.axiosInstance.post(`/notes/${noteId}/revision`);
+              } catch (error) {
+                console.error(`Warning: Failed to create revision for note ${noteId}:`, error);
+                // Continue with append even if revision creation fails
+              }
+            }
+
+            // Get current content
+            const { data: currentContent } = await this.axiosInstance.get(`/notes/${noteId}/content`, {
+              responseType: 'text'
+            });
+
+            // Process the content to append and convert Markdown to HTML if detected
+            let processedContentToAppend = await processContent(contentToAppend);
+
+            // Concatenate current content with new content
+            const newContent = currentContent + processedContentToAppend;
+
+            // Update note content
+            const url = `/notes/${noteId}/content`;
+            const response = await this.axiosInstance.put(url, newContent, {
+              headers: {
+                "Content-Type": "text/plain"
+              }
+            });
+
+            if (response.status === 204) {
+              const revisionMsg = revision ? " (revision created)" : " (no revision)";
+              return {
+                content: [{
+                  type: "text",
+                  text: `Content appended to note ${noteId} successfully${revisionMsg}`
                 }]
               };
             } else {

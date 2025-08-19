@@ -23,12 +23,9 @@ Query composition:
 - text: `<token>` (bare token for full-text search)
 - limit: `limit <number>` (appended to query)
 - Final query: join groups with AND, date groups with OR if both present, then append limit
-- Always calls underlying search_notes with fastSearch=false
 
 **Important distinction:**
 - `text`: Full-text indexed search (faster, finds whole words/tokens)
-- Original `search_notes`: Always use fastSearch=true for basic queries
-- New `search_notes_advanced`: Always use fastSearch=false for content search
 
 ---
 
@@ -40,7 +37,6 @@ Query composition:
 {
   "created_date_start": "2024-08-11",
   "created_date_end": "2024-08-18",
-  "fastSearch": false,
   "includeArchivedNotes": false
 }
 ```
@@ -55,7 +51,7 @@ search_notes_advanced({
   created_date_end: "2024-08-18",
   includeArchivedNotes: false 
 })
-// Internally calls: search_notes({ query: "note.dateCreated >= '2024-08-11' AND note.dateCreated < '2024-08-18'", fastSearch: false, includeArchivedNotes: false })
+// Internally calls: search_notes({ query: "note.dateCreated >= '2024-08-11' AND note.dateCreated < '2024-08-18'", includeArchivedNotes: false })
 ```
 
 ### 2) Modified in last 7 days
@@ -89,12 +85,13 @@ search_notes({
 ```
 - Composed query
 ```
-(note.dateCreated >= '2024-08-11' AND note.dateCreated < '2024-08-18') OR (note.dateModified >= '2024-08-11' AND note.dateModified < '2024-08-18')
+~(note.dateCreated >= '2024-08-11' AND note.dateCreated < '2024-08-18') OR (note.dateModified >= '2024-08-11' AND note.dateModified < '2024-08-18')
 ```
+- **Note**: The `~` prefix is required by Trilium when expressions start with parentheses
 - MCP call
 ```js
 search_notes({ 
-  query: "(note.dateCreated >= '2024-08-11' AND note.dateCreated < '2024-08-18') OR (note.dateModified >= '2024-08-11' AND note.dateModified < '2024-08-18')"
+  query: "~(note.dateCreated >= '2024-08-11' AND note.dateCreated < '2024-08-18') OR (note.dateModified >= '2024-08-11' AND note.dateModified < '2024-08-18')"
 })
 ```
 
@@ -125,8 +122,7 @@ search_notes({ query: "note.dateCreated >= '2024-01-01' AND note.dateCreated < '
 {
   "created_date_start": "2023-08-18",
   "created_date_end": "2024-08-18",
-  "text": "kubernetes",
-  "fastSearch": false
+  "text": "kubernetes"
 }
 ```
 - Composed query
@@ -136,8 +132,7 @@ kubernetes note.dateCreated >= '2023-08-18' AND note.dateCreated < '2024-08-18'
 - MCP call
 ```js
 search_notes({ 
-  query: "kubernetes note.dateCreated >= '2023-08-18' AND note.dateCreated < '2024-08-18'", 
-  fastSearch: false 
+  query: "kubernetes note.dateCreated >= '2023-08-18' AND note.dateCreated < '2024-08-18'"
 })
 ```
 
@@ -159,7 +154,7 @@ search_notes_advanced({
   text: "kubernetes",
   limit: 5
 })
-// Internally calls: search_notes({ query: "kubernetes limit 5", fastSearch: false })
+// Internally calls: search_notes({ query: "kubernetes limit 5" })
 ```
 
 ### 7) Search "n8n" notes created since 2020, ordered by creation date descending, limit 10
@@ -184,7 +179,7 @@ search_notes_advanced({
   orderBy: "note.dateCreated desc",
   limit: 10
 })
-// Internally calls: search_notes({ query: "n8n note.dateCreated >= '2020-01-01' orderBy note.dateCreated desc limit 10", fastSearch: false })
+// Internally calls: search_notes({ query: "n8n note.dateCreated >= '2020-01-01' orderBy note.dateCreated desc limit 10" })
 ```
 
 ### 8) ❌ INVALID: Search "n8n" with orderBy but no date filter (orderBy will be skipped)
@@ -208,7 +203,7 @@ search_notes_advanced({
   orderBy: "note.dateCreated desc",
   limit: 10
 })
-// Internally calls: search_notes({ query: "n8n limit 10", fastSearch: false })
+// Internally calls: search_notes({ query: "n8n limit 10" })
 // orderBy skipped because note.dateCreated not used as filter
 ```
 
@@ -284,13 +279,205 @@ search_notes_advanced({
 
 ---
 
+## Advanced Field-Specific Search Examples
+
+These examples demonstrate advanced field-specific operators for title and content search. These provide more precise control than basic full-text search.
+
+### Field Operators Reference
+- `*=*` : contains substring
+- `*=` : ends with
+- `=*` : starts with
+- `!=` : not equal to
+
+### 12) Title contains "Tolkien"
+- Composed query
+```
+note.title *=* 'Tolkien'
+```
+- JSON structure for future filters parameter
+```json
+{
+  "filters": [
+    { "field": "title", "op": "contains", "value": "Tolkien" }
+  ]
+}
+```
+- Use case: Find notes whose title contains "Tolkien" anywhere
+
+### 13) Title starts with "Project"
+- Composed query
+```
+note.title =* 'Project'
+```
+- JSON structure for future filters parameter
+```json
+{
+  "filters": [
+    { "field": "title", "op": "starts_with", "value": "Project" }
+  ]
+}
+```
+- Use case: Find all project-related notes by title prefix
+
+### 14) Title ends with "Notes"
+- Composed query
+```
+note.title *= 'Notes'
+```
+- JSON structure for future filters parameter
+```json
+{
+  "filters": [
+    { "field": "title", "op": "ends_with", "value": "Notes" }
+  ]
+}
+```
+- Use case: Find all documents ending with "Notes"
+
+### 15) Title does not equal "Backup"
+- Composed query
+```
+note.title != 'Backup'
+```
+- JSON structure for future filters parameter
+```json
+{
+  "filters": [
+    { "field": "title", "op": "not_equal", "value": "Backup" }
+  ]
+}
+```
+- Use case: Exclude backup-related notes from results
+
+### 16) Content contains "dead letter"
+- Composed query
+```
+note.content *=* 'dead letter'
+```
+- JSON structure for future filters parameter
+```json
+{
+  "filters": [
+    { "field": "content", "op": "contains", "value": "dead letter" }
+  ]
+}
+```
+- Use case: Find notes discussing dead letter patterns/queues
+
+### 17) Complex multi-field search: Title starts with "Meeting" AND content contains "agenda"
+- Composed query
+```
+note.title =* 'Meeting' AND note.content *=* 'agenda'
+```
+- JSON structure for future filters parameter
+```json
+{
+  "filters": [
+    { "field": "title", "op": "starts_with", "value": "Meeting" },
+    { "field": "content", "op": "contains", "value": "agenda" }
+  ]
+}
+```
+- Use case: Find meeting notes that contain agenda items
+
+### 18) Advanced combination: Full-text + field filters + date range
+- Composed query
+```
+setup guide note.dateCreated >= '2024-01-01' AND note.title =* 'Tutorial' AND note.content *=* 'steps'
+```
+- JSON structure for future filters parameter
+```json
+{
+  "text": "setup guide",
+  "filters": [
+    { "field": "title", "op": "starts_with", "value": "Tutorial" },
+    { "field": "content", "op": "contains", "value": "steps" }
+  ],
+  "created_date_start": "2024-01-01"
+}
+```
+- Use case: Find recent tutorial guides with step-by-step instructions
+
+### 19) Content search: Notes containing specific phrases
+- Composed query
+```
+note.content *=* 'machine learning'
+```
+- JSON structure for future filters parameter
+```json
+{
+  "filters": [
+    { "field": "content", "op": "contains", "value": "machine learning" }
+  ]
+}
+```
+- Use case: Find notes discussing machine learning concepts
+
+### 21) Advanced field-specific search with filters parameter
+- Params (using new filters parameter)
+```json
+{
+  "filters": [
+    { "field": "title", "op": "contains", "value": "Tutorial" },
+    { "field": "content", "op": "contains", "value": "steps" }
+  ],
+  "created_date_start": "2024-01-01"
+}
+```
+- Composed query
+```
+note.dateCreated >= '2024-01-01' AND note.title *=* 'Tutorial' AND note.content *=* 'steps'
+```
+- Use case: Find recent tutorials with step-by-step instructions using structured filters
+
+### 22) Multiple field filters with different operators
+- Params (using new filters parameter)
+```json
+{
+  "filters": [
+    { "field": "title", "op": "starts_with", "value": "Project" },
+    { "field": "content", "op": "not_equal", "value": "incomplete" },
+    { "field": "content", "op": "contains", "value": "documentation" }
+  ]
+}
+```
+- Composed query
+```
+note.title =* 'Project' AND note.content != 'incomplete' AND note.content *=* 'documentation'
+```
+- Use case: Find project notes with documentation that are not marked incomplete
+
+### 23) Combined full-text and field filters
+- Params (using new filters parameter)
+```json
+{
+  "text": "machine learning",
+  "filters": [
+    { "field": "title", "op": "ends_with", "value": "Notes" },
+    { "field": "content", "op": "contains", "value": "algorithm" }
+  ],
+  "limit": 10
+}
+```
+- Composed query
+```
+machine learning note.title *= 'Notes' AND note.content *=* 'algorithm' limit 10
+```
+- Use case: Find machine learning notes with algorithms, limited to 10 results
+
+---
+
 ## Notes
-- `search_notes_advanced` always sets fastSearch=false internally for proper content search.
-- Original `search_notes` should use fastSearch=true for basic queries.
 - Quote search terms to handle special characters properly.
 - `text` parameter: Full-text indexed search (bare tokens, faster)
+- `filters` parameter: Array of field-specific conditions with structured operators
+  - Supported fields: `title`, `content`
+  - Supported operators: `contains` (*=*), `starts_with` (=*), `ends_with` (*=), `not_equal` (!=)
+  - **Limitation**: `not_contains` (does not contain) is not reliably supported in Trilium's search DSL
 - `orderBy` parameter: Sort results by specified field and direction (asc/desc)  
 - **Important**: orderBy field must also be used as a filter in the query
 - Valid orderBy examples: `note.dateCreated desc`, `note.dateModified asc`
 - The searchQueryBuilder validates that orderBy fields are present in filters
-
+- **Field operators**: Use `note.title` and `note.content` with operators `*=*`, `=*`, `*=`, `!=` for precise field matching
+- **Boolean logic**: Combine field filters with `AND`, `OR`, and `NOT` for complex queries
+- **Critical**: Trilium requires an "expression separator sign" (`~` or `#`) before parentheses when they start an expression - this is automatically handled by the searchQueryBuilder for OR date queries
