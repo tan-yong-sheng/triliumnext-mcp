@@ -64,8 +64,9 @@ node build/index.js   # Run the server directly
 
 ### WRITE Permission Tools
 - `create_note`: Create new notes with various types (text, code, file, image, etc.)
-- `update_note`: Update existing note content
-- `delete_note`: Delete notes by ID
+- `update_note`: Update existing note content with revision control (defaults to revision=true for safety)
+- `append_note`: Add content to existing notes without replacement (defaults to revision=false for performance)
+- `delete_note`: Delete notes by ID (permanent operation with caution warnings)
 
 ## Search Query Architecture
 
@@ -118,3 +119,23 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - `list_descendant_notes` marked as "PREFERRED for 'list all notes' requests"
 - Clear Unix command analogies: `ls` vs `find` behavior for `list_child_notes` and `list_descendant_notes` respectively
 - Specific guidance on when to use each tool for better LLM decision-making
+
+## Content Modification Tools Strategy
+
+### Revision Control Behavior
+- **`update_note`**: Defaults to `revision=true` (safe behavior) - creates backup before complete content replacement
+- **`append_note`**: Defaults to `revision=false` (performance behavior) - efficient for frequent additions like logs/journals
+- **Risk-based defaults**: High-impact operations (complete replacement) default to safety, low-impact operations (append) default to efficiency
+
+### Content Operation Guidelines
+- Use `append_note` for adding content while preserving existing content (logs, journals, incremental updates)
+- Use `update_note` for complete content replacement (rewrites, major edits)
+- Both functions support explicit revision control override via `revision` parameter
+- `delete_note` includes strong caution warnings as it's irreversible
+
+## Field-Specific Search Limitations
+
+### Supported Operators
+- `contains` (*=*), `starts_with` (=*), `ends_with` (*=), `not_equal` (!=)
+- **Known limitation**: `not_contains` (does not contain) is not reliably supported in Trilium's search DSL
+- Field-specific searches work on `title` and `content` fields through the `filters` parameter
