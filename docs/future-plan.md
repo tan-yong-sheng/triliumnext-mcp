@@ -1,87 +1,9 @@
 # TriliumNext MCP: Future Development Plans
 
-## Recently Implemented ✅
-
-### 1. List All Notes Function (`list_all_notes`) ✅ **COMPLETED**
-- **Function**: `list_all_notes` - Complete note inventory functionality
-- **Purpose**: List ALL notes in Trilium database or within a specific subtree with filtering and sorting
-- **Parameters**:
-  - `parentNoteId`: string (optional) - List notes within specific subtree, omit for entire database
-  - `orderBy`: string (optional) - Sort field (e.g., 'title', 'dateCreated', 'dateModified')
-  - `orderDirection`: 'asc' | 'desc' (optional, default: 'desc')
-  - `limit`: number (optional, default: 500) - Maximum results
-  - `includeArchivedNotes`: boolean (optional, default: false)
-  - `includeProtectedNotes`: boolean (optional, default: false)
-- **Implementation**: 
-  - Uses ETAPI search with universal match query `note.noteId != ''`
-  - Uses `ancestorNoteId` parameter when parentNoteId is provided for subtree listing
-  - Client-side filtering for protected notes
-  - Returns trimmed note objects with essential fields
-  - Provides summary with count and scope info
-- **Usage Examples**:
-  ```javascript
-  // Get all notes in entire database
-  list_all_notes()
-  
-  // Get all notes within a specific parent note
-  list_all_notes({ parentNoteId: "abc123" })
-  
-  // Get oldest notes first in a subtree
-  list_all_notes({ 
-    parentNoteId: "abc123", 
-    orderBy: "dateCreated", 
-    orderDirection: "asc" 
-  })
-  ```
-- **Benefits**: 
-  - Complete note inventory and discovery (entire database or subtree)
-  - Bulk operations and data analysis
-  - AI assistant knowledge base overview
-  - Simple alternative to complex search queries
-  - Consistent with list_children_notes parentNoteId pattern
 
 ## Immediate Next Features
 
-### 1. List Children Note Function (`list_children_notes`) ✅ **COMPLETED**
-- **Function**: `list_children_notes` - Separate function for tree navigation
-- **Purpose**: Provide simple directory listing capabilities without complicating search
-- **Parameters**:
-  - `parentNoteId`: string (required) - List direct children of this note
-  - `orderBy`: string (optional) - Sort order (e.g., 'note.title', 'note.dateCreated desc')
-  - `limit`: number (optional) - Maximum results to return
-  - `includeArchivedNotes`: boolean (optional, default: false)
-- **Implementation**: 
-  - Use ETAPI search with `ancestorNoteId` and `ancestorDepth=eq1`
-  - Empty search query to match all children
-  - Single API call efficiency (avoid N+1 problem)
-  - Returns full Note objects with metadata
-- **Usage Examples**:
-  ```javascript
-  // List all direct children of a note
-  list_children_notes({ parentNoteId: "abc123" })
-  
-  // List children sorted by creation date
-  list_children_notes({ 
-    parentNoteId: "abc123", 
-    orderBy: "note.dateCreated desc",
-    limit: 20
-  })
-  ```
-- **Benefits**: 
-  - Keeps `search_notes_advanced` focused on search functionality
-  - Simple, intuitive API for tree navigation
-  - Essential for file explorer-like workflows
-
-#### Common Workflow Patterns:
-**`list_children_notes` → `search_notes_advanced` → Action**
-
-- **Project Status Check**: List project folders → Search for status notes in each → Generate report
-- **Learning Progress**: List subject areas → Find recent activity in each → Track progress  
-- **Documentation Gaps**: List code modules → Check doc coverage in each → Identify missing docs
-- **Meeting Summary**: List monthly folders → Search meetings in each → Compile summary
-- **Knowledge Navigation**: List topic folders → Search related content → Discover connections
-
-### 2. Append Note Function
+### 1. Append Note Function
 - **Function**: `append_note`
 - **Purpose**: Add content to existing notes without replacing entire content
 - **Parameters**:
@@ -94,13 +16,12 @@
   - Update note content via PUT `/notes/{noteId}/content`
   - Optionally create revision via POST `/notes/{noteId}/revision` if `revision=true`
 
-### 3. Enhanced Update Note Function
+### 2. Enhanced Update Note Function
 - **Enhancement**: Add `revision` parameter to existing `update_note` function
 - **Purpose**: Allow users to control whether revisions are created during updates
 - **Parameters**: 
   - Add `revision`: boolean (default: false) - Whether to create revision before updating
 - **Implementation**: Call POST `/notes/{noteId}/revision` before update if `revision=true`
-
 
 ---
 

@@ -55,7 +55,10 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
       // Remove parentheses for single date group
       queryParts.push(dateGroups[0].slice(1, -1));
     } else {
-      queryParts.push(dateGroups.join(' OR '));
+      // When using OR with parentheses, prepend with ~ to satisfy Trilium's parser
+      // Trilium requires an "expression separator sign" (# or ~) before parentheses
+      const orExpression = dateGroups.join(' OR ');
+      queryParts.push(`~${orExpression}`);
     }
   }
   

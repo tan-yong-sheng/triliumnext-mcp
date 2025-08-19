@@ -23,12 +23,9 @@ Query composition:
 - text: `<token>` (bare token for full-text search)
 - limit: `limit <number>` (appended to query)
 - Final query: join groups with AND, date groups with OR if both present, then append limit
-- Always calls underlying search_notes with fastSearch=false
 
 **Important distinction:**
 - `text`: Full-text indexed search (faster, finds whole words/tokens)
-- Original `search_notes`: Always use fastSearch=true for basic queries
-- New `search_notes_advanced`: Always use fastSearch=false for content search
 
 ---
 
@@ -40,7 +37,6 @@ Query composition:
 {
   "created_date_start": "2024-08-11",
   "created_date_end": "2024-08-18",
-  "fastSearch": false,
   "includeArchivedNotes": false
 }
 ```
@@ -55,7 +51,7 @@ search_notes_advanced({
   created_date_end: "2024-08-18",
   includeArchivedNotes: false 
 })
-// Internally calls: search_notes({ query: "note.dateCreated >= '2024-08-11' AND note.dateCreated < '2024-08-18'", fastSearch: false, includeArchivedNotes: false })
+// Internally calls: search_notes({ query: "note.dateCreated >= '2024-08-11' AND note.dateCreated < '2024-08-18'", includeArchivedNotes: false })
 ```
 
 ### 2) Modified in last 7 days
@@ -89,12 +85,13 @@ search_notes({
 ```
 - Composed query
 ```
-(note.dateCreated >= '2024-08-11' AND note.dateCreated < '2024-08-18') OR (note.dateModified >= '2024-08-11' AND note.dateModified < '2024-08-18')
+~(note.dateCreated >= '2024-08-11' AND note.dateCreated < '2024-08-18') OR (note.dateModified >= '2024-08-11' AND note.dateModified < '2024-08-18')
 ```
+- **Note**: The `~` prefix is required by Trilium when expressions start with parentheses
 - MCP call
 ```js
 search_notes({ 
-  query: "(note.dateCreated >= '2024-08-11' AND note.dateCreated < '2024-08-18') OR (note.dateModified >= '2024-08-11' AND note.dateModified < '2024-08-18')"
+  query: "~(note.dateCreated >= '2024-08-11' AND note.dateCreated < '2024-08-18') OR (note.dateModified >= '2024-08-11' AND note.dateModified < '2024-08-18')"
 })
 ```
 
@@ -125,8 +122,7 @@ search_notes({ query: "note.dateCreated >= '2024-01-01' AND note.dateCreated < '
 {
   "created_date_start": "2023-08-18",
   "created_date_end": "2024-08-18",
-  "text": "kubernetes",
-  "fastSearch": false
+  "text": "kubernetes"
 }
 ```
 - Composed query
@@ -136,8 +132,7 @@ kubernetes note.dateCreated >= '2023-08-18' AND note.dateCreated < '2024-08-18'
 - MCP call
 ```js
 search_notes({ 
-  query: "kubernetes note.dateCreated >= '2023-08-18' AND note.dateCreated < '2024-08-18'", 
-  fastSearch: false 
+  query: "kubernetes note.dateCreated >= '2023-08-18' AND note.dateCreated < '2024-08-18'"
 })
 ```
 
@@ -159,7 +154,7 @@ search_notes_advanced({
   text: "kubernetes",
   limit: 5
 })
-// Internally calls: search_notes({ query: "kubernetes limit 5", fastSearch: false })
+// Internally calls: search_notes({ query: "kubernetes limit 5" })
 ```
 
 ### 7) Search "n8n" notes created since 2020, ordered by creation date descending, limit 10
@@ -184,7 +179,7 @@ search_notes_advanced({
   orderBy: "note.dateCreated desc",
   limit: 10
 })
-// Internally calls: search_notes({ query: "n8n note.dateCreated >= '2020-01-01' orderBy note.dateCreated desc limit 10", fastSearch: false })
+// Internally calls: search_notes({ query: "n8n note.dateCreated >= '2020-01-01' orderBy note.dateCreated desc limit 10" })
 ```
 
 ### 8) ❌ INVALID: Search "n8n" with orderBy but no date filter (orderBy will be skipped)
@@ -208,7 +203,7 @@ search_notes_advanced({
   orderBy: "note.dateCreated desc",
   limit: 10
 })
-// Internally calls: search_notes({ query: "n8n limit 10", fastSearch: false })
+// Internally calls: search_notes({ query: "n8n limit 10" })
 // orderBy skipped because note.dateCreated not used as filter
 ```
 
@@ -290,10 +285,9 @@ These examples demonstrate advanced field-specific operators for title and conte
 
 ### Field Operators Reference
 - `*=*` : contains substring
-- `=*` : ends with
-- `*=` : starts with
+- `*=` : ends with
+- `=*` : starts with
 - `!=` : not equal to
-- `=%` : regex search
 
 ### 12) Title contains "Tolkien"
 - Composed query
@@ -325,52 +319,37 @@ note.title =* 'Project'
 ```
 - Use case: Find all project-related notes by title prefix
 
-### 14) Title ends with "Draft"
+### 14) Title ends with "Notes"
 - Composed query
 ```
-note.title *= 'Draft'
+note.title *= 'Notes'
 ```
 - JSON structure for future filters parameter
 ```json
 {
   "filters": [
-    { "field": "title", "op": "ends_with", "value": "Draft" }
+    { "field": "title", "op": "ends_with", "value": "Notes" }
   ]
 }
 ```
-- Use case: Find all draft documents
+- Use case: Find all documents ending with "Notes"
 
-### 15) Title does not contain "Archived"
+### 15) Title does not contain "Backup"
 - Composed query
 ```
-note.title != 'Archived'
+note.title != 'Backup'
 ```
 - JSON structure for future filters parameter
 ```json
 {
   "filters": [
-    { "field": "title", "op": "not_equal", "value": "Archived" }
+    { "field": "title", "op": "not_equal", "value": "Backup" }
   ]
 }
 ```
-- Use case: Exclude archived notes from results
+- Use case: Exclude backup-related notes from results
 
-### 16) Title matches regex pattern (case-insensitive "setup guide")
-- Composed query
-```
-note.title =% '(?i)setup.*guide'
-```
-- JSON structure for future filters parameter
-```json
-{
-  "filters": [
-    { "field": "title", "op": "regex", "value": "(?i)setup.*guide" }
-  ]
-}
-```
-- Use case: Find setup or installation guides with flexible matching
-
-### 17) Content contains "dead letter" (case-insensitive)
+### 16) Content contains "dead letter"
 - Composed query
 ```
 note.content *=* 'dead letter'
@@ -385,86 +364,56 @@ note.content *=* 'dead letter'
 ```
 - Use case: Find notes discussing dead letter patterns/queues
 
-### 18) Content regex search for "dead-letter" or "deadletter" (case-insensitive)
+### 17) Complex multi-field search: Title starts with "Meeting" AND content contains "agenda"
 - Composed query
 ```
-note.content =% '(?i)dead[- ]?letter'
+note.title =* 'Meeting' AND note.content *=* 'agenda'
 ```
 - JSON structure for future filters parameter
 ```json
 {
   "filters": [
-    { "field": "content", "op": "regex", "value": "(?i)dead[- ]?letter" }
+    { "field": "title", "op": "starts_with", "value": "Meeting" },
+    { "field": "content", "op": "contains", "value": "agenda" }
   ]
 }
 ```
-- Use case: Flexible matching for hyphenated or compound terms
+- Use case: Find meeting notes that contain agenda items
 
-### 19) Complex multi-field search: Title starts with "API" AND content contains "REST"
+### 18) Advanced combination: Full-text + field filters + date range
 - Composed query
 ```
-note.title *= 'API' AND note.content *=* 'REST'
-```
-- JSON structure for future filters parameter
-```json
-{
-  "filters": [
-    { "field": "title", "op": "starts_with", "value": "API" },
-    { "field": "content", "op": "contains", "value": "REST" }
-  ]
-}
-```
-- Use case: Find API documentation specifically about REST
-
-### 20) Advanced combination: Full-text + field filters + date range
-- Composed query
-```
-setup guide note.title *= 'Installation' AND note.content *=* 'Docker' AND note.dateCreated >= '2024-01-01'
+note.dateCreated >= '2024-01-01' AND setup guide note.title =* 'Tutorial' AND note.content *=* 'steps'
 ```
 - JSON structure for future filters parameter
 ```json
 {
   "text": "setup guide",
   "filters": [
-    { "field": "title", "op": "starts_with", "value": "Installation" },
-    { "field": "content", "op": "contains", "value": "Docker" }
+    { "field": "title", "op": "starts_with", "value": "Tutorial" },
+    { "field": "content", "op": "contains", "value": "steps" }
   ],
   "created_date_start": "2024-01-01"
 }
 ```
-- Use case: Find recent installation guides mentioning Docker
+- Use case: Find recent tutorial guides with step-by-step instructions
 
-### 21) Exclude drafts: Title does not end with "Draft"
+### 19) Exclude temporary files: Title does not end with "Temp"
 - Composed query
 ```
-NOT note.title =* 'Draft'
+NOT note.title *= 'Temp'
 ```
 - JSON structure for future filters parameter
 ```json
 {
   "filters": [
-    { "field": "title", "op": "not_ends_with", "value": "Draft" }
+    { "field": "title", "op": "not_ends_with", "value": "Temp" }
   ]
 }
 ```
-- Use case: Filter out all draft documents from search results
+- Use case: Filter out all temporary files from search results
 
-### 22) Case-insensitive content search with regex
-- Composed query
-```
-note.content =% '(?i)(kubernetes|k8s|docker|container)'
-```
-- JSON structure for future filters parameter
-```json
-{
-  "filters": [
-    { "field": "content", "op": "regex", "value": "(?i)(kubernetes|k8s|docker|container)" }
-  ]
-}
-```
-- Use case: Find any container-related content with multiple synonyms
-
-### 23) Combined search: Notes about "Tolkien" with specific title patterns
+### 20) Combined search: Notes about "Tolkien" with specific title patterns
 - Composed query
 ```
 Tolkien note.title *=* 'Lord' AND note.content != 'Incomplete'
@@ -481,50 +430,33 @@ Tolkien note.title *=* 'Lord' AND note.content != 'Incomplete'
 ```
 - Use case: Find complete Tolkien notes mentioning "Lord" in title
 
-### 24) Advanced regex: Find notes with version numbers in title
+### 21) Complex business logic: Documentation that's not outdated
 - Composed query
 ```
-note.title =% 'v[0-9]+\\.[0-9]+\\.[0-9]+'
+documentation note.title =* 'Guide' AND note.content *=* 'instructions' AND NOT note.content *=* 'outdated'
 ```
 - JSON structure for future filters parameter
 ```json
 {
+  "text": "documentation",
   "filters": [
-    { "field": "title", "op": "regex", "value": "v[0-9]+\\.[0-9]+\\.[0-9]+" }
+    { "field": "title", "op": "starts_with", "value": "Guide" },
+    { "field": "content", "op": "contains", "value": "instructions" },
+    { "field": "content", "op": "not_contains", "value": "outdated" }
   ]
 }
 ```
-- Use case: Find all notes with semantic version numbers
-
-### 25) Complex business logic: API documentation that's not deprecated
-- Composed query
-```
-API documentation note.title *= 'API' AND note.content *=* 'endpoint' AND NOT note.content *=* 'deprecated'
-```
-- JSON structure for future filters parameter
-```json
-{
-  "text": "API documentation",
-  "filters": [
-    { "field": "title", "op": "starts_with", "value": "API" },
-    { "field": "content", "op": "contains", "value": "endpoint" },
-    { "field": "content", "op": "not_contains", "value": "deprecated" }
-  ]
-}
-```
-- Use case: Find current (non-deprecated) API documentation
+- Use case: Find current (non-outdated) documentation guides
 
 ---
 
 ## Notes
-- `search_notes_advanced` always sets fastSearch=false internally for proper content search.
-- Original `search_notes` should use fastSearch=true for basic queries.
 - Quote search terms to handle special characters properly.
 - `text` parameter: Full-text indexed search (bare tokens, faster)
 - `orderBy` parameter: Sort results by specified field and direction (asc/desc)  
 - **Important**: orderBy field must also be used as a filter in the query
 - Valid orderBy examples: `note.dateCreated desc`, `note.dateModified asc`
 - The searchQueryBuilder validates that orderBy fields are present in filters
-- **Field operators**: Use `note.title` and `note.content` with operators `*=*`, `=*`, `*=`, `!=`, `=%` for precise field matching
-- **Regex patterns**: Use `=%` operator for complex pattern matching (supports case-insensitive with `(?i)` flag)
+- **Field operators**: Use `note.title` and `note.content` with operators `*=*`, `=*`, `*=`, `!=` for precise field matching
 - **Boolean logic**: Combine field filters with `AND`, `OR`, and `NOT` for complex queries
+- **Critical**: Trilium requires an "expression separator sign" (`~` or `#`) before parentheses when they start an expression - this is automatically handled by the searchQueryBuilder for OR date queries
