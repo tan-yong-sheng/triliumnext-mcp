@@ -11,6 +11,22 @@ import {
 import axios from "axios";
 import { marked } from "marked";
 import { buildSearchQuery } from "./modules/searchQueryBuilder.js";
+import { buildListChildrenQuery } from "./modules/listChildrenHelper.js";
+
+// Helper function to trim note objects to essential fields
+function trimNoteResults(notes: any[]): any[] {
+  return notes.map(note => ({
+    noteId: note.noteId,
+    title: note.title,
+    type: note.type,
+    mime: note.mime,
+    isProtected: note.isProtected,
+    dateCreated: note.dateCreated,
+    dateModified: note.dateModified,
+    utcDateCreated: note.utcDateCreated,
+    utcDateModified: note.utcDateModified
+  }));
+}
 
 const TRILIUM_API_URL = process.env.TRILIUM_API_URL;
 const TRILIUM_API_TOKEN = process.env.TRILIUM_API_TOKEN;
@@ -210,6 +226,39 @@ class TriliumServer {
             },
           },
         });
+        tools.push({
+          name: "list_children_notes",
+          description: "List direct children notes of a parent note for tree navigation",
+          inputSchema: {
+            type: "object",
+            properties: {
+              parentNoteId: {
+                type: "string",
+                description: "ID of the parent note to list children from",
+              },
+              orderBy: {
+                type: "string",
+                description: "Sort order for results (e.g., 'title', 'dateCreated', 'dateModified')",
+              },
+              orderDirection: {
+                type: "string",
+                enum: ["asc", "desc"],
+                description: "Sort direction - ascending or descending",
+                default: "asc"
+              },
+              limit: {
+                type: "number",
+                description: "Maximum number of children to return",
+              },
+              includeArchivedNotes: {
+                type: "boolean",
+                description: "Include archived notes in results",
+                default: false
+              },
+            },
+            required: ["parentNoteId"],
+          },
+        });
       }
 
       return { tools };
@@ -281,10 +330,11 @@ class TriliumServer {
             }
 
             const response = await this.axiosInstance.get(`/notes?${params.toString()}`);
+            const trimmedResults = trimNoteResults(response.data.results || []);
             return {
               content: [{
                 type: "text",
-                text: JSON.stringify(response.data.results, null, 2),
+                text: JSON.stringify(trimmedResults, null, 2),
               }],
             };
           }
@@ -316,12 +366,92 @@ class TriliumServer {
             const verboseInfo = isVerbose ? 
               `\n--- Query Debug ---\nBuilt Query: ${query}\nInput Params: ${JSON.stringify(request.params.arguments, null, 2)}\n--- End Debug ---\n\n` : "";
             
-            const results = JSON.stringify(response.data.results, null, 2);
+            const trimmedResults = trimNoteResults(response.data.results || []);
+            const results = JSON.stringify(trimmedResults, null, 2);
             
             return {
               content: [{
                 type: "text",
                 text: `${verboseInfo}${results}`,
+              }],
+            };
+          }
+
+          case "list_children_notes": {
+            if (!this.hasPermission("READ")) {
+              throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to list children notes.");
+            }
+            if (typeof request.params.arguments.parentNoteId !== "string") {
+              throw new McpError(ErrorCode.InvalidParams, "parentNoteId must be a string");
+            }
+
+            // Build query parameters using helper
+            const listChildrenParams = {
+              parentNoteId: request.params.arguments.parentNoteId,
+              orderBy: typeof request.params.arguments.orderBy === "string" ? request.params.arguments.orderBy : undefined,
+              orderDirection: typeof request.params.arguments.orderDirection === "string" ? request.params.arguments.orderDirection : undefined,
+              limit: typeof request.params.arguments.limit === "number" ? request.params.arguments.limit : undefined,
+              includeArchivedNotes: typeof request.params.arguments.includeArchivedNotes === "boolean" ? request.params.arguments.includeArchivedNotes : undefined,
+            };
+            
+            const urlParams = buildListChildrenQuery(listChildrenParams);
+            
+            const response = await this.axiosInstance.get(`/notes?${urlParams.toString()}`);
+            
+            const notes = response.data.results || [];
+            
+            if (notes.length === 0) {
+              return {
+                content: [{
+                  type: "text",
+                  text: `No children found for parent note: ${request.params.arguments.parentNoteId}`,
+                }],
+              };
+            }
+            
+            // Format notes as "date title (noteId)" similar to ls -l output
+            const formattedNotes = notes.map((note: any) => {
+              const title = note.title || "Untitled";
+              const noteId = note.noteId || "unknown";
+              const type = note.type || "unknown";
+              
+              // Format date like ls -l (e.g., "2024-08-19 14:30")
+              const dateCreated = note.dateCreated || note.utcDateCreated || "unknown";
+              let formattedDate = "unknown";
+              
+              if (dateCreated !== "unknown") {
+                try {
+                  // Handle both local and UTC date formats
+                  const date = new Date(dateCreated);
+                  if (!isNaN(date.getTime())) {
+                    formattedDate = date.toISOString().slice(0, 16).replace('T', ' ');
+                  }
+                } catch (e) {
+                  formattedDate = "invalid-date";
+                }
+              }
+              
+              // Add type indicator like ls -F (optional enhancement)
+              const typeIndicator = type === 'book' ? '/' : 
+                                   type === 'code' ? '*' : 
+                                   type === 'search' ? '?' : '';
+              
+              return `${formattedDate}  ${title}${typeIndicator} (${noteId})`;
+            });
+            
+            // Create ls-like output with count summary
+            const output = formattedNotes.join('\n');
+            const summary = `\nTotal: ${notes.length} note${notes.length !== 1 ? 's' : ''}`;
+            
+            // Prepare verbose debug info if enabled
+            const isVerbose = process.env.VERBOSE === "true";
+            const verboseInfo = isVerbose ? 
+              `--- List Children Debug ---\nParent Note ID: ${request.params.arguments.parentNoteId}\nURL Params: ${urlParams.toString()}\nRaw Result Count: ${notes.length}\n--- End Debug ---\n\n` : "";
+            
+            return {
+              content: [{
+                type: "text",
+                text: `${verboseInfo}${output}${summary}`,
               }],
             };
           }
