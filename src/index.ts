@@ -460,6 +460,9 @@ class TriliumServer {
             
             let notes = response.data.results || [];
             
+            // Filter out the parent note itself from the results
+            notes = notes.filter((note: any) => note.noteId !== parentNoteId);
+            
             // Filter out protected notes if not explicitly included
             const includeProtectedNotes = listChildParams.includeProtectedNotes === true;
             if (!includeProtectedNotes) {
@@ -520,6 +523,11 @@ class TriliumServer {
             const response = await this.axiosInstance.get(`/notes?${urlParams.toString()}`);
             
             let notes = response.data.results || [];
+            
+            // Filter out the parent note itself from the results (if parentNoteId is provided)
+            if (listDescendantNotesParams.parentNoteId && listDescendantNotesParams.parentNoteId !== "root") {
+              notes = notes.filter((note: any) => note.noteId !== listDescendantNotesParams.parentNoteId);
+            }
             
             // Filter out protected notes if not explicitly included
             const includeProtectedNotes = listDescendantNotesParams.includeProtectedNotes === true;

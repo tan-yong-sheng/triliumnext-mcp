@@ -17,14 +17,25 @@ export function buildListDescendantNotesQuery(params: ListDescendantNotesParams)
   // Build URL parameters for ETAPI search
   const urlParams = new URLSearchParams();
   
-  // Use a search query that matches all notes
-  // Every note has a noteId, so we search for notes where noteId is not empty
-  urlParams.append("search", "note.noteId != ''");
+  // Build search query for ALL descendants using Trilium search DSL
+  let searchQuery: string;
   
-  // If parentNoteId is provided, search within that subtree
   if (params.parentNoteId) {
-    urlParams.append("ancestorNoteId", params.parentNoteId);
+    if (params.parentNoteId === "root") {
+      // For root, find all notes that have root as an ancestor (all notes in the tree)
+      // This includes direct children and all their descendants
+      searchQuery = "note.ancestors.noteId = 'root'";
+    } else {
+      // For specific parent, find all notes that have this parent as an ancestor
+      // This includes direct children and all their descendants recursively
+      searchQuery = `note.ancestors.noteId = '${params.parentNoteId}'`;
+    }
+  } else {
+    // If no parentNoteId, search all notes in the database
+    searchQuery = "note.noteId != ''";
   }
+  
+  urlParams.append("search", searchQuery);
   
   // Use fastSearch=false for better metadata
   urlParams.append("fastSearch", "false");
