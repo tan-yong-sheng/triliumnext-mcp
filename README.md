@@ -97,27 +97,24 @@ The server provides the following tools for note management:
 
 ### Search Tools
 
-- `search_notes` - Fast full-text search for finding notes by keywords
-  - Requires: search query
-  - Optional: includeArchivedNotes, includeProtectedNotes
-
-- `search_notes_advanced` - Advanced filtered search with date ranges and text search
-  - Optional: created_date_start, created_date_end, modified_date_start, modified_date_end
-  - Optional: text (full-text search token), limit, includeArchivedNotes, includeProtectedNotes
+- `search_notes` - Unified search with advanced filtering capabilities
+  - Supports: full-text search, date ranges, field-specific searches, attribute searches, note properties, hierarchy navigation
+  - Parameters: text, created_date_start/end, modified_date_start/end, filters, attributes, noteProperties, hierarchyType, parentNoteId, limit, orderBy
+  - Automatically optimizes with fast search when only text search is used
 
 ### Note Discovery Tools
 
 - `list_child_notes` - List direct children of a parent note (like Unix `ls` command)
-  - Optional: parentNoteId (default: "root" for top-level notes)
-  - Optional: orderBy, orderDirection, limit, includeArchivedNotes, includeProtectedNotes
+  - Uses `search_notes` with `hierarchyType="children"` internally
+  - Supports all `search_notes` parameters for powerful filtering of child notes
   - Use when browsing note hierarchy or listing immediate children only
 
 - `list_descendant_notes` - List ALL descendant notes recursively in database or subtree (like Unix `find` command)
-  - Optional: parentNoteId (default: "root" to search entire note tree, omit for entire database)
-  - Optional: orderBy, orderDirection, limit, includeArchivedNotes, includeProtectedNotes
+  - Uses `search_notes` with `hierarchyType="descendants"` internally  
+  - Supports all `search_notes` parameters for powerful filtering of descendant notes
   - Use when you need complete note inventory, discovery, or bulk operations
 
-> **Function Comparison**: `list_child_notes` shows only direct children (like `ls`), while `list_descendant_notes` shows ALL descendants recursively (like `find`). Both support security defaults excluding protected and archived notes.
+> **Function Comparison**: `list_child_notes` shows only direct children (like `ls`), while `list_descendant_notes` shows ALL descendants recursively (like `find`). Both support the full range of search parameters including date filtering, text search, attribute filtering, and more.
 
 ### Note Management Tools
 
@@ -178,7 +175,7 @@ npm run watch
 Contributions are welcome! If you are looking to improve the server, especially the search functionality, please familiarize yourself with the following resources:
 
 - **Trilium Search DSL**: The [official documentation](https://triliumnext.github.io/Docs/Wiki/search.html) provides the foundation for all search queries.
-- **Internal Search Implementation**: Our [Search Query Examples](docs/search-query-examples.md) document details how `search_notes_advanced` parameters are translated into Trilium search strings. This is crucial for understanding and extending the current implementation.
+- **Internal Search Implementation**: Our [Search Query Examples](docs/search-query-examples.md) document details how `search_notes` parameters are translated into Trilium search strings. This is crucial for understanding and extending the current implementation.
 
 Please feel free to open an issue or submit a pull request.
 

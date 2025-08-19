@@ -1,12 +1,12 @@
-# MCP Search Examples & Usage Guide (Advanced Params)
+# MCP Search Examples & Usage Guide
 
 It's underlying principle for building search rule string at: src\modules\searchQueryBuilder.ts, with reference to the Trilium Note's documentation: https://triliumnext.github.io/Docs/Wiki/search.html
 
-This guide shows how to call MCP `search_notes_advanced` using structured parameters. The wrapper constructs the Trilium search string internally and passes it as `query` to the underlying `search_notes` function.
+This guide shows how to call MCP `search_notes` using structured parameters. The function constructs the Trilium search string internally from the provided structured parameters.
 
 ---
 
-## Wrapper Contract: search_notes_advanced
+## Function Contract: search_notes
 
 Input parameters:
 - created_date_start: string (ISO date, e.g., '2024-01-01')
@@ -14,8 +14,13 @@ Input parameters:
 - modified_date_start: string (ISO date)
 - modified_date_end: string (ISO date, exclusive upper bound)
 - text: string (full-text search token, uses Trilium's indexed search)
+- filters: array (field-specific title/content searches)
+- attributes: array (label-based searches like #book, #author)
+- noteProperties: array (note.isArchived, note.isProtected searches)
+- hierarchyType: string ('children' or 'descendants' for hierarchy searches)
+- parentNoteId: string (parent note for hierarchy searches)
 - limit: number (max results to return, e.g., 10)
-- includeArchivedNotes?: boolean
+- orderBy: string (sort order, e.g., 'note.dateCreated desc')
 
 Query composition:
 - created: [`note.dateCreated >= <start>`, `note.dateCreated < <end>`]
@@ -36,8 +41,7 @@ Query composition:
 ```json
 {
   "created_date_start": "2024-08-11",
-  "created_date_end": "2024-08-18",
-  "includeArchivedNotes": false
+  "created_date_end": "2024-08-18"
 }
 ```
 - Composed query
@@ -46,12 +50,10 @@ note.dateCreated >= '2024-08-11' AND note.dateCreated < '2024-08-18'
 ```
 - MCP call
 ```js
-search_notes_advanced({ 
+search_notes({ 
   created_date_start: "2024-08-11",
-  created_date_end: "2024-08-18",
-  includeArchivedNotes: false 
+  created_date_end: "2024-08-18"
 })
-// Internally calls: search_notes({ query: "note.dateCreated >= '2024-08-11' AND note.dateCreated < '2024-08-18'", includeArchivedNotes: false })
 ```
 
 ### 2) Modified in last 7 days
@@ -69,7 +71,8 @@ note.dateModified >= '2024-08-11' AND note.dateModified < '2024-08-18'
 - MCP call
 ```js
 search_notes({ 
-  query: "note.dateModified >= '2024-08-11' AND note.dateModified < '2024-08-18'"
+  modified_date_start: "2024-08-11",
+  modified_date_end: "2024-08-18"
 })
 ```
 
@@ -91,7 +94,10 @@ search_notes({
 - MCP call
 ```js
 search_notes({ 
-  query: "~(note.dateCreated >= '2024-08-11' AND note.dateCreated < '2024-08-18') OR (note.dateModified >= '2024-08-11' AND note.dateModified < '2024-08-18')"
+  created_date_start: "2024-08-11",
+  created_date_end: "2024-08-18",
+  modified_date_start: "2024-08-11",
+  modified_date_end: "2024-08-18"
 })
 ```
 
@@ -109,7 +115,10 @@ note.dateCreated >= '2024-01-01' AND note.dateCreated < '2026-01-01'
 ```
 - MCP call
 ```js
-search_notes({ query: "note.dateCreated >= '2024-01-01' AND note.dateCreated < '2026-01-01'" })
+search_notes({ 
+  created_date_start: "2024-01-01",
+  created_date_end: "2026-01-01"
+})
 ```
 
 ---
@@ -132,7 +141,9 @@ kubernetes note.dateCreated >= '2023-08-18' AND note.dateCreated < '2024-08-18'
 - MCP call
 ```js
 search_notes({ 
-  query: "kubernetes note.dateCreated >= '2023-08-18' AND note.dateCreated < '2024-08-18'"
+  text: "kubernetes",
+  created_date_start: "2023-08-18",
+  created_date_end: "2024-08-18"
 })
 ```
 
@@ -150,11 +161,10 @@ kubernetes limit 5
 ```
 - MCP call
 ```js
-search_notes_advanced({ 
+search_notes({ 
   text: "kubernetes",
   limit: 5
 })
-// Internally calls: search_notes({ query: "kubernetes limit 5" })
 ```
 
 ### 7) Search "n8n" notes created since 2020, ordered by creation date descending, limit 10
@@ -173,13 +183,12 @@ n8n note.dateCreated >= '2020-01-01' orderBy note.dateCreated desc limit 10
 ```
 - MCP call
 ```js
-search_notes_advanced({ 
+search_notes({ 
   text: "n8n",
   created_date_start: "2020-01-01",
   orderBy: "note.dateCreated desc",
   limit: 10
 })
-// Internally calls: search_notes({ query: "n8n note.dateCreated >= '2020-01-01' orderBy note.dateCreated desc limit 10" })
 ```
 
 ### 8) ❌ INVALID: Search "n8n" with orderBy but no date filter (orderBy will be skipped)
@@ -198,12 +207,11 @@ n8n limit 10
 - Explanation: orderBy field `note.dateCreated` not found in filters, so orderBy is ignored
 - MCP call
 ```js
-search_notes_advanced({ 
+search_notes({ 
   text: "n8n",
   orderBy: "note.dateCreated desc",
   limit: 10
 })
-// Internally calls: search_notes({ query: "n8n limit 10" })
 // orderBy skipped because note.dateCreated not used as filter
 ```
 
@@ -224,7 +232,7 @@ docker note.dateModified >= '2023-08-18' AND note.dateModified < '2024-08-18' or
 ```
 - MCP call
 ```js
-search_notes_advanced({ 
+search_notes({ 
   text: "docker",
   modified_date_start: "2023-08-18",
   modified_date_end: "2024-08-18",
@@ -248,7 +256,7 @@ note.dateCreated >= '2024-01-01' orderBy note.dateCreated asc limit 15
 ```
 - MCP call
 ```js
-search_notes_advanced({ 
+search_notes({ 
   created_date_start: "2024-01-01",
   orderBy: "note.dateCreated asc",
   limit: 15
@@ -270,7 +278,7 @@ note.dateModified >= '2024-01-01' orderBy note.dateModified asc limit 20
 ```
 - MCP call
 ```js
-search_notes_advanced({ 
+search_notes({ 
   modified_date_start: "2024-01-01",
   orderBy: "note.dateModified asc", 
   limit: 20
@@ -294,7 +302,7 @@ These examples demonstrate advanced field-specific operators for title and conte
 ```
 note.title *=* 'Tolkien'
 ```
-- JSON structure for future filters parameter
+- JSON structure for filters parameter
 ```json
 {
   "filters": [
@@ -309,7 +317,7 @@ note.title *=* 'Tolkien'
 ```
 note.title =* 'Project'
 ```
-- JSON structure for future filters parameter
+- JSON structure for filters parameter
 ```json
 {
   "filters": [
@@ -324,7 +332,7 @@ note.title =* 'Project'
 ```
 note.title *= 'Notes'
 ```
-- JSON structure for future filters parameter
+- JSON structure for filters parameter
 ```json
 {
   "filters": [
@@ -339,7 +347,7 @@ note.title *= 'Notes'
 ```
 note.title != 'Backup'
 ```
-- JSON structure for future filters parameter
+- JSON structure for filters parameter
 ```json
 {
   "filters": [
@@ -354,7 +362,7 @@ note.title != 'Backup'
 ```
 note.content *=* 'dead letter'
 ```
-- JSON structure for future filters parameter
+- JSON structure for filters parameter
 ```json
 {
   "filters": [
@@ -369,7 +377,7 @@ note.content *=* 'dead letter'
 ```
 note.title =* 'Meeting' AND note.content *=* 'agenda'
 ```
-- JSON structure for future filters parameter
+- JSON structure for filters parameter
 ```json
 {
   "filters": [
@@ -385,7 +393,7 @@ note.title =* 'Meeting' AND note.content *=* 'agenda'
 ```
 setup guide note.dateCreated >= '2024-01-01' AND note.title =* 'Tutorial' AND note.content *=* 'steps'
 ```
-- JSON structure for future filters parameter
+- JSON structure for filters parameter
 ```json
 {
   "text": "setup guide",
@@ -403,7 +411,7 @@ setup guide note.dateCreated >= '2024-01-01' AND note.title =* 'Tutorial' AND no
 ```
 note.content *=* 'machine learning'
 ```
-- JSON structure for future filters parameter
+- JSON structure for filters parameter
 ```json
 {
   "filters": [
@@ -414,7 +422,7 @@ note.content *=* 'machine learning'
 - Use case: Find notes discussing machine learning concepts
 
 ### 21) Advanced field-specific search with filters parameter
-- Params (using new filters parameter)
+- Params (using filters parameter)
 ```json
 {
   "filters": [
@@ -431,7 +439,7 @@ note.dateCreated >= '2024-01-01' AND note.title *=* 'Tutorial' AND note.content 
 - Use case: Find recent tutorials with step-by-step instructions using structured filters
 
 ### 22) Multiple field filters with different operators
-- Params (using new filters parameter)
+- Params (using filters parameter)
 ```json
 {
   "filters": [
@@ -448,7 +456,7 @@ note.title =* 'Project' AND note.content != 'incomplete' AND note.content *=* 'd
 - Use case: Find project notes with documentation that are not marked incomplete
 
 ### 23) Combined full-text and field filters
-- Params (using new filters parameter)
+- Params (using filters parameter)
 ```json
 {
   "text": "machine learning",
@@ -464,6 +472,161 @@ note.title =* 'Project' AND note.content != 'incomplete' AND note.content *=* 'd
 machine learning note.title *= 'Notes' AND note.content *=* 'algorithm' limit 10
 ```
 - Use case: Find machine learning notes with algorithms, limited to 10 results
+
+---
+
+## Attribute Search Examples
+
+Trilium supports searching by attributes (labels and relations) using the `#` syntax. These examples show how to combine full-text search with attribute filtering.
+
+### Attribute Search Reference
+- `#label`: Search for notes with a specific label
+- `#!label`: Search for notes WITHOUT a specific label
+- `#label = value`: Search for notes with label set to specific value
+- `#label >= value`: Numeric comparison operators (>=, <=, >, <, !=)
+- `#label *=* substring`: String operators (contains, starts_with, ends_with)
+- `~relation.property`: Search through relations
+
+### 24) Book Label Search
+- Composed query: Find all notes with "book" label
+```
+#book
+```
+- JSON structure for attributes parameter
+```json
+{
+  "attributes": [
+    { "type": "label", "name": "book" }
+  ]
+}
+```
+- Use case: Find all book-related notes
+
+### 25) Book with Publication Year
+- Composed query: Find books published in 1954
+```
+#book #publicationYear = 1954
+```
+- JSON structure for attributes parameter
+```json
+{
+  "attributes": [
+    { "type": "label", "name": "book" },
+    { "type": "label", "name": "publicationYear", "op": "=", "value": "1954" }
+  ]
+}
+```
+
+### 26) Combined Full-text and Attribute Search
+- Composed query: Find notes containing "tolkien" with book label
+```
+tolkien #book
+```
+- Composed query: Find notes containing "towers" with book OR author label
+```
+towers #book or #author
+```
+- Composed query: Find notes containing "towers" but NOT having book label
+```
+towers #!book
+```
+
+### 27) Genre Contains Search
+- Composed query: Find notes with genre containing "fan"
+```
+#genre *=* fan
+```
+- JSON structure for attributes parameter
+```json
+{
+  "attributes": [
+    { "type": "label", "name": "genre", "op": "contains", "value": "fan" }
+  ]
+}
+```
+
+### 28) Numeric Range Search
+- Composed query: Find books published in the 1950s
+```
+#book #publicationYear >= 1950 #publicationYear < 1960
+```
+- JSON structure for attributes parameter
+```json
+{
+  "attributes": [
+    { "type": "label", "name": "book" },
+    { "type": "label", "name": "publicationYear", "op": ">=", "value": "1950" },
+    { "type": "label", "name": "publicationYear", "op": "<", "value": "1960" }
+  ]
+}
+```
+
+### 29) Combined Attributes with Ordering
+- Composed query: Find Tolkien books ordered by publication date
+```
+#author=Tolkien orderBy #publicationDate desc, note.title limit 10
+```
+- Use case: Sorted attribute-based searches with secondary ordering
+
+### 30) Archive Status Search
+- Composed query for archived notes
+```
+note.isArchived = true
+```
+- Composed query for non-archived notes
+```
+note.isArchived = false
+```
+- Combined with other filters (e.g., archived notes with title "Work")
+```
+note.isArchived = true AND note.title = 'Work'
+```
+- JSON structure for noteProperties parameter
+```json
+{
+  "noteProperties": [
+    { "property": "isArchived", "op": "=", "value": "true" }
+  ]
+}
+```
+- Use case: Filter notes by archive status using note properties
+- Note: `search_notes` always includes archived notes - use `note.isArchived = false` to exclude them
+
+---
+
+## Hierarchy Search Examples
+
+The unified `search_notes` function also supports hierarchy searches when combined with `hierarchyType` and `parentNoteId` parameters.
+
+### 31) List direct children with additional filters
+- Params
+```json
+{
+  "hierarchyType": "children",
+  "parentNoteId": "projectFolderId",
+  "text": "docker"
+}
+```
+- Composed query
+```
+docker note.parents.noteId = 'projectFolderId'
+```
+- Use case: Find children containing "docker" in a specific folder
+
+### 32) List descendants with date filtering
+- Params
+```json
+{
+  "hierarchyType": "descendants", 
+  "parentNoteId": "workspaceId",
+  "modified_date_start": "2024-08-01"
+}
+```
+- Composed query
+```
+note.dateModified >= '2024-08-01' AND note.ancestors.noteId = 'workspaceId'
+```
+- Use case: Find all descendants modified recently in a workspace
 
 ---
 

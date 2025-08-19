@@ -12,8 +12,6 @@ This is a Model Context Protocol (MCP) server for TriliumNext Notes that provide
 - **Main Server**: `src/index.ts` - MCP server setup, tool definitions, and request handling
 - **Helper Modules**: `src/modules/` - Specialized functionality split into focused modules:
   - `searchQueryBuilder.ts` - Builds Trilium search query strings from structured parameters
-  - `listChildHelper.ts` - Handles direct children listing (like Unix `ls`)
-  - `listDescendantNotesHelper.ts` - Handles recursive note listing (like Unix `find`)
   - `contentProcessor.ts` - Markdown detection and HTML conversion
   - `noteFormatter.ts` - Output formatting for note listings
   - `responseUtils.ts` - Debug info and response formatting utilities
@@ -21,7 +19,8 @@ This is a Model Context Protocol (MCP) server for TriliumNext Notes that provide
 ### MCP Tool Architecture
 - **Permission-based tools**: READ vs WRITE permissions control available tools
 - **Tool ordering**: `list_descendant_notes` appears before `list_child_notes` to prioritize comprehensive listing
-- **Search hierarchy**: Basic `search_notes` → Advanced `search_notes_advanced` → Listing tools
+- **Unified search architecture**: Single `search_notes` function with smart performance optimization
+- **List function integration**: `list_child_notes` and `list_descendant_notes` use `search_notes` as parent function with different `hierarchyType` parameters
 - **Critical Trilium syntax handling**: OR queries with parentheses require `~` prefix per Trilium parser requirements
 
 ## Environment Variables
@@ -56,10 +55,9 @@ node build/index.js   # Run the server directly
 ## MCP Tools Available
 
 ### READ Permission Tools
-- `search_notes`: Fast full-text search using simple keyword searches
-- `search_notes_advanced`: Advanced filtered search with date ranges, field-specific searches
-- `list_descendant_notes`: List ALL descendant notes recursively (like Unix `find`) - **PREFERRED for "list all notes"**
-- `list_child_notes`: List direct child notes only (like Unix `ls`) - for navigation/browsing
+- `search_notes`: Unified search with comprehensive filtering capabilities including full-text search, date ranges, field-specific searches, attribute searches, note properties, and hierarchy navigation
+- `list_descendant_notes`: List ALL descendant notes recursively (like Unix `find`) - uses `search_notes` with `hierarchyType="descendants"` - **PREFERRED for "list all notes"**
+- `list_child_notes`: List direct child notes only (like Unix `ls`) - uses `search_notes` with `hierarchyType="children"` - for navigation/browsing
 - `get_note`: Retrieve note content by ID
 
 ### WRITE Permission Tools
@@ -70,11 +68,17 @@ node build/index.js   # Run the server directly
 
 ## Search Query Architecture
 
+### Unified Search System
+- **Single search function**: `search_notes` handles all search scenarios with automatic performance optimization
+- **Smart fastSearch logic**: Automatically uses `fastSearch=true` for simple text-only queries, `fastSearch=false` for complex structured queries
+- **Hierarchical integration**: `list_child_notes` and `list_descendant_notes` use `search_notes` internally with different `hierarchyType` parameters
+- **Parameter inheritance**: List functions support all `search_notes` parameters for powerful filtering capabilities
+
 ### Query Builder System
 - **Structured → DSL**: `searchQueryBuilder.ts` converts JSON parameters to Trilium search strings
 - **Critical fix**: OR queries with parentheses automatically get `~` prefix (required by Trilium parser)
 - **Field operators**: `*=*` (contains), `=*` (starts with), `*=` (ends with), `!=` (not equal)
-- **Documentation**: `docs/search-query-examples.md` contains 21+ examples with JSON structure for future filters parameter
+- **Documentation**: `docs/search-query-examples.md` contains 30+ examples with JSON structure for all parameters
 
 ### Trilium Search DSL Integration
 - **Parent-child queries**: Uses `note.parents.noteId = 'parentId'` for direct children

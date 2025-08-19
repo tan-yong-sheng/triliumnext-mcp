@@ -67,12 +67,12 @@ This document provides examples of natural language queries that demonstrate how
 - Major document revisions
 
 ### Search Tool Selection
-- Use `search_notes` for simple keyword searches
-- Use `search_notes_advanced` for date ranges, field-specific searches, or complex queries
+- Use `search_notes` for both simple keyword searches and advanced filtering
+- `search_notes` automatically optimizes performance based on query complexity
 
-## search_notes_advanced Parameters Guide
+## search_notes Parameters Guide
 
-The `search_notes_advanced` function is the most powerful search tool with these key parameters:
+The `search_notes` function is the unified search tool with these key parameters:
 
 ### Keyword Search
 - **keyword**: Basic text search across all note content
