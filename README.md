@@ -15,6 +15,7 @@ Make sure to set up your environment variables first:
 - `TRILIUM_API_URL` (default: http://localhost:8080/etapi)
 - `TRILIUM_API_TOKEN` (required, get this from your Trilium Notes settings)
 - `PERMISSIONS` (optional, default='READ;WRITE', where READ let this MCP has permissions to perform `search_notes` and `get_note` operation and WRITE let this MCP has permissions to perform `create_note`, `update_note` and `delete_note` operations) 
+- `VERBOSE` (optional, default='false', where if true it will print out some logging response and pass the logs into LLM (such as API call) which is useful for developers to debug this MCP)
 
 ## Installation
 
