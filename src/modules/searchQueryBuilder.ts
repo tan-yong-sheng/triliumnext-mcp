@@ -144,6 +144,8 @@ function buildFieldQuery(filter: FilterCondition): string {
   
   // Map operators to Trilium syntax
   let triliumOperator: string;
+  let escapedValue: string;
+  
   switch (op) {
     case 'contains':
       triliumOperator = '*=*';
@@ -162,8 +164,8 @@ function buildFieldQuery(filter: FilterCondition): string {
       return '';
   }
   
-  // Escape quotes in the value and wrap in single quotes
-  const escapedValue = value.replace(/'/g, "\\'");
+  // Escape quotes in the value and wrap in single quotes for regular operators
+  escapedValue = value.replace(/'/g, "\\'");
   
   return `${triliumField} ${triliumOperator} '${escapedValue}'`;
 }

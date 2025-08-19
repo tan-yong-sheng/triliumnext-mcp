@@ -334,7 +334,7 @@ note.title *= 'Notes'
 ```
 - Use case: Find all documents ending with "Notes"
 
-### 15) Title does not contain "Backup"
+### 15) Title does not equal "Backup"
 - Composed query
 ```
 note.title != 'Backup'
@@ -473,6 +473,7 @@ machine learning note.title *= 'Notes' AND note.content *=* 'algorithm' limit 10
 - `filters` parameter: Array of field-specific conditions with structured operators
   - Supported fields: `title`, `content`
   - Supported operators: `contains` (*=*), `starts_with` (=*), `ends_with` (*=), `not_equal` (!=)
+  - **Limitation**: `not_contains` (does not contain) is not reliably supported in Trilium's search DSL
 - `orderBy` parameter: Sort results by specified field and direction (asc/desc)  
 - **Important**: orderBy field must also be used as a filter in the query
 - Valid orderBy examples: `note.dateCreated desc`, `note.dateModified asc`
