@@ -227,53 +227,14 @@ class TriliumServer {
           },
         });
         tools.push({
-          name: "list_child_notes",
-          description: "List direct child notes of a parent note (like Unix 'ls' command). Use when user wants to browse/navigate note hierarchy or list top-level notes. Use parentNoteId='root' when user asks to 'list all notes' to show top-level notes.",
-          inputSchema: {
-            type: "object",
-            properties: {
-              parentNoteId: {
-                type: "string",
-                description: "ID of the parent note to list children from. Use 'root' for top-level notes when user asks to 'list all notes' at root level.",
-                default: "root"
-              },
-              orderBy: {
-                type: "string",
-                description: "Sort order for results (e.g., 'title', 'dateCreated', 'dateModified')",
-              },
-              orderDirection: {
-                type: "string",
-                enum: ["asc", "desc"],
-                description: "Sort direction - ascending or descending",
-                default: "asc"
-              },
-              limit: {
-                type: "number",
-                description: "Maximum number of children to return",
-              },
-              includeArchivedNotes: {
-                type: "boolean",
-                description: "Include archived notes in results",
-                default: false
-              },
-              includeProtectedNotes: {
-                type: "boolean",
-                description: "Include protected notes in results",
-                default: false
-              },
-            },
-            required: [],
-          },
-        });
-        tools.push({
           name: "list_descendant_notes",
-          description: "List ALL descendant notes recursively in database or subtree (like Unix 'find' command). Use when user wants complete note inventory, discovery, or bulk operations. When user asks to 'list all notes' and wants to see everything, use this with parentNoteId='root' or omit parentNoteId entirely.",
+          description: "List ALL descendant notes recursively in database or subtree (like Unix 'find' command). PREFERRED for 'list all notes' requests - provides complete note inventory. Use when user wants to see everything, discovery, or bulk operations, especially for 'list all notes' or 'show me everything at my note' requests",
           inputSchema: {
             type: "object",
             properties: {
               parentNoteId: {
                 type: "string",
-                description: "Optional parent note ID to search within specific subtree. Use 'root' to search entire note tree, or omit to search entire database. When user asks to 'list all notes', use 'root' or omit this parameter.",
+                description: "Optional parent note ID to search within specific subtree. Use 'root' to search entire note tree, or omit to search entire database. RECOMMENDED: Use 'root' or omit this parameter when user asks to 'list all notes'.",
                 default: "root"
               },
               orderBy: {
@@ -303,6 +264,45 @@ class TriliumServer {
                 default: false
               },
             },
+          },
+        });
+        tools.push({
+          name: "list_child_notes",
+          description: "List direct child notes of a parent note (like Unix 'ls' command). Use for browsing/navigating note hierarchy or when user specifically wants only direct children.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              parentNoteId: {
+                type: "string",
+                description: "ID of the parent note to list children from. Use 'root' for top-level notes. For 'list all notes' requests, consider using list_descendant_notes instead.",
+                default: "root"
+              },
+              orderBy: {
+                type: "string",
+                description: "Sort order for results (e.g., 'title', 'dateCreated', 'dateModified')",
+              },
+              orderDirection: {
+                type: "string",
+                enum: ["asc", "desc"],
+                description: "Sort direction - ascending or descending",
+                default: "asc"
+              },
+              limit: {
+                type: "number",
+                description: "Maximum number of children to return",
+              },
+              includeArchivedNotes: {
+                type: "boolean",
+                description: "Include archived notes in results",
+                default: false
+              },
+              includeProtectedNotes: {
+                type: "boolean",
+                description: "Include protected notes in results",
+                default: false
+              },
+            },
+            required: [],
           },
         });
       }
