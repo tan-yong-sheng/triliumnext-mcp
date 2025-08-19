@@ -284,6 +284,238 @@ search_notes_advanced({
 
 ---
 
+## Advanced Field-Specific Search Examples
+
+These examples demonstrate advanced field-specific operators for title and content search. These provide more precise control than basic full-text search.
+
+### Field Operators Reference
+- `*=*` : contains substring
+- `=*` : ends with
+- `*=` : starts with
+- `!=` : not equal to
+- `=%` : regex search
+
+### 12) Title contains "Tolkien"
+- Composed query
+```
+note.title *=* 'Tolkien'
+```
+- JSON structure for future filters parameter
+```json
+{
+  "filters": [
+    { "field": "title", "op": "contains", "value": "Tolkien" }
+  ]
+}
+```
+- Use case: Find notes whose title contains "Tolkien" anywhere
+
+### 13) Title starts with "Project"
+- Composed query
+```
+note.title =* 'Project'
+```
+- JSON structure for future filters parameter
+```json
+{
+  "filters": [
+    { "field": "title", "op": "starts_with", "value": "Project" }
+  ]
+}
+```
+- Use case: Find all project-related notes by title prefix
+
+### 14) Title ends with "Draft"
+- Composed query
+```
+note.title *= 'Draft'
+```
+- JSON structure for future filters parameter
+```json
+{
+  "filters": [
+    { "field": "title", "op": "ends_with", "value": "Draft" }
+  ]
+}
+```
+- Use case: Find all draft documents
+
+### 15) Title does not contain "Archived"
+- Composed query
+```
+note.title != 'Archived'
+```
+- JSON structure for future filters parameter
+```json
+{
+  "filters": [
+    { "field": "title", "op": "not_equal", "value": "Archived" }
+  ]
+}
+```
+- Use case: Exclude archived notes from results
+
+### 16) Title matches regex pattern (case-insensitive "setup guide")
+- Composed query
+```
+note.title =% '(?i)setup.*guide'
+```
+- JSON structure for future filters parameter
+```json
+{
+  "filters": [
+    { "field": "title", "op": "regex", "value": "(?i)setup.*guide" }
+  ]
+}
+```
+- Use case: Find setup or installation guides with flexible matching
+
+### 17) Content contains "dead letter" (case-insensitive)
+- Composed query
+```
+note.content *=* 'dead letter'
+```
+- JSON structure for future filters parameter
+```json
+{
+  "filters": [
+    { "field": "content", "op": "contains", "value": "dead letter" }
+  ]
+}
+```
+- Use case: Find notes discussing dead letter patterns/queues
+
+### 18) Content regex search for "dead-letter" or "deadletter" (case-insensitive)
+- Composed query
+```
+note.content =% '(?i)dead[- ]?letter'
+```
+- JSON structure for future filters parameter
+```json
+{
+  "filters": [
+    { "field": "content", "op": "regex", "value": "(?i)dead[- ]?letter" }
+  ]
+}
+```
+- Use case: Flexible matching for hyphenated or compound terms
+
+### 19) Complex multi-field search: Title starts with "API" AND content contains "REST"
+- Composed query
+```
+note.title *= 'API' AND note.content *=* 'REST'
+```
+- JSON structure for future filters parameter
+```json
+{
+  "filters": [
+    { "field": "title", "op": "starts_with", "value": "API" },
+    { "field": "content", "op": "contains", "value": "REST" }
+  ]
+}
+```
+- Use case: Find API documentation specifically about REST
+
+### 20) Advanced combination: Full-text + field filters + date range
+- Composed query
+```
+setup guide note.title *= 'Installation' AND note.content *=* 'Docker' AND note.dateCreated >= '2024-01-01'
+```
+- JSON structure for future filters parameter
+```json
+{
+  "text": "setup guide",
+  "filters": [
+    { "field": "title", "op": "starts_with", "value": "Installation" },
+    { "field": "content", "op": "contains", "value": "Docker" }
+  ],
+  "created_date_start": "2024-01-01"
+}
+```
+- Use case: Find recent installation guides mentioning Docker
+
+### 21) Exclude drafts: Title does not end with "Draft"
+- Composed query
+```
+NOT note.title =* 'Draft'
+```
+- JSON structure for future filters parameter
+```json
+{
+  "filters": [
+    { "field": "title", "op": "not_ends_with", "value": "Draft" }
+  ]
+}
+```
+- Use case: Filter out all draft documents from search results
+
+### 22) Case-insensitive content search with regex
+- Composed query
+```
+note.content =% '(?i)(kubernetes|k8s|docker|container)'
+```
+- JSON structure for future filters parameter
+```json
+{
+  "filters": [
+    { "field": "content", "op": "regex", "value": "(?i)(kubernetes|k8s|docker|container)" }
+  ]
+}
+```
+- Use case: Find any container-related content with multiple synonyms
+
+### 23) Combined search: Notes about "Tolkien" with specific title patterns
+- Composed query
+```
+Tolkien note.title *=* 'Lord' AND note.content != 'Incomplete'
+```
+- JSON structure for future filters parameter
+```json
+{
+  "text": "Tolkien",
+  "filters": [
+    { "field": "title", "op": "contains", "value": "Lord" },
+    { "field": "content", "op": "not_equal", "value": "Incomplete" }
+  ]
+}
+```
+- Use case: Find complete Tolkien notes mentioning "Lord" in title
+
+### 24) Advanced regex: Find notes with version numbers in title
+- Composed query
+```
+note.title =% 'v[0-9]+\\.[0-9]+\\.[0-9]+'
+```
+- JSON structure for future filters parameter
+```json
+{
+  "filters": [
+    { "field": "title", "op": "regex", "value": "v[0-9]+\\.[0-9]+\\.[0-9]+" }
+  ]
+}
+```
+- Use case: Find all notes with semantic version numbers
+
+### 25) Complex business logic: API documentation that's not deprecated
+- Composed query
+```
+API documentation note.title *= 'API' AND note.content *=* 'endpoint' AND NOT note.content *=* 'deprecated'
+```
+- JSON structure for future filters parameter
+```json
+{
+  "text": "API documentation",
+  "filters": [
+    { "field": "title", "op": "starts_with", "value": "API" },
+    { "field": "content", "op": "contains", "value": "endpoint" },
+    { "field": "content", "op": "not_contains", "value": "deprecated" }
+  ]
+}
+```
+- Use case: Find current (non-deprecated) API documentation
+
+---
+
 ## Notes
 - `search_notes_advanced` always sets fastSearch=false internally for proper content search.
 - Original `search_notes` should use fastSearch=true for basic queries.
@@ -293,4 +525,6 @@ search_notes_advanced({
 - **Important**: orderBy field must also be used as a filter in the query
 - Valid orderBy examples: `note.dateCreated desc`, `note.dateModified asc`
 - The searchQueryBuilder validates that orderBy fields are present in filters
-
+- **Field operators**: Use `note.title` and `note.content` with operators `*=*`, `=*`, `*=`, `!=`, `=%` for precise field matching
+- **Regex patterns**: Use `=%` operator for complex pattern matching (supports case-insensitive with `(?i)` flag)
+- **Boolean logic**: Combine field filters with `AND`, `OR`, and `NOT` for complex queries
