@@ -10,7 +10,7 @@
   - `noteId`: Target note ID
   - `content`: Text content to append
   - `revision`: boolean (default: false) - Whether to create revision before appending
-- **Implementatiowrn**: 
+- **Implementation**: 
   - Read current note content via GET `/notes/{noteId}/content`
   - Concatenate new content to existing content
   - Update note content via PUT `/notes/{noteId}/content`
@@ -22,6 +22,61 @@
 - **Parameters**: 
   - Add `revision`: boolean (default: false) - Whether to create revision before updating
 - **Implementation**: Call POST `/notes/{noteId}/revision` before update if `revision=true`
+
+### 3. Revision Parameter Strategy Analysis
+
+**Research Outcome: Different Default Values Recommended**
+
+Based on analysis of Trilium's ETAPI and common use patterns:
+
+#### **`update_note` → `revision=true` (default)**
+**Rationale:**
+- **High-impact operation**: Complete content replacement
+- **Data safety**: Prevents accidental loss of entire note content
+- **User expectation**: Major edits typically warrant version history
+- **Recovery capability**: Easy rollback for full content changes
+- **Trilium best practice**: Major modifications should preserve history
+
+#### **`append_note` → `revision=false` (default)**
+**Rationale:**
+- **Incremental operation**: Adding content, not replacing
+- **Lower risk**: Original content remains intact
+- **Performance consideration**: Frequent appends (logs, journals) shouldn't create excessive revisions
+- **User workflow**: Append operations are often frequent and minor
+- **Storage efficiency**: Avoid revision bloat for routine additions
+
+#### **Implementation Strategy:**
+```typescript
+// Different defaults based on operation risk
+update_note(noteId: string, content: string, revision: boolean = true)   // Safe default
+append_note(noteId: string, content: string, revision: boolean = false)  // Performance default
+```
+
+#### **Benefits of This Approach:**
+1. **Risk-appropriate defaults**: High-risk operations default to safe behavior
+2. **Performance optimization**: Low-risk operations avoid unnecessary overhead
+3. **User control**: Both functions allow explicit override
+4. **Backward compatibility**: `update_note` enhancement maintains safety
+5. **Intuitive behavior**: Matches user expectations for each operation type
+
+#### **API Call Examples:**
+```javascript
+// Safe by default - creates revision before major change
+update_note("noteId", "completely new content")  // revision=true
+
+// Efficient by default - no revision for minor addition  
+append_note("noteId", "\n- New log entry")      // revision=false
+
+// Explicit control when needed
+update_note("noteId", "new content", false)     // Skip revision
+append_note("noteId", "\n- Important note", true) // Force revision
+```
+
+This strategy balances data safety with performance based on the inherent risk profile of each operation.
+
+
+3. Add label management + search via label of Note
+
 
 ---
 
