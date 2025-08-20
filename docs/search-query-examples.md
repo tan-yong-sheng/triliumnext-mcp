@@ -834,6 +834,54 @@ note.type = 'text' AND note.isArchived = false AND note.contentSize > 0
 
 ---
 
+## Regex Search Examples
+
+Trilium supports regex searches using the `%=` operator. This is now supported in the MCP.
+
+### 73) Regex on Labels
+- Composed query: Find books published in the 1900s
+```
+#publicationYear %= '19[0-9]{2}'
+```
+- JSON structure for attributes parameter
+```json
+{
+  "attributes": [
+    { "type": "label", "name": "publicationYear", "op": "regex", "value": "19[0-9]{2}" }
+  ]
+}
+```
+
+### 74) Regex on Note Title
+- Composed query: Find notes with titles starting with "Project" and ending with "2024"
+```
+note.title %= '^Project.*2024$'
+```
+- JSON structure for noteProperties parameter
+```json
+{
+  "noteProperties": [
+    { "property": "title", "op": "regex", "value": "^Project.*2024$" }
+  ]
+}
+```
+
+### 75) Regex on Note Content
+- Composed query: Find notes containing an email address in the content.
+```
+note.content %= '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}'
+```
+- JSON structure for noteProperties parameter
+```json
+{
+  "noteProperties": [
+    { "property": "content", "op": "regex", "value": "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\\.[a-zA-Z]{2,}" }
+  ]
+}
+```
+
+---
+
 ## Hierarchy Search Examples
 
 The unified `search_notes` function also supports hierarchy searches when combined with `hierarchyType` and `parentNoteId` parameters.
@@ -1328,8 +1376,9 @@ note.dateCreated >= '2024-01-01' AND note.dateCreated < '2024-12-31' AND note.da
 #publicationYear %= '19[0-9]{2}'
 ```
 - Finds labels matching regex pattern for years 1900-1999
-- **Note**: Our MCP doesn't support regex operator `%=` yet
-- **Status**: ⚠️ NOT IMPLEMENTED in current MCP search
+- **Note**: Our MCP now supports the regex operator `%=`.
+- **Status**: ✅ IMPLEMENTED in current MCP search
+
 
 ### 54) Smart Date Search (TriliumNext Feature)
 - TriliumNext native query

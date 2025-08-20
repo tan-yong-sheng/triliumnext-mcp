@@ -135,7 +135,7 @@ export function createReadTools(): any[] {
     },
     {
       name: "resolve_note_id",
-      description: "Resolves a note/folder name to its actual note ID for use with other tools. You MUST call this function before 'list_descendant_notes' or 'list_child_notes' when users provide note names instead of note IDs (e.g., 'wqd7006', 'My Project') UNLESS the user explicitly provides a note ID. Selection Process: 1. Analyze the query to understand what note/folder the user is looking for 2. Optionally prioritizes notes with children (folders) based on prioritizeFolders parameter 3. Return the most relevant match based on: - Exact title matches prioritized over partial matches - Notes with children (folders/containers) preferred when prioritizeFolders=true - Book type notes as secondary folder indicator - Most recently modified notes when multiple matches exist Response Format: - Returns JSON with selectedNote (best match), totalMatches count, and topMatches array (configurable via maxResults, default 3) - Provides clear nextSteps guidance for using the resolved ID - If no matches exist, suggest query refinements - For ambiguous queries with many matches, shows alternatives in topMatches. Usage Examples: - For listing: resolve_note_id(name, prioritizeFolders=true) → list_descendant_notes - For content: resolve_note_id(name, prioritizeFolders=false) → get_note",
+      description: "Resolves a note/folder name to its actual note ID for use with other tools. You MUST call this function before 'list_descendant_notes' or 'list_child_notes' when users provide note names instead of note IDs (e.g., 'wqd7006', 'My Project') UNLESS the user explicitly provides a note ID.",
       inputSchema: {
         type: "object",
         properties: {
@@ -226,7 +226,7 @@ function createSearchProperties() {
           },
           op: {
             type: "string",
-            enum: ["exists", "not_exists", "=", "!=", ">=", "<=", ">", "<", "contains", "starts_with", "ends_with"],
+            enum: ["exists", "not_exists", "=", "!=", ">=", "<=", ">", "<", "contains", "starts_with", "ends_with", "regex"],
             description: "Attribute operator - 'exists'/'not_exists' for presence checks, others for value comparisons",
             default: "exists"
           },
@@ -257,7 +257,7 @@ function createSearchProperties() {
           },
           op: {
             type: "string",
-            enum: ["=", "!=", ">", "<", ">=", "<=", "contains", "starts_with", "ends_with", "not_equal"],
+            enum: ["=", "!=", ">", "<", ">=", "<=", "contains", "starts_with", "ends_with", "not_equal", "regex"],
             description: "Comparison operator. For title/content: use 'contains', 'starts_with', 'ends_with', 'not_equal'. For date properties: use '>=', '<=', '>', '<', '=', '!='. For other properties: use comparison operators.",
             default: "="
           },

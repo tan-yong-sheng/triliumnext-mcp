@@ -1,7 +1,7 @@
 interface AttributeCondition {
   type: string;     // 'label', 'relation' (future)
   name: string;     // Name of the label or relation
-  op?: string;      // Operator (exists, not_exists, =, !=, >=, <=, >, <, contains, starts_with, ends_with)
+  op?: string;      // Operator (exists, not_exists, =, !=, >=, <=, >, <, contains, starts_with, ends_with, regex)
   value?: string;   // Value to search for (optional for exists/not_exists)
   logic?: 'AND' | 'OR'; // Logic operator to combine with NEXT item
 }
@@ -9,7 +9,7 @@ interface AttributeCondition {
 // NotePropertyCondition interface for note.* properties (including title and content)
 interface NotePropertyCondition {
   property: string; // Note property name (isArchived, isProtected, title, content, etc.)
-  op?: string;      // Operator (=, !=, >, <, >=, <=, contains, starts_with, ends_with)
+  op?: string;      // Operator (=, !=, >, <, >=, <=, contains, starts_with, ends_with, regex)
   value: string;    // Value to compare
   logic?: 'AND' | 'OR'; // Logic operator to combine with NEXT item
 }
@@ -212,6 +212,9 @@ function buildAttributeQuery(attribute: AttributeCondition): string {
     case 'ends_with':
       if (!value) return '';
       return `${prefix}${escapedName} *= '${value.replace(/'/g, "\\'")}'`;
+    case 'regex':
+      if (!value) return '';
+      return `${prefix}${escapedName} %= '${value.replace(/'/g, "\\'")}'`;
     default:
       return '';
   }
@@ -377,6 +380,9 @@ function buildNotePropertyQuery(noteProperty: NotePropertyCondition): string {
       break;
     case 'not_equal':
       triliumOperator = '!=';
+      break;
+    case 'regex':
+      triliumOperator = '%=';
       break;
     default:
       // Invalid operator, skip this filter

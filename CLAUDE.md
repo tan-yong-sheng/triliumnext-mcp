@@ -100,7 +100,7 @@ node build/index.js   # Run the server directly
 ### Query Builder System
 - **Structured → DSL**: `searchQueryBuilder.ts` converts JSON parameters to Trilium search strings
 - **Critical fix**: OR queries with parentheses automatically get `~` prefix (required by Trilium parser)
-- **Field operators**: `*=*` (contains), `=*` (starts with), `*=` (ends with), `!=` (not equal)
+- **Field operators**: `*=*` (contains), `=*` (starts with), `*=` (ends with), `!=` (not equal), `%=` (regex)
 - **Documentation**: `docs/search-query-examples.md` contains 30+ examples with JSON structure for all parameters
 
 ### Development Guidelines for Search Functions
@@ -210,7 +210,7 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 
 ### Unified noteProperties Approach
 - **Architectural design**: Field-specific searches for `title` and `content` integrated into `noteProperties` parameter  
-- **Supported operators**: `contains` (*=*), `starts_with` (=*), `ends_with` (*=), `not_equal` (!=)
+- **Supported operators**: `contains` (*=*), `starts_with` (=*), `ends_with` (*=), `not_equal` (!=), `regex` (%=)
 - **Known limitation**: `not_contains` (does not contain) is not reliably supported in Trilium's search DSL
 - **OR logic support**: Full per-item logic support for title/content searches via `logic: "OR"` parameter
 - **Consistent API**: Same interface pattern as system properties (note.isArchived, note.type, etc.)
@@ -226,7 +226,7 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 ### Enhanced Note Properties Support
 - **Boolean properties**: `isArchived`, `isProtected` - support `=`, `!=` operators with `"true"`/`"false"` values
 - **String properties**: `type` - support all operators with string values
-- **Content properties**: `title`, `content` - support field-specific operators (`contains`, `starts_with`, `ends_with`, `not_equal`)
+- **Content properties**: `title`, `content` - support field-specific operators (`contains`, `starts_with`, `ends_with`, `not_equal`, `regex`)
 - **Date properties**: `dateCreated`, `dateModified`, `dateCreatedUtc`, `dateModifiedUtc` - support comparison operators (`>=`, `<=`, `>`, `<`, `=`, `!=`) with ISO date strings and smart date expressions
 - **Numeric properties**: `labelCount`, `ownedLabelCount`, `attributeCount`, `relationCount`, `parentCount`, `childrenCount`, `contentSize`, `revisionCount` - support numeric comparisons (`>`, `<`, `>=`, `<=`, `=`, `!=`) with unquoted numeric values
 - **Automatic type handling**: Query builder properly handles boolean, string, content, date, and numeric value formatting
@@ -251,6 +251,19 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - **Edge case handling**: Auto-cleanup of logic on last items, AND default logic, proper grouping
 
 ## Recent Enhancements (Latest)
+
+### Regex Search Support - Full Support Completed
+- **Major capability addition**: Implemented comprehensive regex search support in `buildAttributeQuery()` and `buildNotePropertyQuery()` functions
+- **TriliumNext integration**: Full support for `%=` operator for both attributes and note properties
+- **Enhanced capabilities achieved**:
+  - **Complete regex support**: All TriliumNext regex patterns now supported for labels, relations, titles, and content
+  - **Mixed searches**: Regex can be combined with other search types
+- **Implementation details**:
+  - Added `regex` operator to `AttributeCondition` and `NotePropertyCondition` interfaces
+  - Updated `buildAttributeQuery()` and `buildNotePropertyQuery()` to handle `%=` operator
+  - Updated tool schemas to include `regex` operator
+  - Added comprehensive documentation with regex search examples
+- **Status**: ✅ **IMPLEMENTED - UNTESTED** - Full implementation with comprehensive examples and updated schemas, but not validated against live TriliumNext instances
 
 ### OrderBy Support Removal - Complexity Reduction
 - **Issue identified**: Structured orderBy implementation created excessive complexity with multiple edge cases and TriliumNext compatibility concerns
@@ -369,9 +382,9 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - **Purpose**: LLM-friendly note ID resolution from note names/titles
 - **Problem solved**: Eliminates LLM confusion when users provide note names instead of IDs
 - **Key features**: 
-  - JSON response format with top N alternatives (configurable via `maxResults`)
-  - Smart fuzzy search with intelligent prioritization (exact matches → folders → recent)
-  - Clear workflow guidance in responses
+  - **JSON response format**: with top N alternatives (configurable via `maxResults`)
+  - **Smart fuzzy search**: with intelligent prioritization (exact matches → folders → recent)
+  - **Clear workflow guidance**: in responses
 - **Usage patterns**:
   - General: `resolve_note_id(name) → use returned noteId with other tools`
 
@@ -401,6 +414,7 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 ## Documentation Status
 
 ### Testing Status
+- ⚠️ **NEEDS TESTING**: Regex search examples in `docs/search-query-examples.md` need validation against actual TriliumNext instances
 - ⚠️ **NEEDS TESTING**: Relation search examples in `docs/search-query-examples.md` (examples 63-70) need validation against actual TriliumNext instances
 - ⚠️ **UNTESTED**: Attribute search examples from "## Attribute Search Examples" section (examples 24-33) have not been tested against actual TriliumNext instances  
 - ⚠️ **UNTESTED**: Two-parameter approach with per-item logic needs validation
