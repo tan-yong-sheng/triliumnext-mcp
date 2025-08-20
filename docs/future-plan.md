@@ -76,7 +76,29 @@ This document outlines planned features and enhancements for the TriliumNext MCP
 
 ## Medium Priority Features
 
-### 4. Attribute Management System - **NEEDS REIMPLEMENTATION**
+### 4. Negation Support Enhancement
+
+**Status**: Future consideration - `not()` syntax support
+
+**Current Implementation**:
+- ✅ **`!=` operator**: Already implemented for attributes and noteProperties (e.g., `note.type != 'archived'`, `#status != 'completed'`)
+- ✅ **`not_exists` operator**: Available for attributes to check absence (e.g., `#private not_exists`)
+- ✅ **`not_equal` operator**: Available for title/content searches in noteProperties
+
+**Proposed Enhancement**:
+- ⏳ **`not()` function syntax**: Support TriliumNext's `not()` wrapper for complex negation expressions
+- ⏳ **Examples**: `not(#book OR #article)`, `not(note.isArchived = true AND note.type = 'text')`
+- ⏳ **Benefits**: More intuitive negation of complex grouped conditions vs. current De Morgan's law transformations
+
+**Implementation Considerations**:
+- **TriliumNext compatibility**: Verify `not()` function support in current TriliumNext versions
+- **Query builder enhancement**: Extend searchQueryBuilder to handle `not()` wrapper syntax
+- **User interface**: Design schema for specifying negation at expression group level
+- **Documentation**: Provide clear examples showing `not()` vs. existing `!=` approaches
+
+**Priority**: Low - existing `!=` and `not_exists` operators cover most negation use cases effectively
+
+### 5. Attribute Management System - **NEEDS REIMPLEMENTATION**
 
 **Status**: Removed due to reliability issues - requires redesign and testing
 

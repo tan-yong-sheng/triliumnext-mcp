@@ -166,7 +166,7 @@ export function createReadTools(): any[] {
     },
     {
       name: "search_notes",
-      description: "Unified search with structured parameters. Supports: full-text search, date filtering, field-specific searches (title/content), attribute searches (#labels), note properties (isArchived), and hierarchy navigation (children/descendants). Automatically optimizes with fast search when only text search is used.",
+      description: "Unified search with structured parameters. Supports: full-text search, date filtering, field-specific searches (title/content), attribute searches (#labels), note properties (isArchived), and hierarchy navigation (children/descendants). Use OR/AND logic within arrays for complex conditions (e.g., 'created OR modified' dates) instead of multiple separate search calls. Automatically optimizes with fast search when only text search is used.",
       inputSchema: {
         type: "object",
         properties: searchProperties,
@@ -216,7 +216,7 @@ function createSearchProperties() {
     },
     attributes: {
       type: "array",
-      description: "Array of attribute-based search conditions for Trilium labels and relations (e.g., #book, #author, ~authorNote). User-defined metadata attached to notes.",
+      description: "Array of attribute-based search conditions for Trilium labels and relations (e.g., #book, #author, ~authorNote). User-defined metadata attached to notes. Use OR logic between items for 'either/or' searches (e.g., '#book OR #article' → set logic:'OR' on first item). Use single search_notes call instead of multiple separate searches.",
       items: {
         type: "object",
         properties: {
@@ -242,15 +242,16 @@ function createSearchProperties() {
           logic: {
             type: "string",
             enum: ["AND", "OR"],
-            description: "Logic operator to combine with NEXT attribute. Default is AND if not specified."
+            description: "Logic operator to combine with next attribute. REQUIRED: Always specify 'AND' or 'OR' for every item. The system will automatically ignore logic on the last item (no next item to combine with).",
+            default: "AND"
           }
         },
-        required: ["type", "name"]
+        required: ["type", "name", "logic"]
       }
     },
     noteProperties: {
       type: "array",
-      description: "Array of note property conditions for built-in note metadata and content searches (e.g., note.isArchived, note.type, note.title, note.content). System-level properties with note.* prefix. For title/content: use 'contains', 'starts_with', 'ends_with', 'not_equal' operators. For other properties: use comparison operators. IMPORTANT: For date properties (dateCreated, dateModified, dateCreatedUtc, dateModifiedUtc), you MUST use exact ISO date format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss.sssZ). DO NOT use smart expressions like 'TODAY-7' or 'MONTH-1'.",
+      description: "Array of note property conditions for built-in note metadata and content searches (e.g., note.isArchived, note.type, note.title, note.content). System-level properties with note.* prefix. For title/content: use 'contains', 'starts_with', 'ends_with', 'not_equal' operators. For other properties: use comparison operators. Use OR logic between items for 'either/or' searches (e.g., 'created OR modified in last 7 days' → set logic:'OR' on first item). Use single search_notes call instead of multiple separate searches. IMPORTANT: For date properties (dateCreated, dateModified, dateCreatedUtc, dateModifiedUtc), you MUST use exact ISO date format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss.sssZ). DO NOT use smart expressions like 'TODAY-7' or 'MONTH-1'.",
       items: {
         type: "object",
         properties: {
@@ -272,10 +273,11 @@ function createSearchProperties() {
           logic: {
             type: "string",
             enum: ["AND", "OR"],
-            description: "Logic operator to combine with NEXT property. Default is AND if not specified."
+            description: "Logic operator to combine with next property. REQUIRED: Always specify 'AND' or 'OR' for every item. The system will automatically ignore logic on the last item (no next item to combine with).",
+            default: "AND"
           }
         },
-        required: ["property", "value"]
+        required: ["property", "value", "logic"]
       }
     },
     limit: {

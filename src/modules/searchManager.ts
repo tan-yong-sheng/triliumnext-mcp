@@ -60,12 +60,13 @@ export async function handleSearchNotes(
   const params = new URLSearchParams();
   params.append("search", query);
   
-  // Smart fastSearch logic: use fastSearch=true only when ONLY text parameter is provided
+  // Smart fastSearch logic: use fastSearch=true ONLY when ONLY text parameter is provided (no other parameters)
   const hasOnlyText = args.text && 
     (!args.attributes || !Array.isArray(args.attributes) || args.attributes.length === 0) &&
     (!args.noteProperties || !Array.isArray(args.noteProperties) || args.noteProperties.length === 0) &&
     !args.hierarchyType &&
-    !args.orderBy;
+    !args.orderBy &&
+    !args.limit; // fastSearch doesn't support limit clauses
   
   params.append("fastSearch", hasOnlyText ? "true" : "false");
   params.append("includeArchivedNotes", "true"); // Always include archived notes
@@ -117,11 +118,12 @@ export async function handleListChildNotes(
   const params = new URLSearchParams();
   params.append("search", query);
   
-  // Smart fastSearch logic
+  // Smart fastSearch logic: use fastSearch=true ONLY when ONLY text parameter is provided (no other parameters)
   const hasOnlyText = searchParams.text && 
     (!searchParams.attributes || !Array.isArray(searchParams.attributes) || searchParams.attributes.length === 0) &&
     (!searchParams.noteProperties || !Array.isArray(searchParams.noteProperties) || searchParams.noteProperties.length === 0) &&
-    !searchParams.orderBy;
+    !searchParams.orderBy &&
+    !searchParams.limit; // fastSearch doesn't support limit clauses
   
   params.append("fastSearch", hasOnlyText ? "true" : "false");
   params.append("includeArchivedNotes", "true");
@@ -180,11 +182,12 @@ export async function handleListDescendantNotes(
   const params = new URLSearchParams();
   params.append("search", query);
   
-  // Smart fastSearch logic
+  // Smart fastSearch logic: use fastSearch=true ONLY when ONLY text parameter is provided (no other parameters)
   const hasOnlyText = searchParams.text && 
     (!searchParams.attributes || !Array.isArray(searchParams.attributes) || searchParams.attributes.length === 0) &&
     (!searchParams.noteProperties || !Array.isArray(searchParams.noteProperties) || searchParams.noteProperties.length === 0) &&
-    !searchParams.orderBy;
+    !searchParams.orderBy &&
+    !searchParams.limit; // fastSearch doesn't support limit clauses
   
   params.append("fastSearch", hasOnlyText ? "true" : "false");
   params.append("includeArchivedNotes", "true");

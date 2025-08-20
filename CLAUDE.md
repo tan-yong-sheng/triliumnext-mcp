@@ -93,7 +93,8 @@ node build/index.js   # Run the server directly
 
 ### Unified Search System
 - **Single search function**: `search_notes` handles all search scenarios with automatic performance optimization
-- **Smart fastSearch logic**: Automatically uses `fastSearch=true` for simple text-only queries, `fastSearch=false` for complex structured queries
+- **Smart fastSearch logic**: Automatically uses `fastSearch=true` ONLY when ONLY text parameter is provided (no attributes, noteProperties, hierarchyType, orderBy, or limit), `fastSearch=false` for all other scenarios
+- **FastSearch compatibility**: TriliumNext's fastSearch mode does not support `limit` or `orderBy` clauses - these automatically disable fastSearch
 - **Hierarchical integration**: `list_child_notes` and `list_descendant_notes` use `search_notes` internally with different `hierarchyType` parameters
 - **Parameter inheritance**: List functions support all `search_notes` parameters for powerful filtering capabilities
 
@@ -239,7 +240,7 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 ### Clean Two-Parameter Approach - AND Logic Default Aligned with TriliumNext
 - **`attributes` parameter**: For Trilium user-defined metadata (`#book`, `~author.title`)
   - **Labels**: `#book`, `#author` - user-defined tags and categories  
-  - **Relations**: `~author.title *= 'Tolkien'` - connections between notes (**IMPLEMENTED**)
+  - **Relations**: `~author.title *= 'Tolkien'` - connections between notes (**IMPLEMENTED - UNTESTED**)
   - **Per-item logic**: Each attribute can specify `logic: "OR"` to combine with next attribute
   - **Default logic**: AND when not specified (matches TriliumNext behavior: `#book #publicationYear = 1954`)
   - **Trilium syntax**: Automatically handles proper `#` and `~` prefixes, OR grouping with `~(#book OR #author)`
@@ -252,6 +253,15 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - **Edge case handling**: Auto-cleanup of logic on last items, AND default logic, proper grouping
 
 ## Recent Enhancements (Latest)
+
+### FastSearch Logic Fix - Critical Bug Resolution
+- **Issue identified**: `hasOnlyText` logic was missing `!args.limit` check, causing incorrect `fastSearch=true` when limit parameter was present
+- **Root cause**: TriliumNext's fastSearch mode does not support `limit` or `orderBy` clauses, but MCP was incorrectly enabling fastSearch when these parameters were present
+- **Symptom**: Queries like `"n8n limit 5"` would return empty results despite being valid Trilium queries
+- **Fix implemented**: Added `!args.limit` check to fastSearch logic in all search functions (searchManager.ts lines 69, 124, 189)
+- **Rule clarified**: FastSearch is now used ONLY when ONLY text parameter is provided (no attributes, noteProperties, hierarchyType, orderBy, or limit)
+- **Documentation updated**: Enhanced CLAUDE.md with clear fastSearch compatibility rules
+- **Status**: ✅ **COMPLETED** - All search functions now correctly handle limit and orderBy parameters with proper fastSearch detection
 
 ### Logic Default Alignment - AND Default Implementation Completed
 - **Major behavior change**: Updated default logic for both `attributes` and `noteProperties` parameters from OR to AND
@@ -288,7 +298,7 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
   - Enhanced documentation with 8 comprehensive relation search examples (examples 63-70)
   - Updated architectural status from "partially implemented" to "IMPLEMENTED"
 - **Documentation impact**: Added comprehensive relation search examples in `docs/search-query-examples.md`
-- **Status**: ✅ **COMPLETED** - Full implementation with comprehensive examples and updated tool schemas
+- **Status**: ✅ **IMPLEMENTED - UNTESTED** - Full implementation with comprehensive examples and updated schemas, but not validated against live TriliumNext instances
 
 ### Date Parameter Unification Implementation - noteProperties Enhancement Completed
 - **Major architectural change**: Removed all legacy date parameters (`created_date_start`, `created_date_end`, `modified_date_start`, `modified_date_end`) and unified them into `noteProperties` parameter
@@ -386,7 +396,7 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - ✅ **DOCUMENTED**: Enhanced date search examples (examples 55-62) showing unified noteProperties approach with smart dates and UTC support
 - ✅ **IMPLEMENTED**: Date parameter unification - removed legacy date parameters and unified into noteProperties with smart date support
 - ✅ **MIGRATED**: All date examples (1-11, 18, 32) updated to use noteProperties syntax with smart date expressions
-- ✅ **IMPLEMENTED**: Relation search support - full implementation with comprehensive examples and updated schemas
+- ✅ **IMPLEMENTED - UNTESTED**: Relation search support - full implementation with comprehensive examples and updated schemas, but not validated against live TriliumNext instances
 - **Reminder**: All attribute and relation examples need validation to ensure the generated Trilium search strings work correctly with the ETAPI
 - **Priority**: Test unified `noteProperties` implementation and new relation search functionality  
 - **Next**: Consider performance testing of unified approach vs legacy specialized parameters

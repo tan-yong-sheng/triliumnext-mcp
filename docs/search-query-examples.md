@@ -116,7 +116,7 @@ search_notes({
 ```
 - Composed query
 ```
-note.dateCreated >= '2024-01-01' AND note.dateCreated < '2026-01-01'
+note.dateCreated >= '2024-01-01' AND note.dateCreated < '2025-12-31'
 ```
 - MCP call
 ```js
@@ -242,7 +242,7 @@ search_notes({
 ```
 - Composed query
 ```
-docker note.dateModified >= 'YEAR-1' orderBy note.dateModified desc limit 5
+docker note.dateModified >= '2023-08-20' orderBy note.dateModified desc limit 5
 ```
 - MCP call
 ```js
@@ -282,7 +282,7 @@ search_notes({
 })
 ```
 
-### 11) Search notes modified since 2024, ordered by modification date ascending (using noteProperties)
+### 11) Search 20 notes modified since 2024, ordered by modification date ascending (using noteProperties)
 - Params
 ```json
 {
@@ -445,41 +445,39 @@ note.content *=* 'machine learning'
 ```
 - Use case: Find notes discussing machine learning concepts
 
-### 21) Advanced field-specific search with noteProperties parameter
+### 20) Advanced field-specific search with noteProperties parameter
 - Params (using noteProperties parameter)
 ```json
 {
   "noteProperties": [
-    { "property": "title", "op": "contains", "value": "Tutorial" },
-    { "property": "content", "op": "contains", "value": "steps" }
-  ],
-  "created_date_start": "2024-01-01"
-}
-```
-- Composed query
-```
-note.dateCreated >= '2024-01-01' AND note.title *=* 'Tutorial' AND note.content *=* 'steps'
-```
-- Use case: Find recent tutorials with step-by-step instructions using structured noteProperties
-
-### 22) Multiple noteProperties searches with different operators
-- Params (using noteProperties parameter)
-```json
-{
-  "noteProperties": [
-    { "property": "title", "op": "starts_with", "value": "Project" },
-    { "property": "content", "op": "not_equal", "value": "incomplete" },
-    { "property": "content", "op": "contains", "value": "documentation" }
+    {
+      "property": "dateCreated",
+      "op": ">=",
+      "value": "2025-06-01",
+      "logic": "AND"
+    },
+    {
+      "property": "title",
+      "op": "contains",
+      "value": "n8n",
+      "logic": "OR"
+    },
+    {
+      "property": "content",
+      "op": "contains",
+      "value": "n8n"
+    }
   ]
 }
 ```
 - Composed query
 ```
-note.title =* 'Project' AND note.content != 'incomplete' AND note.content *=* 'documentation'
+n8n note.dateCreated >= '2025-06-01' ~(note.title *=* 'n8n' OR note.content *=* 'n8n')
 ```
-- Use case: Find project notes with documentation that are not marked incomplete
+- Use case: Find recent tutorials with step-by-step instructions using structured noteProperties
 
-### 23) Combined full-text and noteProperties searches
+
+### 21) Combined full-text and noteProperties searches
 - Params (using noteProperties parameter)
 ```json
 {
@@ -512,6 +510,168 @@ Trilium supports searching by attributes (labels and relations) using the `#` an
 - `~relation`: Search for notes with a specific relation
 - `~relation.property`: Search relations by target note properties
 - `~relation *=* value`: String operators for relation searches
+
+## Label Search Examples
+
+### 22) Book Label Search
+- Composed query: Find all notes with "book" label
+```
+#book
+```
+- JSON structure for attributes parameter
+```json
+{
+  "attributes": [
+    { "type": "label", "name": "book" }
+  ]
+}
+```
+- Use case: Find all book-related notes
+
+### 23) Combined Full-text and Attribute Search
+- Composed query: Find notes containing "tolkien" with book label
+```
+tolkien #book
+```
+- Composed query: Find notes containing "towers" with book OR author label
+```
+towers #book or #author
+```
+- Composed query: Find notes containing "towers" but NOT having book label
+```
+towers #!book
+```
+
+### 24) Genre Contains Search
+- Composed query: Find notes with genre containing "fan"
+```
+#genre *=* fan
+```
+- JSON structure for attributes parameter
+```json
+{
+  "attributes": [
+    { "type": "label", "name": "genre", "op": "contains", "value": "fan" }
+  ]
+}
+```
+
+### 25) Numeric Range Search
+- Composed query: Find books published in the 1950s
+```
+#book #publicationYear >= 1950 #publicationYear < 1960
+```
+- JSON structure for attributes parameter
+```json
+{
+  "attributes": [
+    { "type": "label", "name": "book" },
+    { "type": "label", "name": "publicationYear", "op": ">=", "value": "1950" },
+    { "type": "label", "name": "publicationYear", "op": "<", "value": "1960" }
+  ]
+}
+```
+
+### 26) Combined Attributes with Ordering
+- Composed query: Find Tolkien books ordered by publication date
+```
+#author=Tolkien orderBy #publicationDate desc, note.title limit 10
+```
+- Use case: Sorted attribute-based searches with secondary ordering
+
+### 27) Attribute OR Logic - Book OR Author Label
+- Composed query: Find notes containing "towers" with book OR author label
+```
+towers ~(#book OR #author)
+```
+- JSON structure with per-item logic for attributes
+```json
+{
+  "text": "towers",
+  "attributes": [
+    { "type": "label", "name": "book", "logic": "OR" },
+    { "type": "label", "name": "author" }
+  ]
+}
+```
+- Use case: Find notes about "towers" that are either books or authored content
+
+### 28) Multiple OR Attributes with Values
+- Composed query: Find notes with genre fantasy OR science fiction
+```
+~(#genre = 'fantasy' OR #genre = 'science fiction')
+```
+- JSON structure with per-item logic for attributes
+```json
+{
+  "attributes": [
+    { "type": "label", "name": "genre", "op": "=", "value": "fantasy", "logic": "OR" },
+    { "type": "label", "name": "genre", "op": "=", "value": "science fiction" }
+  ]
+}
+```
+- Use case: Find notes in either of two specific genres
+
+### 29) Note Properties OR Logic
+- Composed query: Find archived notes OR text notes
+```
+~(note.isArchived = true OR note.type = 'text')
+```
+- JSON structure with per-item logic for note properties
+```json
+{
+  "noteProperties": [
+    { "property": "isArchived", "op": "=", "value": "true", "logic": "OR" },
+    { "property": "type", "op": "=", "value": "text" }
+  ]
+}
+```
+- Use case: Find notes that are either archived or text type
+
+### 30) Mixed Attributes AND Note Properties
+- Composed query: Find book notes with high label count
+```
+towers #book AND note.labelCount > 3
+```
+- JSON structure with separate attributes and noteProperties
+```json
+{
+  "text": "towers",
+  "attributes": [
+    { "type": "label", "name": "book" }
+  ],
+  "noteProperties": [
+    { "property": "labelCount", "op": ">", "value": "3" }
+  ]
+}
+```
+- Use case: Find well-tagged book notes about towers
+
+### 31) Archive Status Search
+- Composed query for archived notes
+```
+note.isArchived = true
+```
+- Composed query for non-archived notes
+```
+note.isArchived = false
+```
+- Combined with other filters (e.g., archived notes with title "Work")
+```
+note.isArchived = true AND note.title = 'Work'
+```
+- JSON structure for noteProperties parameter
+```json
+{
+  "noteProperties": [
+    { "property": "isArchived", "op": "=", "value": "true" }
+  ]
+}
+```
+- Use case: Filter notes by archive status using note properties
+- Note: `search_notes` always includes archived notes - use `note.isArchived = false` to exclude them
+
+---
 
 ## Relation Search Examples
 
@@ -675,178 +835,6 @@ note.type = 'text' AND note.isArchived = false AND note.contentSize > 0
 - Use case: Find active text notes with content (ALL conditions must be met)
 - **Note**: When logic is not specified, noteProperties are combined with AND (TriliumNext default behavior)
 
-### 24) Book Label Search
-- Composed query: Find all notes with "book" label
-```
-#book
-```
-- JSON structure for attributes parameter
-```json
-{
-  "attributes": [
-    { "type": "label", "name": "book" }
-  ]
-}
-```
-- Use case: Find all book-related notes
-
-### 25) Book with Publication Year
-- Composed query: Find books published in 1954
-```
-#book #publicationYear = 1954
-```
-- JSON structure for attributes parameter
-```json
-{
-  "attributes": [
-    { "type": "label", "name": "book" },
-    { "type": "label", "name": "publicationYear", "op": "=", "value": "1954" }
-  ]
-}
-```
-
-### 26) Combined Full-text and Attribute Search
-- Composed query: Find notes containing "tolkien" with book label
-```
-tolkien #book
-```
-- Composed query: Find notes containing "towers" with book OR author label
-```
-towers #book or #author
-```
-- Composed query: Find notes containing "towers" but NOT having book label
-```
-towers #!book
-```
-
-### 27) Genre Contains Search
-- Composed query: Find notes with genre containing "fan"
-```
-#genre *=* fan
-```
-- JSON structure for attributes parameter
-```json
-{
-  "attributes": [
-    { "type": "label", "name": "genre", "op": "contains", "value": "fan" }
-  ]
-}
-```
-
-### 28) Numeric Range Search
-- Composed query: Find books published in the 1950s
-```
-#book #publicationYear >= 1950 #publicationYear < 1960
-```
-- JSON structure for attributes parameter
-```json
-{
-  "attributes": [
-    { "type": "label", "name": "book" },
-    { "type": "label", "name": "publicationYear", "op": ">=", "value": "1950" },
-    { "type": "label", "name": "publicationYear", "op": "<", "value": "1960" }
-  ]
-}
-```
-
-### 29) Combined Attributes with Ordering
-- Composed query: Find Tolkien books ordered by publication date
-```
-#author=Tolkien orderBy #publicationDate desc, note.title limit 10
-```
-- Use case: Sorted attribute-based searches with secondary ordering
-
-### 30) Attribute OR Logic - Book OR Author Label
-- Composed query: Find notes containing "towers" with book OR author label
-```
-towers ~(#book OR #author)
-```
-- JSON structure with per-item logic for attributes
-```json
-{
-  "text": "towers",
-  "attributes": [
-    { "type": "label", "name": "book", "logic": "OR" },
-    { "type": "label", "name": "author" }
-  ]
-}
-```
-- Use case: Find notes about "towers" that are either books or authored content
-
-### 31) Multiple OR Attributes with Values
-- Composed query: Find notes with genre fantasy OR science fiction
-```
-~(#genre = 'fantasy' OR #genre = 'science fiction')
-```
-- JSON structure with per-item logic for attributes
-```json
-{
-  "attributes": [
-    { "type": "label", "name": "genre", "op": "=", "value": "fantasy", "logic": "OR" },
-    { "type": "label", "name": "genre", "op": "=", "value": "science fiction" }
-  ]
-}
-```
-- Use case: Find notes in either of two specific genres
-
-### 32) Note Properties OR Logic
-- Composed query: Find archived notes OR text notes
-```
-~(note.isArchived = true OR note.type = 'text')
-```
-- JSON structure with per-item logic for note properties
-```json
-{
-  "noteProperties": [
-    { "property": "isArchived", "op": "=", "value": "true", "logic": "OR" },
-    { "property": "type", "op": "=", "value": "text" }
-  ]
-}
-```
-- Use case: Find notes that are either archived or text type
-
-### 33) Mixed Attributes AND Note Properties
-- Composed query: Find book notes with high label count
-```
-towers #book AND note.labelCount > 3
-```
-- JSON structure with separate attributes and noteProperties
-```json
-{
-  "text": "towers",
-  "attributes": [
-    { "type": "label", "name": "book" }
-  ],
-  "noteProperties": [
-    { "property": "labelCount", "op": ">", "value": "3" }
-  ]
-}
-```
-- Use case: Find well-tagged book notes about towers
-
-### 34) Archive Status Search
-- Composed query for archived notes
-```
-note.isArchived = true
-```
-- Composed query for non-archived notes
-```
-note.isArchived = false
-```
-- Combined with other filters (e.g., archived notes with title "Work")
-```
-note.isArchived = true AND note.title = 'Work'
-```
-- JSON structure for noteProperties parameter
-```json
-{
-  "noteProperties": [
-    { "property": "isArchived", "op": "=", "value": "true" }
-  ]
-}
-```
-- Use case: Filter notes by archive status using note properties
-- Note: `search_notes` always includes archived notes - use `note.isArchived = false` to exclude them
 
 ---
 
