@@ -4,9 +4,23 @@ This document outlines planned features and enhancements for the TriliumNext MCP
 
 ## High Priority Features
 
-### 1. Documentation Discovery Function (`get_documentation` or `get_help`)
+### 1. Advanced Search Templates
+- Pre-built search templates for common use cases
+- Template system for complex queries
+- User-customizable search patterns
+- Support regex search
+
+
+### 2. search_replace feature
+- Performs search-and-replace operations in a note.
+- Proposed arguments: targetType, replacements, useRegex?, replaceAll?
+
+
+### 3. Documentation Discovery Function (`get_documentation` or `get_help`)
 
 **Purpose**: Provide users with comprehensive guidance on what they can accomplish using the TriliumNext MCP server.
+
+**Challenge**: How to mantain docs of different versions for different users (e.g., breaking change in function name, etc...)?
 
 **Implementation Plan**:
 - Create a new MCP tool function that fetches documentation from a static GitHub raw URL
@@ -62,61 +76,40 @@ This document outlines planned features and enhancements for the TriliumNext MCP
 
 ## Medium Priority Features
 
-### 2. Attribute Management System ✅ **IMPLEMENTED**
+### 4. Attribute Management System - **NEEDS REIMPLEMENTATION**
 
-**Status**: Completed with `manage_attributes` MCP function
+**Status**: Removed due to reliability issues - requires redesign and testing
 
-**Implemented Features**:
-- ✅ `list`: Discover all attributes (labels and relations) with usage statistics and values, filtered by type
-- ✅ `create`: Add new labels and relations to notes with validation and type-specific constraints
-- ✅ `update`: Modify attribute values and position with OpenAPI-compliant restrictions (relations: position only, labels: value + position)
-- ✅ `delete`: Remove attributes from notes with enhanced messaging showing attribute type and name
-- ✅ `get`: Retrieve specific attribute details by attribute ID (works for both labels and relations)
+**Reliability Issues Identified**:
+- ❌ **List operation confusion**: Implementation unclear about noteId requirements vs database-wide discovery
+- ❌ **ETAPI compatibility concerns**: Uncertain reliability with TriliumNext External API endpoints
+- ❌ **Error handling gaps**: Insufficient validation and error recovery mechanisms  
+- ❌ **Testing gaps**: Insufficient validation against actual TriliumNext instances
+- ❌ **User experience issues**: Confusing operation semantics (list vs get operations)
 
-**Technical Implementation**:
-- Full ETAPI integration using unified `/attributes` endpoints
-- Support for both `label` and `relation` types with `attributeType` parameter
-- Comprehensive error handling with type-specific validation
-- OpenAPI constraint compliance (relations can only update position, not values)
-- Enhanced discovery with type filtering and sorting options
-- Backward compatibility maintained while extending functionality
+**Future Implementation Requirements**:
+- **Thorough ETAPI testing**: Validate all operations against live TriliumNext instances
+- **Clear operation semantics**: Redesign with unambiguous operation purposes and requirements
+- **Comprehensive error handling**: Robust validation and user-friendly error messages
+- **Progressive rollout**: Implement and test one operation at a time (starting with read-only operations)
+- **Documentation first**: Complete API documentation before implementation
+- **User feedback integration**: Design based on actual user needs and workflows
 
-### 4. Advanced Search Templates
-- Pre-built search templates for common use cases
-- Template system for complex queries
-- User-customizable search patterns
-- Support regex search
+**Proposed Features for Future Implementation**:
+- ⏳ `list_attributes`: Database-wide attribute discovery with clear semantics
+- ⏳ `get_attribute`: Specific attribute instance details with attributeId
+- ⏳ `create_attribute`: Add labels and relations with full validation
+- ⏳ `update_attribute`: Modify existing attributes with constraint checking
+- ⏳ `delete_attribute`: Remove attributes with safety confirmations
 
-### 5. search_replace feature
-- Performs search-and-replace operations in a note.
-- Proposed arguments: targetType, replacements, useRegex?, replaceAll?
+**Implementation Strategy**:
+1. **Research phase**: Comprehensive ETAPI endpoint analysis and testing
+2. **Design phase**: Clear API design with unambiguous operation semantics  
+3. **Read-only phase**: Implement and test list/get operations first
+4. **Write operations phase**: Add create/update/delete with extensive validation
+5. **Integration testing**: Full workflow testing with real TriliumNext instances
+6. **Documentation and guides**: Complete usage documentation with examples
 
-### 6. Bulk Operations
-- Batch note creation/updates
-- Bulk tagging and organization
-- Mass export/import capabilities
-
-### 7. Enhanced Content Processing
-- Better Markdown detection and conversion
-- Support for additional content types
-- Content transformation utilities
-
-## Low Priority Features
-
-### 8. Search Query Optimization
-- Query performance analysis
-- Automatic query optimization suggestions
-- Search result caching
-
-### 9. Integration Enhancements
-- Webhook support for real-time updates
-- Integration with external note-taking systems
-- Advanced synchronization capabilities
-
-### 10. Analytics and Insights
-- Note usage statistics
-- Search pattern analysis
-- Content organization insights
 
 ## Implementation Notes
 

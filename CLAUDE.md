@@ -11,11 +11,9 @@ This is a Model Context Protocol (MCP) server for TriliumNext Notes that provide
 ### Modular Structure (Refactored from Monolithic)
 - **Main Server**: `src/index.ts` - Lightweight MCP server setup (~150 lines, down from 1400+)
 - **Business Logic Modules**: `src/modules/` - Core functionality separated by domain:
-  - `attributeManager.ts` - CRUD operations for labels and relations
   - `noteManager.ts` - Note creation, update, append, delete, and retrieval
   - `searchManager.ts` - Search, list_child_notes, and list_descendant_notes operations
 - **Request Handlers**: `src/modules/` - MCP request/response processing:
-  - `attributeHandler.ts` - Attribute tool request handling with permission validation
   - `noteHandler.ts` - Note tool request handling with permission validation
   - `searchHandler.ts` - Search tool request handling with permission validation
 - **Schema Definitions**: `src/modules/` - Tool schema generation:
@@ -81,7 +79,6 @@ node build/index.js   # Run the server directly
   - **Configurable results**: `maxResults` parameter (default: 3, range: 1-10) controls number of alternatives returned
   - **Context-aware usage**: Enable folder prioritization for listing workflows (`list_descendant_notes`/`list_child_notes`), disable for content workflows (`get_note`)
   - **JSON response format**: Returns structured data with selectedNote, totalMatches, topMatches array, and nextSteps guidance
-- `manage_attributes` (list operation): Get all unique attribute names (labels and relations) used across all notes with usage statistics - useful for discovering available attributes for searches and understanding attribute usage patterns across note types
 - `list_descendant_notes`: List ALL descendant notes recursively (like Unix `find`) - uses `search_notes` with `hierarchyType="descendants"` - **PREFERRED for "list all notes"**
 - `list_child_notes`: List direct child notes only (like Unix `ls`) - uses `search_notes` with `hierarchyType="children"` - for navigation/browsing
 - `get_note`: Retrieve note content by ID
@@ -91,7 +88,6 @@ node build/index.js   # Run the server directly
 - `update_note`: Update existing note content with revision control (defaults to revision=true for safety)
 - `append_note`: Add content to existing notes without replacement (defaults to revision=false for performance)
 - `delete_note`: Delete notes by ID (permanent operation with caution warnings)
-- `manage_attributes` (CRUD operations): Comprehensive attribute management with create, update, delete, and get operations for both note labels and relations using ETAPI
 
 ## Search Query Architecture
 
@@ -366,11 +362,17 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - **Benefits**: 91% size reduction, complete separation of concerns, enhanced maintainability and testability
 - **Pattern**: Manager (business logic) → Handler (request processing) → Tool Definition (schemas)
 
-### `manage_attributes` Tool Enhancement
-- **Upgrade**: From `manage_labels` to unified `manage_attributes` supporting both labels and relations
-- **Capabilities**: Full CRUD operations (create, read, update, delete, list) for both labels (`#tag`) and relations (`~connection`)
-- **Permission-based exposure**: Dynamic tool schema generation based on READ/WRITE permissions
-- **API integration**: Uses unified `/attributes` endpoints from OpenAPI specification
+### `manage_attributes` Tool Enhancement - **REMOVED**
+
+**Status**: Removed due to reliability issues and implementation complexity
+
+**Issues identified**:
+- Unclear operation semantics (list vs get confusion)
+- ETAPI compatibility concerns
+- Insufficient testing against live TriliumNext instances
+- User experience confusion about requirements
+
+**Future consideration**: Full redesign with comprehensive testing planned for future implementation (see `docs/future-plan.md`)
 
 ## Documentation Status
 

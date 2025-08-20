@@ -12,8 +12,6 @@ import axios from "axios";
 
 // Import modular components
 import { generateTools } from "./modules/toolDefinitions.js";
-import { createAttributeToolSchema } from "./modules/attributeManager.js";
-import { handleAttributeRequest } from "./modules/attributeHandler.js";
 import { 
   handleCreateNoteRequest,
   handleUpdateNoteRequest, 
@@ -81,12 +79,6 @@ class TriliumServer {
       // Generate standard tools based on permissions
       const tools = generateTools(this);
       
-      // Add manage_attributes tool with dynamic schema based on permissions
-      if (this.hasPermission("READ") || this.hasPermission("WRITE")) {
-        const hasRead = this.hasPermission("READ");
-        const hasWrite = this.hasPermission("WRITE");
-        tools.push(createAttributeToolSchema(hasRead, hasWrite));
-      }
 
       return { tools };
     });
@@ -127,9 +119,6 @@ class TriliumServer {
           case "list_descendant_notes":
             return await handleListDescendantNotesRequest(request.params.arguments, this.axiosInstance, this);
 
-          // Attribute management operations
-          case "manage_attributes":
-            return await handleAttributeRequest(request.params.arguments, this.axiosInstance, this);
 
           default:
             throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${request.params.name}`);
