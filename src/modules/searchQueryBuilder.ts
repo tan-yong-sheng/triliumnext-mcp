@@ -188,46 +188,49 @@ function finalizeGroup(queries: string[], logic: 'AND' | 'OR'): string {
 function buildAttributeQuery(attribute: AttributeCondition): string {
   const { type, name, op = 'exists', value } = attribute;
   
-  // Currently only support labels (relations support can be added later)
-  if (type !== 'label') {
+  // Support both labels and relations
+  if (type !== 'label' && type !== 'relation') {
     return '';
   }
   
-  // Escape the label name
+  // Escape the attribute name
   const escapedName = name.replace(/'/g, "\\'");
+  
+  // Determine the prefix based on attribute type
+  const prefix = type === 'label' ? '#' : '~';
   
   switch (op) {
     case 'exists':
-      return `#${escapedName}`;
+      return `${prefix}${escapedName}`;
     case 'not_exists':
-      return `#!${escapedName}`;
+      return `${prefix}!${escapedName}`;
     case '=':
       if (!value) return '';
-      return `#${escapedName} = '${value.replace(/'/g, "\\'")}'`;
+      return `${prefix}${escapedName} = '${value.replace(/'/g, "\\'")}'`;
     case '!=':
       if (!value) return '';
-      return `#${escapedName} != '${value.replace(/'/g, "\\'")}'`;
+      return `${prefix}${escapedName} != '${value.replace(/'/g, "\\'")}'`;
     case '>=':
       if (!value) return '';
-      return `#${escapedName} >= '${value.replace(/'/g, "\\'")}'`;
+      return `${prefix}${escapedName} >= '${value.replace(/'/g, "\\'")}'`;
     case '<=':
       if (!value) return '';
-      return `#${escapedName} <= '${value.replace(/'/g, "\\'")}'`;
+      return `${prefix}${escapedName} <= '${value.replace(/'/g, "\\'")}'`;
     case '>':
       if (!value) return '';
-      return `#${escapedName} > '${value.replace(/'/g, "\\'")}'`;
+      return `${prefix}${escapedName} > '${value.replace(/'/g, "\\'")}'`;
     case '<':
       if (!value) return '';
-      return `#${escapedName} < '${value.replace(/'/g, "\\'")}'`;
+      return `${prefix}${escapedName} < '${value.replace(/'/g, "\\'")}'`;
     case 'contains':
       if (!value) return '';
-      return `#${escapedName} *=* '${value.replace(/'/g, "\\'")}'`;
+      return `${prefix}${escapedName} *=* '${value.replace(/'/g, "\\'")}'`;
     case 'starts_with':
       if (!value) return '';
-      return `#${escapedName} =* '${value.replace(/'/g, "\\'")}'`;
+      return `${prefix}${escapedName} =* '${value.replace(/'/g, "\\'")}'`;
     case 'ends_with':
       if (!value) return '';
-      return `#${escapedName} *= '${value.replace(/'/g, "\\'")}'`;
+      return `${prefix}${escapedName} *= '${value.replace(/'/g, "\\'")}'`;
     default:
       return '';
   }

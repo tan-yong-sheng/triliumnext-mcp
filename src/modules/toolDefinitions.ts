@@ -223,7 +223,7 @@ function createSearchProperties() {
           type: {
             type: "string",
             enum: ["label", "relation"],
-            description: "Type of attribute: 'label' for #tags, 'relation' for ~relations (future)"
+            description: "Type of attribute: 'label' for #tags, 'relation' for ~relations"
           },
           name: {
             type: "string",

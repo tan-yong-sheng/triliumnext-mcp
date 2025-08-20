@@ -243,7 +243,7 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 ### Clean Two-Parameter Approach
 - **`attributes` parameter**: For Trilium user-defined metadata (`#book`, `~author.title`)
   - **Labels**: `#book`, `#author` - user-defined tags and categories  
-  - **Relations**: `~author.title *= 'Tolkien'` - connections between notes (future support)
+  - **Relations**: `~author.title *= 'Tolkien'` - connections between notes (**IMPLEMENTED**)
   - **Per-item logic**: Each attribute can specify `logic: "OR"` to combine with next attribute
   - **Trilium syntax**: Automatically handles proper `#` and `~` prefixes, OR grouping with `~(#book OR #author)`
 - **`noteProperties` parameter**: For Trilium built-in note metadata (`note.isArchived`, `note.type`)
@@ -254,6 +254,25 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - **Edge case handling**: Auto-cleanup of logic on last items, OR default logic, proper grouping
 
 ## Recent Enhancements (Latest)
+
+### Relation Search Implementation - Full Support Completed
+- **Major capability addition**: Implemented comprehensive relation search support in `buildAttributeQuery()` function
+- **TriliumNext integration**: Full support for `~relationName` and `~relationName.property` syntax patterns
+- **Query building enhancement**: Added `~` prefix handling for relations vs `#` prefix for labels
+- **Enhanced capabilities achieved**:
+  - **Complete relation support**: All TriliumNext relation patterns now supported - `~author`, `~author.title`, `~author.relations.publisher.title`
+  - **Mixed searches**: Labels and relations can be combined in same query with proper syntax
+  - **OR logic compatibility**: Relations work with existing per-item logic system
+  - **Property access**: Support for nested relation properties like `~author.title *=* 'Tolkien'`
+  - **All operators**: Full operator support for relations: `exists`, `=`, `!=`, `>=`, `<=`, `>`, `<`, `contains`, `starts_with`, `ends_with`
+- **Implementation details**:
+  - Modified `buildAttributeQuery()` to support both `type: "label"` and `type: "relation"`
+  - Added prefix selection logic: `#` for labels, `~` for relations
+  - Updated tool schema description to remove "future support" notation
+  - Enhanced documentation with 8 comprehensive relation search examples (examples 63-70)
+  - Updated architectural status from "partially implemented" to "IMPLEMENTED"
+- **Documentation impact**: Added comprehensive relation search examples in `docs/search-query-examples.md`
+- **Status**: ✅ **COMPLETED** - Full implementation with comprehensive examples and updated tool schemas
 
 ### Date Parameter Unification Implementation - noteProperties Enhancement Completed
 - **Major architectural change**: Removed all legacy date parameters (`created_date_start`, `created_date_end`, `modified_date_start`, `modified_date_end`) and unified them into `noteProperties` parameter
@@ -336,14 +355,16 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 ## Documentation Status
 
 ### Testing Status
-- ⚠️ **UNTESTED**: Attribute search examples in `docs/search-query-examples.md` from "## Attribute Search Examples" section through "### Attribute Search Reference" have not been tested against actual TriliumNext instances
-- ⚠️ **UNTESTED**: Two-parameter approach with per-item logic (examples 30-33) needs validation
+- ⚠️ **NEEDS TESTING**: Relation search examples in `docs/search-query-examples.md` (examples 63-70) need validation against actual TriliumNext instances
+- ⚠️ **UNTESTED**: Attribute search examples from "## Attribute Search Examples" section (examples 24-33) have not been tested against actual TriliumNext instances  
+- ⚠️ **UNTESTED**: Two-parameter approach with per-item logic needs validation
 - ✅ **COMPLETED**: Field-specific search unification - `filters` parameter removed and `title`/`content` moved to `noteProperties`
 - ✅ **UPDATED**: All documentation examples migrated from `filters` to `noteProperties` syntax (examples 12-23, 47-52)
 - ✅ **RESEARCHED**: Date parameter unification feasibility - confirmed TriliumNext native support for date properties and smart date expressions
 - ✅ **DOCUMENTED**: Enhanced date search examples (examples 55-62) showing unified noteProperties approach with smart dates and UTC support
 - ✅ **IMPLEMENTED**: Date parameter unification - removed legacy date parameters and unified into noteProperties with smart date support
 - ✅ **MIGRATED**: All date examples (1-11, 18, 32) updated to use noteProperties syntax with smart date expressions
-- **Reminder**: Attribute examples need validation to ensure the generated Trilium search strings work correctly with the ETAPI
-- **Priority**: Test unified `noteProperties` implementation for date, title/content searches with OR logic functionality
-- **Next**: Consider performance testing of unified noteProperties approach vs legacy specialized parameters
+- ✅ **IMPLEMENTED**: Relation search support - full implementation with comprehensive examples and updated schemas
+- **Reminder**: All attribute and relation examples need validation to ensure the generated Trilium search strings work correctly with the ETAPI
+- **Priority**: Test unified `noteProperties` implementation and new relation search functionality  
+- **Next**: Consider performance testing of unified approach vs legacy specialized parameters

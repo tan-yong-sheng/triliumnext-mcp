@@ -500,14 +500,144 @@ machine learning note.title *= 'Notes' AND note.content *=* 'algorithm' limit 10
 
 ## Attribute Search Examples
 
-Trilium supports searching by attributes (labels and relations) using the `#` syntax. These examples show how to combine full-text search with attribute filtering.
+Trilium supports searching by attributes (labels and relations) using the `#` and `~` syntax. These examples show how to combine full-text search with attribute filtering.
 
 ### Attribute Search Reference
 - `#label`: Search for notes with a specific label
-- `#!label`: Search for notes WITHOUT a specific label
+- `#!label`: Search for notes WITHOUT a specific label  
 - `#label = value`: Search for notes with label set to specific value
 - `#label >= value`: Numeric comparison operators (>=, <=, >, <, !=)
 - `#label *=* substring`: String operators (contains, starts_with, ends_with)
+- `~relation`: Search for notes with a specific relation
+- `~relation.property`: Search relations by target note properties
+- `~relation *=* value`: String operators for relation searches
+
+## Relation Search Examples
+
+Relations in TriliumNext allow connecting notes to other notes. The MCP supports searching by relations using the `~` syntax.
+
+### 63) Basic Relation Search - Find notes with author relation
+- Composed query: Find all notes that have an "author" relation
+```
+~author
+```
+- JSON structure for attributes parameter
+```json
+{
+  "attributes": [
+    { "type": "relation", "name": "author" }
+  ]
+}
+```
+- Use case: Find all notes that reference an author
+
+### 64) Relation with Property Search - Find notes by author's title
+- Composed query: Find notes connected to authors containing "Tolkien"
+```
+~author.title *=* 'Tolkien'
+```
+- JSON structure for attributes parameter  
+```json
+{
+  "attributes": [
+    { "type": "relation", "name": "author.title", "op": "contains", "value": "Tolkien" }
+  ]
+}
+```
+- Use case: Find books/notes written by Tolkien
+
+### 65) Relation Value Comparison - Find notes by specific author ID
+- Composed query: Find notes connected to a specific author note
+```
+~author = 'authorNoteId123'
+```
+- JSON structure for attributes parameter
+```json
+{
+  "attributes": [
+    { "type": "relation", "name": "author", "op": "=", "value": "authorNoteId123" }
+  ]
+}
+```
+- Use case: Find all works by a specific author note
+
+### 66) Mixed Label and Relation Search
+- Composed query: Find books by Tolkien
+```
+#book ~author.title *=* 'Tolkien'
+```  
+- JSON structure for attributes parameter
+```json
+{
+  "attributes": [
+    { "type": "label", "name": "book" },
+    { "type": "relation", "name": "author.title", "op": "contains", "value": "Tolkien" }
+  ]
+}
+```
+- Use case: Find book notes authored by Tolkien
+
+### 67) Relation OR Logic - Find notes with multiple possible relations
+- Composed query: Find notes with author OR editor relations
+```
+~(~author OR ~editor)
+```
+- JSON structure with per-item logic for relations
+```json
+{
+  "attributes": [
+    { "type": "relation", "name": "author", "logic": "OR" },
+    { "type": "relation", "name": "editor" }
+  ]
+}
+```
+- Use case: Find notes that have either author or editor connections
+
+### 68) Complex Relation Property Search
+- Composed query: Find notes connected to authors with specific properties
+```
+~author.relations.publisher.title = 'Penguin Books'
+```
+- JSON structure for nested relation property
+```json
+{
+  "attributes": [
+    { "type": "relation", "name": "author.relations.publisher.title", "op": "=", "value": "Penguin Books" }
+  ]
+}
+```
+- Use case: Find books by authors published by specific publishers
+
+### 69) Relation String Operations
+- Composed query: Find notes with relations starting with "co-"
+```
+~collaborator =* 'co-'
+```
+- JSON structure for relation string search
+```json
+{
+  "attributes": [
+    { "type": "relation", "name": "collaborator", "op": "starts_with", "value": "co-" }
+  ]
+}
+```
+- Use case: Find collaborative relationships
+
+### 70) Combined Full-text and Relation Search
+- Composed query: Find Tolkien content with author relations
+```
+tolkien ~author
+```
+- JSON structure combining text and relation search
+```json
+{
+  "text": "tolkien", 
+  "attributes": [
+    { "type": "relation", "name": "author" }
+  ]
+}
+```
+- Use case: Find Tolkien-related content that has author metadata
 
 ### 24) Book Label Search
 - Composed query: Find all notes with "book" label
@@ -1234,7 +1364,7 @@ note.dateCreated >= '2024-01-01' AND note.dateCreated < '2024-12-31' AND note.da
 ### Missing TriliumNext Features
 1. **Regex search** (`%=` operator) - not implemented
 2. **Smart date expressions** (TODAY-30, MONTH+1) - not implemented  
-3. **Relation searches** (`~author.title`) - partially implemented
+3. **✅ Relation searches** (`~author.title`) - **IMPLEMENTED**
 4. **Negation operators** (`#!label`) - not implemented
 
 ### Recommended Next Steps
@@ -1252,7 +1382,7 @@ note.dateCreated >= '2024-01-01' AND note.dateCreated < '2024-12-31' AND note.da
   - **Per-item logic**: Each item can specify `logic: "OR"` to create OR groups with the next item
 - `attributes` parameter: Array for Trilium user-defined metadata (labels and relations)
   - **Labels**: Use `#book`, `#author` syntax - user-defined tags and categories
-  - **Relations**: Use `~author.title` syntax - connections between notes (future support)
+  - **Relations**: Use `~author.title` syntax - connections between notes (**IMPLEMENTED**)
   - Supported operators: `exists`, `not_exists`, `=`, `!=`, `>=`, `<=`, `>`, `<`, `contains`, `starts_with`, `ends_with`
   - **Per-item logic**: Each item can specify `logic: "OR"` to create OR groups with the next item
 - `noteProperties` parameter: Array for Trilium built-in note metadata (note.* properties)
