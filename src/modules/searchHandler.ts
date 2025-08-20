@@ -36,7 +36,6 @@ export async function handleSearchNotesRequest(
       attributes: args.attributes,
       noteProperties: args.noteProperties,
       limit: args.limit,
-      orderBy: args.orderBy,
       hierarchyType: args.hierarchyType,
       parentNoteId: args.parentNoteId
     };
@@ -76,7 +75,6 @@ export async function handleListChildNotesRequest(
       attributes: args.attributes,
       noteProperties: args.noteProperties,
       limit: args.limit,
-      orderBy: args.orderBy,
       parentNoteId: args.parentNoteId || "root"
     };
 
@@ -127,7 +125,6 @@ export async function handleListDescendantNotesRequest(
       attributes: args.attributes,
       noteProperties: args.noteProperties,
       limit: args.limit,
-      orderBy: args.orderBy,
       parentNoteId: args.parentNoteId || "root"
     };
 

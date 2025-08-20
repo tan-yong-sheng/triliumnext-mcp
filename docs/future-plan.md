@@ -98,7 +98,46 @@ This document outlines planned features and enhancements for the TriliumNext MCP
 
 **Priority**: Low - existing `!=` and `not_exists` operators cover most negation use cases effectively
 
-### 5. Attribute Management System - **NEEDS REIMPLEMENTATION**
+### 6. OrderBy/Sorting Support - **NEEDS REIMPLEMENTATION** (But perhaps not support natively for noteProperties like what I think before, so may not be re-implemented if still don't know its rule)
+
+**Status**: Removed due to complexity and inconsistencies - requires redesign and testing
+
+**Issues Identified**:
+- ❌ **Query generation complexity**: Structured orderBy created complex query building logic with multiple edge cases
+- ❌ **TriliumNext compatibility issues**: Uncertain behavior with different combinations of note properties and attributes in sorting
+- ❌ **Expression separator conflicts**: Confusion with `~` prefix usage for OR expressions vs sorting requirements
+- ❌ **LLM consistency challenges**: Despite structured approach, still prone to user confusion about field naming
+- ❌ **FastSearch integration**: Additional complexity in fastSearch logic detection with sorting parameters
+
+**Future Implementation Requirements**:
+- **Simple string-based approach**: Return to simple `orderBy: string` parameter format for better reliability
+- **TriliumNext validation**: Comprehensive testing of orderBy syntax with live TriliumNext instances
+- **Clear documentation**: Explicit examples showing valid orderBy patterns and field names
+- **Error handling**: Graceful handling of invalid orderBy syntax rather than complex validation
+- **Reduced complexity**: Focus on common use cases rather than comprehensive sorting capabilities
+
+**Proposed Features for Future Implementation**:
+- ⏳ **Simple orderBy parameter**: `"orderBy": "note.dateModified desc"` format
+- ⏳ **Basic sorting**: Support for note properties (`note.dateCreated`, `note.title`) only initially
+- ⏳ **Validation removal**: Let TriliumNext handle orderBy validation rather than pre-validating
+- ⏳ **Clear field mapping**: Simple documentation showing exact field names to use
+- ⏳ **Progressive enhancement**: Add attribute sorting (`#label desc`) only after note property sorting is stable
+
+**Implementation Strategy**:
+1. **Research phase**: Test simple orderBy strings directly with TriliumNext to understand native behavior
+2. **Basic implementation**: Add simple string orderBy parameter without complex validation
+3. **Testing phase**: Validate common orderBy patterns with real TriliumNext instances
+4. **Documentation**: Create clear examples showing working orderBy syntax
+5. **Gradual enhancement**: Add more advanced sorting only after basic implementation is proven stable
+
+**Why Simple Approach is Better**:
+- ✅ **Matches TriliumNext native syntax**: Direct string format aligns with TriliumNext documentation examples
+- ✅ **Reduced complexity**: No complex query building logic or interface definitions needed
+- ✅ **Easier debugging**: Query issues are immediately visible in debug output
+- ✅ **Better reliability**: Less chance for edge cases and parameter interaction issues
+- ✅ **Lower maintenance**: Fewer moving parts and integration points
+
+### 7. Attribute Management System - **NEEDS REIMPLEMENTATION**
 
 **Status**: Removed due to reliability issues - requires redesign and testing
 

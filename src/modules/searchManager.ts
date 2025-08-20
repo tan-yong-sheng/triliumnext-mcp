@@ -7,20 +7,12 @@ import { buildSearchQuery } from "./searchQueryBuilder.js";
 import { trimNoteResults, formatNotesForListing } from "./noteFormatter.js";
 import { createSearchDebugInfo, createListSummary } from "./responseUtils.js";
 
-// OrderByCondition interface matching searchQueryBuilder
-interface OrderByCondition {
-  type: 'noteProperty' | 'attribute';
-  field: string;
-  direction: 'asc' | 'desc';
-  attributeType?: 'label' | 'relation';
-}
-
+// Interface for SearchOperation - removed OrderByCondition import and orderBy field
 export interface SearchOperation {
   text?: string;
   attributes?: any[];
   noteProperties?: any[];
   limit?: number;
-  orderBy?: OrderByCondition[];
   hierarchyType?: "children" | "descendants";
   parentNoteId?: string;
 }
@@ -73,8 +65,7 @@ export async function handleSearchNotes(
     (!args.attributes || !Array.isArray(args.attributes) || args.attributes.length === 0) &&
     (!args.noteProperties || !Array.isArray(args.noteProperties) || args.noteProperties.length === 0) &&
     !args.hierarchyType &&
-    (!args.orderBy || !Array.isArray(args.orderBy) || args.orderBy.length === 0) &&
-    !args.limit; // fastSearch doesn't support limit or orderBy clauses
+    !args.limit; // fastSearch doesn't support limit clauses
   
   params.append("fastSearch", hasOnlyText ? "true" : "false");
   params.append("includeArchivedNotes", "true"); // Always include archived notes
@@ -130,8 +121,7 @@ export async function handleListChildNotes(
   const hasOnlyText = searchParams.text && 
     (!searchParams.attributes || !Array.isArray(searchParams.attributes) || searchParams.attributes.length === 0) &&
     (!searchParams.noteProperties || !Array.isArray(searchParams.noteProperties) || searchParams.noteProperties.length === 0) &&
-    (!searchParams.orderBy || !Array.isArray(searchParams.orderBy) || searchParams.orderBy.length === 0) &&
-    !searchParams.limit; // fastSearch doesn't support limit or orderBy clauses
+    !searchParams.limit; // fastSearch doesn't support limit clauses
   
   params.append("fastSearch", hasOnlyText ? "true" : "false");
   params.append("includeArchivedNotes", "true");
@@ -194,8 +184,7 @@ export async function handleListDescendantNotes(
   const hasOnlyText = searchParams.text && 
     (!searchParams.attributes || !Array.isArray(searchParams.attributes) || searchParams.attributes.length === 0) &&
     (!searchParams.noteProperties || !Array.isArray(searchParams.noteProperties) || searchParams.noteProperties.length === 0) &&
-    (!searchParams.orderBy || !Array.isArray(searchParams.orderBy) || searchParams.orderBy.length === 0) &&
-    !searchParams.limit; // fastSearch doesn't support limit or orderBy clauses
+    !searchParams.limit; // fastSearch doesn't support limit clauses
   
   params.append("fastSearch", hasOnlyText ? "true" : "false");
   params.append("includeArchivedNotes", "true");

@@ -14,18 +14,9 @@ interface NotePropertyCondition {
   logic?: 'AND' | 'OR'; // Logic operator to combine with NEXT item
 }
 
-// OrderByCondition interface for structured sorting
-interface OrderByCondition {
-  type: 'noteProperty' | 'attribute';
-  field: string;
-  direction: 'asc' | 'desc';
-  attributeType?: 'label' | 'relation';
-}
-
 interface SearchStructuredParams {
   text?: string;
   limit?: number;
-  orderBy?: OrderByCondition[];
   attributes?: AttributeCondition[];
   noteProperties?: NotePropertyCondition[];
   hierarchyType?: 'children' | 'descendants';
@@ -97,16 +88,6 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
   } else if (query.trim() === '') {
     // No search criteria provided at all - this will trigger the validation error in index.ts
     query = '';
-  }
-  
-  // Add orderBy with validation
-  if (params.orderBy && params.orderBy.length > 0) {
-    const orderByParts = buildOrderByExpressions(params.orderBy);
-    if (orderByParts.length > 0) {
-      // Only add orderBy if we have valid expressions
-      const orderByString = orderByParts.join(', ');
-      query += ` orderBy ${orderByString}`;
-    }
   }
   
   // Add limit
@@ -456,104 +437,4 @@ function buildHierarchyQuery(hierarchyType: 'children' | 'descendants', parentNo
       // Invalid hierarchy type, skip this filter
       return '';
   }
-}
-
-/**
- * Builds orderBy expressions from structured orderBy conditions
- */
-function buildOrderByExpressions(orderByConditions: OrderByCondition[]): string[] {
-  const expressions: string[] = [];
-  
-  for (const condition of orderByConditions) {
-    const expression = buildOrderByExpression(condition);
-    if (expression) {
-      expressions.push(expression);
-    }
-  }
-  
-  return expressions;
-}
-
-/**
- * Builds a single orderBy expression
- */
-function buildOrderByExpression(condition: OrderByCondition): string {
-  const { type, field, direction } = condition;
-  
-  let triliumField: string;
-  
-  if (type === 'noteProperty') {
-    // Map note property names to Trilium syntax
-    switch (field) {
-      case 'dateCreated':
-        triliumField = 'note.dateCreated';
-        break;
-      case 'dateModified':
-        triliumField = 'note.dateModified';
-        break;
-      case 'dateCreatedUtc':
-        triliumField = 'note.dateCreatedUtc';
-        break;
-      case 'dateModifiedUtc':
-        triliumField = 'note.dateModifiedUtc';
-        break;
-      case 'title':
-        triliumField = 'note.title';
-        break;
-      case 'type':
-        triliumField = 'note.type';
-        break;
-      case 'isArchived':
-        triliumField = 'note.isArchived';
-        break;
-      case 'isProtected':
-        triliumField = 'note.isProtected';
-        break;
-      case 'labelCount':
-        triliumField = 'note.labelCount';
-        break;
-      case 'attributeCount':
-        triliumField = 'note.attributeCount';
-        break;
-      case 'relationCount':
-        triliumField = 'note.relationCount';
-        break;
-      case 'parentCount':
-        triliumField = 'note.parentCount';
-        break;
-      case 'childrenCount':
-        triliumField = 'note.childrenCount';
-        break;
-      case 'contentSize':
-        triliumField = 'note.contentSize';
-        break;
-      case 'revisionCount':
-        triliumField = 'note.revisionCount';
-        break;
-      default:
-        // Invalid note property, skip
-        return '';
-    }
-  } else if (type === 'attribute') {
-    // Build attribute-based orderBy
-    const { attributeType } = condition;
-    if (!attributeType) {
-      // attributeType is required for attributes
-      return '';
-    }
-    
-    if (attributeType === 'label') {
-      triliumField = `#${field}`;
-    } else if (attributeType === 'relation') {
-      triliumField = `~${field}`;
-    } else {
-      // Invalid attribute type
-      return '';
-    }
-  } else {
-    // Invalid type
-    return '';
-  }
-  
-  return `${triliumField} ${direction}`;
 }
