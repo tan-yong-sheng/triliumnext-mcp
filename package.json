@@ -17,8 +17,10 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "0.6.0",
+    "@types/turndown": "^5.0.5",
     "axios": "^1.8.3",
-    "marked": "^15.0.7"
+    "marked": "^15.0.7",
+    "turndown": "^7.2.1"
   },
   "devDependencies": {
     "@types/node": "^20.11.24",

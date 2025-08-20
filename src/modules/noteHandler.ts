@@ -174,7 +174,8 @@ export async function handleGetNoteRequest(
   try {
     const noteOperation: NoteOperation = {
       noteId: args.noteId,
-      includeContent: args.includeContent !== false
+      includeContent: args.includeContent !== false,
+      returnMarkdown: args.returnMarkdown !== false // Default to true
     };
 
     const result = await handleGetNote(noteOperation, axiosInstance);
@@ -206,8 +207,8 @@ export async function handleSearchAndReplaceRequest(
   axiosInstance: any,
   permissionChecker: PermissionChecker
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
-  if (!permissionChecker.hasPermission("WRITE")) {
-    throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to perform search and replace operations.");
+  if (!permissionChecker.hasPermission("READ") || !permissionChecker.hasPermission("WRITE")) {
+    throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to perform search and replace operations. Requires both READ and WRITE permissions.");
   }
 
   try {
@@ -217,7 +218,9 @@ export async function handleSearchAndReplaceRequest(
       replacement: args.replacement,
       useRegex: args.useRegex ?? false,
       dryRun: args.dryRun ?? true,
-      createRevision: args.createRevision ?? true
+      createRevision: args.createRevision ?? true,
+      returnMarkdown: args.returnMarkdown ?? true,
+      replaceAll: args.replaceAll ?? true
     };
 
     const result = await handleSearchAndReplace(searchAndReplaceOperation, axiosInstance);
@@ -225,9 +228,22 @@ export async function handleSearchAndReplaceRequest(
     // Format response with detailed information
     let responseText = result.message;
     
+    // Include detailed replacement information in JSON format
+    if (result.replacements && result.replacements.length > 0) {
+      responseText += `\n\nReplacement Details:\n`;
+      responseText += JSON.stringify({
+        replacements: result.replacements,
+        summary: {
+          totalMatches: result.matchCount,
+          replacedCount: args.dryRun ? 0 : result.matchCount,
+          replaceAll: args.replaceAll ?? true
+        }
+      }, null, 2);
+    }
+    
     if (args.dryRun && result.matched) {
       responseText += `\n\nDry Run Results:`;
-      responseText += `\n- Found ${result.matchCount} matches`;
+      responseText += `\n- Found ${result.matchCount} match${result.matchCount !== 1 ? 'es' : ''}`;
       if (result.originalContent && result.updatedContent) {
         responseText += `\n- Original content length: ${result.originalContent.length} characters`;
         responseText += `\n- Updated content length: ${result.updatedContent.length} characters`;

@@ -4,6 +4,7 @@
  */
 
 import { processContent } from "./contentProcessor.js";
+import { smartConvertToMarkdown } from "./htmlToMarkdownConverter.js";
 
 export interface NoteOperation {
   parentNoteId?: string;
@@ -14,6 +15,7 @@ export interface NoteOperation {
   noteId?: string;
   revision?: boolean;
   includeContent?: boolean;
+  returnMarkdown?: boolean;
 }
 
 export interface NoteCreateResponse {
@@ -44,12 +46,23 @@ export interface SearchAndReplaceOperation {
   useRegex?: boolean;
   dryRun?: boolean;
   createRevision?: boolean;
+  returnMarkdown?: boolean;
+  replaceAll?: boolean;
+}
+
+export interface ReplacementDetail {
+  match: string;
+  replacement: string;
+  position: number;
+  lineNumber: number;
+  lineText: string;
 }
 
 export interface SearchAndReplaceResponse {
   noteId: string;
   matched: boolean;
   matchCount: number;
+  replacements?: ReplacementDetail[];
   originalContent?: string;
   updatedContent?: string;
   message: string;
@@ -217,7 +230,7 @@ export async function handleGetNote(
   args: NoteOperation,
   axiosInstance: any
 ): Promise<NoteGetResponse> {
-  const { noteId, includeContent = true } = args;
+  const { noteId, includeContent = true, returnMarkdown = true } = args;
 
   if (!noteId) {
     throw new Error("noteId is required for get operation.");
@@ -235,9 +248,14 @@ export async function handleGetNote(
     responseType: 'text'
   });
 
+  // Convert to Markdown if requested (default: true for LLM-friendly format)
+  const processedContent = returnMarkdown 
+    ? await smartConvertToMarkdown(noteContent)
+    : noteContent;
+
   return {
     note: noteResponse.data,
-    content: noteContent
+    content: processedContent
   };
 }
 
@@ -254,7 +272,9 @@ export async function handleSearchAndReplace(
     replacement, 
     useRegex = false, 
     dryRun = true, 
-    createRevision = true 
+    createRevision = true,
+    returnMarkdown = true,
+    replaceAll = true
   } = args;
 
   if (!noteId || !searchPattern || replacement === undefined) {
@@ -276,34 +296,83 @@ export async function handleSearchAndReplace(
 
   let updatedContent: string;
   let matchCount = 0;
+  const replacements: ReplacementDetail[] = [];
 
   try {
+    // Process replacement text for Markdown conversion
+    const processedReplacement = await processContent(replacement);
+    
     if (useRegex) {
-      // Use regex replacement
-      const regex = new RegExp(searchPattern, 'g');
-      const matches = originalContent.match(regex);
-      matchCount = matches ? matches.length : 0;
-      // Process replacement text for Markdown conversion
-      const processedReplacement = await processContent(replacement);
-      updatedContent = originalContent.replace(regex, processedReplacement);
-    } else {
-      // Use simple string replacement
-      // Process replacement text for Markdown conversion
-      const processedReplacement = await processContent(replacement);
-      const beforeLength = originalContent.length;
-      updatedContent = originalContent.split(searchPattern).join(processedReplacement);
-      const afterLength = updatedContent.length;
-      const searchLength = searchPattern.length;
-      const replacementLength = processedReplacement.length;
+      // Use regex replacement with detailed tracking
+      const regex = new RegExp(searchPattern, replaceAll ? 'g' : '');
+      let match;
+      let currentContent = originalContent;
+      let offset = 0;
       
-      // Calculate match count based on length change
-      if (searchLength !== replacementLength) {
-        const lengthDiff = beforeLength - afterLength;
-        const perReplacementDiff = searchLength - replacementLength;
-        matchCount = perReplacementDiff !== 0 ? lengthDiff / perReplacementDiff : 0;
-      } else {
-        // Same length - count direct matches
-        matchCount = (originalContent.match(new RegExp(escapeRegex(searchPattern), 'g')) || []).length;
+      // Find all matches first to track positions
+      const globalRegex = new RegExp(searchPattern, 'g');
+      while ((match = globalRegex.exec(originalContent)) !== null) {
+        const matchText = match[0];
+        const position = match.index;
+        const lineNumber = getLineNumber(originalContent, position);
+        const lineText = getLineText(originalContent, position);
+        
+        replacements.push({
+          match: matchText,
+          replacement: processedReplacement,
+          position,
+          lineNumber,
+          lineText
+        });
+        
+        matchCount++;
+        
+        // If not replacing all, break after first match
+        if (!replaceAll) break;
+      }
+      
+      // Perform the actual replacement
+      updatedContent = replaceAll 
+        ? originalContent.replace(regex, processedReplacement)
+        : originalContent.replace(new RegExp(searchPattern), processedReplacement);
+        
+    } else {
+      // Use simple string replacement with detailed tracking
+      let searchIndex = 0;
+      let currentContent = originalContent;
+      updatedContent = originalContent;
+      
+      while ((searchIndex = originalContent.indexOf(searchPattern, searchIndex)) !== -1) {
+        const position = searchIndex;
+        const lineNumber = getLineNumber(originalContent, position);
+        const lineText = getLineText(originalContent, position);
+        
+        replacements.push({
+          match: searchPattern,
+          replacement: processedReplacement,
+          position,
+          lineNumber,
+          lineText
+        });
+        
+        matchCount++;
+        searchIndex += searchPattern.length;
+        
+        // If not replacing all, break after first match
+        if (!replaceAll) break;
+      }
+      
+      // Perform the actual replacement
+      if (matchCount > 0) {
+        if (replaceAll) {
+          updatedContent = originalContent.split(searchPattern).join(processedReplacement);
+        } else {
+          // Replace only the first occurrence
+          const firstIndex = originalContent.indexOf(searchPattern);
+          updatedContent = originalContent.substring(0, firstIndex) + 
+                          processedReplacement + 
+                          originalContent.substring(firstIndex + searchPattern.length);
+        }
       }
     }
   } catch (error) {
@@ -315,14 +384,23 @@ export async function handleSearchAndReplace(
 
   // If dry run or no matches, return without updating
   if (dryRun || !matched) {
+    // Convert content to Markdown if requested for better LLM readability
+    const processedOriginal = dryRun && returnMarkdown 
+      ? await smartConvertToMarkdown(originalContent)
+      : originalContent;
+    const processedUpdated = dryRun && returnMarkdown 
+      ? await smartConvertToMarkdown(updatedContent)
+      : updatedContent;
+
     return {
       noteId,
       matched,
       matchCount,
-      originalContent: dryRun ? originalContent : undefined,
-      updatedContent: dryRun ? updatedContent : undefined,
+      replacements: dryRun ? replacements : undefined,
+      originalContent: dryRun ? processedOriginal : undefined,
+      updatedContent: dryRun ? processedUpdated : undefined,
       message: dryRun 
-        ? `Dry run: Found ${matchCount} matches in note ${noteId}` 
+        ? `Dry run: Found ${matchCount} match${matchCount !== 1 ? 'es' : ''} in note ${noteId}${returnMarkdown ? ' (content converted to Markdown for preview)' : ''}` 
         : `No matches found for pattern "${searchPattern}" in note ${noteId}`,
       revisionCreated: false
     };
@@ -360,7 +438,8 @@ export async function handleSearchAndReplace(
     noteId,
     matched,
     matchCount,
-    message: `Replaced ${matchCount} occurrences in note ${noteId}${revisionMsg}`,
+    replacements,
+    message: `Successfully replaced ${matchCount} occurrence${matchCount !== 1 ? 's' : ''} in note ${noteId}${revisionMsg}`,
     revisionCreated
   };
 }
@@ -370,4 +449,20 @@ export async function handleSearchAndReplace(
  */
 function escapeRegex(string: string): string {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Get line number for a given position in text
+ */
+function getLineNumber(content: string, position: number): number {
+  return content.substring(0, position).split('\n').length;
+}
+
+/**
+ * Get the text of the line containing the given position
+ */
+function getLineText(content: string, position: number): string {
+  const lines = content.split('\n');
+  const lineIndex = getLineNumber(content, position) - 1;
+  return lines[lineIndex] || '';
 }

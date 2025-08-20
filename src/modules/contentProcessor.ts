@@ -1,5 +1,11 @@
 import { marked } from "marked";
 
+// Configure marked.js for GitHub Flavored Markdown
+marked.setOptions({
+  breaks: true, // GitHub-style: treat single newlines as hard breaks
+  gfm: true     // Enable GitHub Flavored Markdown
+});
+
 /**
  * Detects if content is likely Markdown based on common indicators
  */

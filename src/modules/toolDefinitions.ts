@@ -46,7 +46,7 @@ export function createWriteTools(): any[] {
     },
     {
       name: "update_note",
-      description: "Update the content of an existing note with optional revision creation. WARNING: This completely replaces the note's content. Consider using 'append_note' for adding content without replacement. STRONGLY RECOMMENDED: Keep revision=true (default) to create a backup before overwriting, unless explicitly instructed otherwise to prevent irreversible data loss.",
+      description: "⚠️ LAST RESORT ONLY: Update note content by complete replacement when 'append_note' (for adding content) and 'search_and_replace' (for targeted edits) cannot accomplish the task. WARNING: This completely replaces ALL note content. PRIORITY ORDER: 1️⃣ Use 'append_note' for adding content. 2️⃣ Use 'search_and_replace' for targeted changes. 3️⃣ Use 'update_note' only as last resort. STRONGLY RECOMMENDED: Keep revision=true (default) to create a backup before overwriting.",
       inputSchema: {
         type: "object",
         properties: {
@@ -69,7 +69,7 @@ export function createWriteTools(): any[] {
     },
     {
       name: "append_note",
-      description: "Appends new content to an existing note without overwriting it. Use this instead of update_note when you want to add text below the existing content (e.g., logs, journals). For full content replacement, use update_note. By default, it avoids creating revisions (revision=false) to improve performance during frequent additions.",
+      description: "🥇 PREFERRED: Appends new content to an existing note without overwriting anything. This is the BEST choice when you want to add text below existing content (e.g., logs, journals, additional sections). By default, avoids creating revisions (revision=false) for performance during frequent additions. PRIORITY ORDER: 1️⃣ Use 'append_note' for adding content. 2️⃣ Use 'search_and_replace' for targeted changes. 3️⃣ Use 'update_note' only as last resort.",
       inputSchema: {
         type: "object",
         properties: {
@@ -103,43 +103,6 @@ export function createWriteTools(): any[] {
         },
         required: ["noteId"],
       },
-    },
-    {
-      name: "search_and_replace",
-      description: "Search for text patterns and replace them in a specific note. Supports both exact string matching and regex patterns. Use dryRun=true to preview changes before applying them. Replacement text supports Markdown (automatically converted to HTML). IMPORTANT: When dryRun=false, STRONGLY RECOMMENDED to keep createRevision=true (default) to create a backup before making changes, unless user explicitly requests no revision.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          noteId: {
-            type: "string",
-            description: "ID of the note to perform search and replace on"
-          },
-          searchPattern: {
-            type: "string",
-            description: "Text or regex pattern to search for"
-          },
-          replacement: {
-            type: "string",
-            description: "Replacement text (supports regex capture groups if useRegex=true). Markdown content is automatically converted to HTML."
-          },
-          useRegex: {
-            type: "boolean",
-            description: "Whether to treat searchPattern as regex (default: false)",
-            default: false
-          },
-          dryRun: {
-            type: "boolean",
-            description: "Preview changes without applying them (default: true). When true, createRevision is automatically ignored.",
-            default: true
-          },
-          createRevision: {
-            type: "boolean",
-            description: "Create backup revision before changes (default: true). STRONGLY RECOMMENDED to keep true when dryRun=false to prevent data loss. Only set to false if user explicitly requests no backup. Ignored when dryRun=true.",
-            default: true
-          }
-        },
-        required: ["noteId", "searchPattern", "replacement"]
-      }
     }
   ];
 }
@@ -153,7 +116,7 @@ export function createReadTools(): any[] {
   return [
     {
       name: "get_note",
-      description: "Get a note and its content by ID",
+      description: "Get a note and its content by ID. Returns content in Markdown format by default for LLM-friendly processing (especially useful for search and replace operations). Set returnMarkdown=false to get raw HTML format.",
       inputSchema: {
         type: "object",
         properties: {
@@ -164,6 +127,11 @@ export function createReadTools(): any[] {
           includeContent: {
             type: "boolean",
             description: "Whether to include the note's content in the response",
+            default: true
+          },
+          returnMarkdown: {
+            type: "boolean",
+            description: "Whether to convert HTML content to Markdown format (default: true). Markdown is recommended for LLM processing, search/replace operations, and better readability. Set to false only if you need raw HTML format.",
             default: true
           }
         },
@@ -300,6 +268,61 @@ function createSearchProperties() {
 }
 
 /**
+ * Generate tools that require both read and write permissions
+ */
+export function createReadWriteTools(): any[] {
+  return [
+    {
+      name: "search_and_replace",
+      description: "🥈 EFFICIENT CHOICE: Search for text patterns and replace them in a specific note without sending entire content repeatedly. Supports both exact string matching and regex patterns. Use dryRun=true to preview changes. PRIORITY ORDER: 1️⃣ Use 'append_note' for adding content. 2️⃣ Use 'search_and_replace' for targeted changes. 3️⃣ Use 'update_note' only as last resort. STRONGLY RECOMMENDED to keep createRevision=true (default) for safety.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          noteId: {
+            type: "string",
+            description: "ID of the note to perform search and replace on"
+          },
+          searchPattern: {
+            type: "string",
+            description: "Text or regex pattern to search for"
+          },
+          replacement: {
+            type: "string",
+            description: "Replacement text (supports regex capture groups if useRegex=true). Markdown content is automatically converted to HTML. Use empty string (\"\") to REMOVE the matched content."
+          },
+          useRegex: {
+            type: "boolean",
+            description: "Whether to treat searchPattern as regex (default: false)",
+            default: false
+          },
+          dryRun: {
+            type: "boolean",
+            description: "Preview changes without applying them (default: true). When true, createRevision is automatically ignored.",
+            default: true
+          },
+          createRevision: {
+            type: "boolean",
+            description: "Create backup revision before changes (default: true). STRONGLY RECOMMENDED to keep true when dryRun=false to prevent data loss. Only set to false if user explicitly requests no backup. Ignored when dryRun=true.",
+            default: true
+          },
+          returnMarkdown: {
+            type: "boolean",
+            description: "Whether to convert HTML content to Markdown format in dry-run results (default: true). Markdown format is recommended for LLM processing and better readability of preview content.",
+            default: true
+          },
+          replaceAll: {
+            type: "boolean",
+            description: "Whether to replace all occurrences (default: true) or only the first occurrence (false). Use replaceAll=false for surgical, controlled replacements.",
+            default: true
+          }
+        },
+        required: ["noteId", "searchPattern", "replacement"]
+      }
+    }
+  ];
+}
+
+/**
  * Generate all tools based on permissions
  */
 export function generateTools(permissionChecker: PermissionChecker): any[] {
@@ -313,6 +336,11 @@ export function generateTools(permissionChecker: PermissionChecker): any[] {
   // Add read tools if READ permission  
   if (permissionChecker.hasPermission("READ")) {
     tools.push(...createReadTools());
+  }
+
+  // Add tools that require both read and write permissions
+  if (permissionChecker.hasPermission("READ") && permissionChecker.hasPermission("WRITE")) {
+    tools.push(...createReadWriteTools());
   }
 
   return tools;

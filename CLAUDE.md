@@ -77,14 +77,14 @@ node build/index.js   # Run the server directly
   - **Configurable results**: `maxResults` parameter (default: 3, range: 1-10) controls number of alternatives returned
   - **Intelligent prioritization**: Automatically prioritizes exact matches, then folder-type notes (book), then most recent
   - **JSON response format**: Returns structured data with selectedNote, totalMatches, topMatches array, and nextSteps guidance
-- `get_note`: Retrieve note content by ID
+- `get_note`: Retrieve note content by ID. **LLM-optimized**: Returns Markdown format by default (`returnMarkdown=true`) for easy search/replace operations. Set `returnMarkdown=false` for raw HTML when needed.
 
 ### WRITE Permission Tools
 - `create_note`: Create new notes with various types (text, code, file, image, etc.)
 - `update_note`: Update existing note content with revision control (defaults to revision=true for safety)
 - `append_note`: Add content to existing notes without replacement (defaults to revision=false for performance)
 - `delete_note`: Delete notes by ID (permanent operation with caution warnings)
-- `search_and_replace`: Search for text patterns and replace them in specific notes with string or regex support. Features dry-run previews, safety-first revision control, and rule enforcement for conflicting parameters
+- `search_and_replace`: Search for text patterns and replace them in specific notes with string or regex support. Features dry-run previews, safety-first revision control, rule enforcement for conflicting parameters, and **granular control** with `replaceAll` parameter. **LLM-optimized**: Returns Markdown format by default (`returnMarkdown=true`) in dry-run results for easy content preview and analysis. **Enhanced transparency**: Provides detailed JSON response showing exactly what was replaced, including position, line number, and context.
 
 ## Search Query Architecture
 
@@ -251,6 +251,32 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - **Edge case handling**: Auto-cleanup of logic on last items, AND default logic, proper grouping
 
 ## Recent Enhancements (Latest)
+
+### LLM-Optimized Content Format - HTML to Markdown Conversion Completed
+- **Major UX improvement**: Added HTML-to-Markdown conversion for LLM-friendly content processing
+- **Problem solved**: LLMs can now easily perform search/replace operations on readable Markdown instead of complex HTML
+- **Enhanced capabilities achieved**:
+  - **TurndownJS integration**: High-quality HTML→Markdown conversion with GitHub Flavored Markdown support
+  - **Smart defaults**: `returnMarkdown=true` by default for optimal LLM experience
+  - **Round-trip compatibility**: Works seamlessly with existing Markdown→HTML processing
+  - **Search/replace optimization**: LLMs can now use intuitive patterns like `**bold**` instead of `<strong>bold</strong>`
+  - **Granular control**: Added `replaceAll` parameter for surgical replacements (default: true)
+  - **Detailed transparency**: JSON response shows exact replacements with position, line number, and context
+- **Implementation details**:
+  - Added `htmlToMarkdownConverter.ts` module with TurndownJS configuration
+  - Enhanced `get_note` with `returnMarkdown` parameter (default: true)
+  - Enhanced `search_and_replace` with `returnMarkdown` for dry-run results and `replaceAll` for control
+  - Added `ReplacementDetail` interface for comprehensive replacement tracking
+  - Updated tool schemas with clear LLM guidance about format benefits
+  - Maintained backward compatibility with `returnMarkdown=false` option
+- **LLM workflow improvements**:
+  - **Intuitive regex**: `**text**` vs `<strong>text</strong>` for search patterns
+  - **Readable previews**: Dry-run results show clean Markdown format
+  - **Better pattern matching**: Headers, links, lists, and formatting use familiar Markdown syntax
+  - **Enhanced search accuracy**: Eliminates HTML tag complexity from search operations
+  - **Surgical precision**: `replaceAll=false` for controlled, first-match-only replacements
+  - **Full transparency**: Detailed JSON showing what was replaced where
+- **Status**: ✅ **COMPLETED** - Full implementation with optimal LLM defaults, comprehensive GitHub Flavored Markdown support, and detailed replacement tracking
 
 ### Tool Simplification - Redundant Tool Removal Completed
 - **Major simplification**: Removed redundant `list_child_notes` and `list_descendant_notes` tools
