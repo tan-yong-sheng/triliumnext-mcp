@@ -9,6 +9,9 @@ A model context protocol server for TriliumNext Notes. This server provides tool
 
 > Note: Suggest to use with Cline extension in VSCode, instead of Claude Desktop
 
+> You could now install the beta version via the command: `npx -y triliumnext-mcp@beta`
+
+
 ## Quick Start
 
 Make sure to set up your environment variables first:
