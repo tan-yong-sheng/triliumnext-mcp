@@ -46,7 +46,7 @@ export function createWriteTools(): any[] {
     },
     {
       name: "update_note",
-      description: "⚠️ LAST RESORT ONLY: Update note content by complete replacement when 'append_note' (for adding content) and 'search_and_replace' (for targeted edits) cannot accomplish the task. WARNING: This completely replaces ALL note content. PRIORITY ORDER: 1️⃣ Use 'append_note' for adding content. 2️⃣ Use 'search_and_replace' for targeted changes. 3️⃣ Use 'update_note' only as last resort. STRONGLY RECOMMENDED: Keep revision=true (default) to create a backup before overwriting.",
+      description: "Update note content by complete replacement. Best for major restructuring, complete rewrites, or when managing overall note organization. WARNING: This replaces ALL note content. PRIORITY GUIDANCE: Consider 'append_note' for adding content or 'search_and_replace' for targeted edits first, but use 'update_note' when it's the most appropriate tool for the task (e.g., major structural changes, complete content reorganization). STRONGLY RECOMMENDED: Keep revision=true (default) to create a backup before overwriting.",
       inputSchema: {
         type: "object",
         properties: {
@@ -69,7 +69,7 @@ export function createWriteTools(): any[] {
     },
     {
       name: "append_note",
-      description: "🥇 PREFERRED: Appends new content to an existing note without overwriting anything. This is the BEST choice when you want to add text below existing content (e.g., logs, journals, additional sections). By default, avoids creating revisions (revision=false) for performance during frequent additions. PRIORITY ORDER: 1️⃣ Use 'append_note' for adding content. 2️⃣ Use 'search_and_replace' for targeted changes. 3️⃣ Use 'update_note' only as last resort.",
+      description: "🥇 RECOMMENDED: Appends new content to an existing note without overwriting anything. Ideal for adding text below existing content (e.g., logs, journals, additional sections). By default, avoids creating revisions (revision=false) for performance during frequent additions. PRIORITY GUIDANCE: This is often the best choice for adding content, but use the tool that best fits your specific task.",
       inputSchema: {
         type: "object",
         properties: {
@@ -274,7 +274,7 @@ export function createReadWriteTools(): any[] {
   return [
     {
       name: "search_and_replace",
-      description: "🥈 EFFICIENT CHOICE: Search for text patterns and replace them in a specific note without sending entire content repeatedly. Supports both exact string matching and regex patterns. Use dryRun=true to preview changes. PRIORITY ORDER: 1️⃣ Use 'append_note' for adding content. 2️⃣ Use 'search_and_replace' for targeted changes. 3️⃣ Use 'update_note' only as last resort. STRONGLY RECOMMENDED to keep createRevision=true (default) for safety.",
+      description: "🥈 EFFICIENT: Search for text patterns and replace them in a specific note without sending entire content repeatedly. Supports both exact string matching and regex patterns. Use dryRun=true to preview changes. PRIORITY GUIDANCE: Often the best choice for targeted changes and edits, helps avoid content repetition. STRONGLY RECOMMENDED to keep createRevision=true (default) for safety.",
       inputSchema: {
         type: "object",
         properties: {
