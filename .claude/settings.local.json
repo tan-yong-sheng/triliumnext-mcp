@@ -7,6 +7,9 @@
       "Bash(npm run build)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "additionalDirectories": [
+      "C:\\c\\Users\\tys\\Documents\\Coding"
+    ]
   }
 }

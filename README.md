@@ -102,10 +102,12 @@ The server provides the following tools for note management:
   - Parameters: text, created_date_start/end, modified_date_start/end, filters, attributes, noteProperties, hierarchyType, parentNoteId, limit, orderBy
   - Automatically optimizes with fast search when only text search is used
 
-- `list_labels` - Get all unique label names used in the note system
-  - Returns a list of all label names across all notes with usage counts
-  - Useful for discovering available labels for attribute searches
-  - Optional: includeValues (show label values), sortBy (name or usage count)
+- `manage_attributes` - Comprehensive attribute management system for CRUD operations on both labels and relations
+  - **Operations**: list (discover attributes), create (add to note), update (modify), delete (remove), get (details)
+  - **Types**: Supports both labels (#tags) and relations (~connections) with `attributeType` parameter
+  - **Discovery**: Find all unique attribute names across notes with usage counts and values, filtered by type
+  - **Management**: Create, update, and delete labels and relations on notes with full ETAPI integration
+  - **Features**: Support for attribute values, positioning, inheritance, validation, and type-specific constraints
 
 ### Note Discovery Tools
 

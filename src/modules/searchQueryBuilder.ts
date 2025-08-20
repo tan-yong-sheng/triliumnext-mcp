@@ -1,9 +1,3 @@
-interface FilterCondition {
-  field: string;    // 'title' or 'content'
-  op: string;       // 'contains', 'starts_with', 'ends_with', 'not_equal'
-  value: string;    // search value
-}
-
 interface AttributeCondition {
   type: string;     // 'label', 'relation' (future)
   name: string;     // Name of the label or relation
@@ -12,23 +6,18 @@ interface AttributeCondition {
   logic?: 'AND' | 'OR'; // Logic operator to combine with NEXT item
 }
 
-// NotePropertyCondition interface for note.* properties
+// NotePropertyCondition interface for note.* properties (including title and content)
 interface NotePropertyCondition {
-  property: string; // Note property name (isArchived, isProtected, etc.)
-  op?: string;      // Operator (=, !=, >, <, >=, <=)
+  property: string; // Note property name (isArchived, isProtected, title, content, etc.)
+  op?: string;      // Operator (=, !=, >, <, >=, <=, contains, starts_with, ends_with)
   value: string;    // Value to compare
   logic?: 'AND' | 'OR'; // Logic operator to combine with NEXT item
 }
 
 interface SearchStructuredParams {
-  created_date_start?: string;
-  created_date_end?: string;
-  modified_date_start?: string;
-  modified_date_end?: string;
   text?: string;
   limit?: number;
   orderBy?: string;
-  filters?: FilterCondition[];
   attributes?: AttributeCondition[];
   noteProperties?: NotePropertyCondition[];
   hierarchyType?: 'children' | 'descendants';
@@ -44,16 +33,7 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
     console.error(`[VERBOSE] buildSearchQuery input:`, JSON.stringify(params, null, 2));
   }
   
-  // Build field-specific filters
-  const fieldFilters: string[] = [];
-  if (params.filters && params.filters.length > 0) {
-    for (const filter of params.filters) {
-      const fieldQuery = buildFieldQuery(filter);
-      if (fieldQuery) {
-        fieldFilters.push(fieldQuery);
-      }
-    }
-  }
+  // Field-specific filters are now handled in noteProperties parameter
   
   // Build attribute-specific filters (labels and relations with #, ~ syntax)
   const attributeExpressions: string[] = [];
@@ -61,7 +41,7 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
     attributeExpressions.push(...buildAttributeExpressions(params.attributes));
   }
   
-  // Build note property filters (note.* properties - separate concept)
+  // Build note property filters (note.* properties - including dates)
   const notePropertyExpressions: string[] = [];
   if (params.noteProperties && params.noteProperties.length > 0) {
     notePropertyExpressions.push(...buildNotePropertyExpressions(params.noteProperties));
@@ -76,54 +56,7 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
     }
   }
   
-  // Build date ranges
-  const dateGroups: string[] = [];
-  
-  // Created date range
-  if (params.created_date_start || params.created_date_end) {
-    const createdParts: string[] = [];
-    if (params.created_date_start) {
-      createdParts.push(`note.dateCreated >= '${params.created_date_start}'`);
-    }
-    if (params.created_date_end) {
-      createdParts.push(`note.dateCreated < '${params.created_date_end}'`);
-    }
-    if (createdParts.length > 0) {
-      dateGroups.push(`(${createdParts.join(' AND ')})`);
-    }
-  }
-  
-  // Modified date range
-  if (params.modified_date_start || params.modified_date_end) {
-    const modifiedParts: string[] = [];
-    if (params.modified_date_start) {
-      modifiedParts.push(`note.dateModified >= '${params.modified_date_start}'`);
-    }
-    if (params.modified_date_end) {
-      modifiedParts.push(`note.dateModified < '${params.modified_date_end}'`);
-    }
-    if (modifiedParts.length > 0) {
-      dateGroups.push(`(${modifiedParts.join(' AND ')})`);
-    }
-  }
-  
-  // Join date groups with OR if multiple
-  if (dateGroups.length > 0) {
-    if (dateGroups.length === 1) {
-      // Remove parentheses for single date group
-      queryParts.push(dateGroups[0].slice(1, -1));
-    } else {
-      // When using OR with parentheses, prepend with ~ to satisfy Trilium's parser
-      // Trilium requires an "expression separator sign" (# or ~) before parentheses
-      const orExpression = dateGroups.join(' OR ');
-      queryParts.push(`~${orExpression}`);
-    }
-  }
-  
-  // Add field filters
-  if (fieldFilters.length > 0) {
-    queryParts.push(...fieldFilters);
-  }
+  // Field filters now handled through noteProperties parameter
   
   // Add attribute expressions (labels and relations)
   if (attributeExpressions.length > 0) {
@@ -148,10 +81,10 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
   // Build main query
   let query = queryParts.join(' ');
   
-  // If only filters/attributes/noteProperties/hierarchy were provided and no other search criteria, add universal match condition
-  if (query.trim() === '' && (fieldFilters.length > 0 || attributeExpressions.length > 0 || notePropertyExpressions.length > 0 || hierarchyFilters.length > 0)) {
-    // For ETAPI compatibility, we need a base search condition when only using filters/attributes/noteProperties/hierarchy
-    const allFilters = [...fieldFilters, ...attributeExpressions, ...notePropertyExpressions, ...hierarchyFilters];
+  // If only attributes/noteProperties/hierarchy were provided and no other search criteria, add universal match condition
+  if (query.trim() === '' && (attributeExpressions.length > 0 || notePropertyExpressions.length > 0 || hierarchyFilters.length > 0)) {
+    // For ETAPI compatibility, we need a base search condition when only using attributes/noteProperties/hierarchy
+    const allFilters = [...attributeExpressions, ...notePropertyExpressions, ...hierarchyFilters];
     query = `note.noteId != '' ${allFilters.join(' ')}`;
   } else if (query.trim() === '') {
     // No search criteria provided at all - this will trigger the validation error in index.ts
@@ -187,52 +120,6 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
   }
   
   return query;
-}
-
-/**
- * Builds a field-specific query based on the filter condition
- * Maps JSON operators to Trilium search operators
- */
-function buildFieldQuery(filter: FilterCondition): string {
-  const { field, op, value } = filter;
-  
-  // Map field names to Trilium note properties
-  let triliumField: string;
-  if (field === 'title') {
-    triliumField = 'note.title';
-  } else if (field === 'content') {
-    triliumField = 'note.content';
-  } else {
-    // Invalid field, skip this filter
-    return '';
-  }
-  
-  // Map operators to Trilium syntax
-  let triliumOperator: string;
-  let escapedValue: string;
-  
-  switch (op) {
-    case 'contains':
-      triliumOperator = '*=*';
-      break;
-    case 'starts_with':
-      triliumOperator = '=*';
-      break;
-    case 'ends_with':
-      triliumOperator = '*=';
-      break;
-    case 'not_equal':
-      triliumOperator = '!=';
-      break;
-    default:
-      // Invalid operator, skip this filter
-      return '';
-  }
-  
-  // Escape quotes in the value and wrap in single quotes for regular operators
-  escapedValue = value.replace(/'/g, "\\'");
-  
-  return `${triliumField} ${triliumOperator} '${escapedValue}'`;
 }
 
 /**
@@ -347,6 +234,27 @@ function buildAttributeQuery(attribute: AttributeCondition): string {
 }
 
 /**
+ * Validates ISO date format for date properties
+ */
+function validateISODate(value: string, property: string): string {
+  // ISO date formats: YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss.sssZ
+  const isoDateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  const isoDateTimeRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/;
+  
+  if (!isoDateRegex.test(value) && !isoDateTimeRegex.test(value)) {
+    throw new Error(`Invalid date format for property '${property}'. Must use ISO format: 'YYYY-MM-DD' (e.g., '2024-01-01') or 'YYYY-MM-DDTHH:mm:ss.sssZ' (e.g., '2024-01-01T00:00:00.000Z'). Smart expressions like 'TODAY-7' are not allowed.`);
+  }
+  
+  // Additional validation: check if the date is actually valid
+  const dateObj = new Date(value);
+  if (isNaN(dateObj.getTime())) {
+    throw new Error(`Invalid date value for property '${property}': '${value}'. Please provide a valid ISO date.`);
+  }
+  
+  return value;
+}
+
+/**
  * Builds note property expressions with per-item logic support
  */
 function buildNotePropertyExpressions(noteProperties: NotePropertyCondition[]): string[] {
@@ -409,6 +317,21 @@ function buildNotePropertyQuery(noteProperty: NotePropertyCondition): string {
     case 'title':
       triliumProperty = 'note.title';
       break;
+    case 'content':
+      triliumProperty = 'note.content';
+      break;
+    case 'dateCreated':
+      triliumProperty = 'note.dateCreated';
+      break;
+    case 'dateModified':
+      triliumProperty = 'note.dateModified';
+      break;
+    case 'dateCreatedUtc':
+      triliumProperty = 'note.dateCreatedUtc';
+      break;
+    case 'dateModifiedUtc':
+      triliumProperty = 'note.dateModifiedUtc';
+      break;
     case 'labelCount':
       triliumProperty = 'note.labelCount';
       break;
@@ -459,6 +382,18 @@ function buildNotePropertyQuery(noteProperty: NotePropertyCondition): string {
     case '<=':
       triliumOperator = '<=';
       break;
+    case 'contains':
+      triliumOperator = '*=*';
+      break;
+    case 'starts_with':
+      triliumOperator = '=*';
+      break;
+    case 'ends_with':
+      triliumOperator = '*=';
+      break;
+    case 'not_equal':
+      triliumOperator = '!=';
+      break;
     default:
       // Invalid operator, skip this filter
       return '';
@@ -481,6 +416,14 @@ function buildNotePropertyQuery(noteProperty: NotePropertyCondition): string {
              property === 'contentSize' || property === 'revisionCount') {
     // Numeric properties - no quotes needed
     processedValue = value;
+  } else if (property === 'title' || property === 'content') {
+    // Title and content properties need quotes for string operators
+    processedValue = `'${value.replace(/'/g, "\\'")}'`;
+  } else if (property === 'dateCreated' || property === 'dateModified' || 
+             property === 'dateCreatedUtc' || property === 'dateModifiedUtc') {
+    // Date properties - validate ISO format and wrap in quotes
+    const validatedValue = validateISODate(value, property);
+    processedValue = `'${validatedValue.replace(/'/g, "\\'")}'`;
   } else {
     // For other properties, escape quotes and wrap in single quotes
     processedValue = `'${value.replace(/'/g, "\\'")}'`;

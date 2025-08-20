@@ -62,75 +62,58 @@ This document outlines planned features and enhancements for the TriliumNext MCP
 
 ## Medium Priority Features
 
-### 2. Relation Support and Management
+### 2. Attribute Management System ✅ **IMPLEMENTED**
 
-**Purpose**: Complete support for Trilium's relation system - the second major type of user-defined metadata alongside labels.
+**Status**: Completed with `manage_attributes` MCP function
 
-**Search Support Proposals**:
-- Implement `type: "relation"` in the attributes parameter
-- Support for relation queries like `~author.title *= 'Tolkien'`
-- Complex relation chains: `~author.relations.son.title = 'Christopher Tolkien'`
-- Relation-based hierarchy navigation and discovery
+**Implemented Features**:
+- ✅ `list`: Discover all attributes (labels and relations) with usage statistics and values, filtered by type
+- ✅ `create`: Add new labels and relations to notes with validation and type-specific constraints
+- ✅ `update`: Modify attribute values and position with OpenAPI-compliant restrictions (relations: position only, labels: value + position)
+- ✅ `delete`: Remove attributes from notes with enhanced messaging showing attribute type and name
+- ✅ `get`: Retrieve specific attribute details by attribute ID (works for both labels and relations)
 
-**Relation Management Operations** (Proposals):
-- `list_relations`: Get all unique relation names used across notes (similar to `list_labels`)
-- `create_relation`: Establish new relations between notes
-- `update_relation`: Modify existing relation properties or targets
-- `delete_relation`: Remove relations between notes
-- `get_note_relations`: List all relations for a specific note (incoming and outgoing)
-
-**Technical Considerations**:
-- Relations are bidirectional in Trilium - need to handle both directions
-- Relation target validation (ensure target notes exist)
-- Relation type validation against Trilium's relation system
-- Performance implications of relation traversal queries
-
-### 3. Label Management System
-
-**Purpose**: Comprehensive label lifecycle management beyond just searching.
-
-**Label Management Operations** (Proposals):
-- `create_label`: Add new labels to notes with optional values
-- `update_label`: Modify label values on existing notes  
-- `delete_label`: Remove labels from notes (with safety checks)
-- `bulk_label_operations`: Batch operations for efficiency
-- `get_label_usage`: Analyze label usage patterns and statistics
-- `rename_label`: Rename labels across all notes (global operation)
-
-**Advanced Label Features** (Proposals):
-- Label inheritance and propagation rules
-- Label templates for consistent tagging
-- Label validation and constraints
-- Label relationship mapping (which labels commonly appear together)
+**Technical Implementation**:
+- Full ETAPI integration using unified `/attributes` endpoints
+- Support for both `label` and `relation` types with `attributeType` parameter
+- Comprehensive error handling with type-specific validation
+- OpenAPI constraint compliance (relations can only update position, not values)
+- Enhanced discovery with type filtering and sorting options
+- Backward compatibility maintained while extending functionality
 
 ### 4. Advanced Search Templates
 - Pre-built search templates for common use cases
 - Template system for complex queries
 - User-customizable search patterns
+- Support regex search
 
-### 5. Bulk Operations
+### 5. search_replace feature
+- Performs search-and-replace operations in a note.
+- Proposed arguments: targetType, replacements, useRegex?, replaceAll?
+
+### 6. Bulk Operations
 - Batch note creation/updates
 - Bulk tagging and organization
 - Mass export/import capabilities
 
-### 6. Enhanced Content Processing
+### 7. Enhanced Content Processing
 - Better Markdown detection and conversion
 - Support for additional content types
 - Content transformation utilities
 
 ## Low Priority Features
 
-### 6. Search Query Optimization
+### 8. Search Query Optimization
 - Query performance analysis
 - Automatic query optimization suggestions
 - Search result caching
 
-### 7. Integration Enhancements
+### 9. Integration Enhancements
 - Webhook support for real-time updates
 - Integration with external note-taking systems
 - Advanced synchronization capabilities
 
-### 8. Analytics and Insights
+### 10. Analytics and Insights
 - Note usage statistics
 - Search pattern analysis
 - Content organization insights

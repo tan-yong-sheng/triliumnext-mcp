@@ -9,104 +9,108 @@ This guide shows how to call MCP `search_notes` using structured parameters. The
 ## Function Contract: search_notes
 
 Input parameters:
-- created_date_start: string (ISO date, e.g., '2024-01-01')
-- created_date_end: string (ISO date, exclusive upper bound, e.g., '2024-12-31')
-- modified_date_start: string (ISO date)
-- modified_date_end: string (ISO date, exclusive upper bound)
 - text: string (full-text search token, uses Trilium's indexed search)
-- filters: array (field-specific title/content searches)
 - attributes: array (label-based searches like #book, #author)
-- noteProperties: array (note.isArchived, note.isProtected searches)
+- noteProperties: array (note.isArchived, note.isProtected, note.title, note.content, note.dateCreated, note.dateModified searches)
 - hierarchyType: string ('children' or 'descendants' for hierarchy searches)
 - parentNoteId: string (parent note for hierarchy searches)
 - limit: number (max results to return, e.g., 10)
 - orderBy: string (sort order, e.g., 'note.dateCreated desc')
 
 Query composition:
-- created: [`note.dateCreated >= <start>`, `note.dateCreated < <end>`]
-- modified: [`note.dateModified >= <start>`, `note.dateModified < <end>`]
 - text: `<token>` (bare token for full-text search)
+- noteProperties: Individual `note.*` conditions joined with AND/OR based on logic parameter
+- attributes: `#label` and `~relation` expressions with AND/OR logic
+- hierarchyType: `note.parents.noteId` (children) or `note.ancestors.noteId` (descendants)
 - limit: `limit <number>` (appended to query)
-- Final query: join groups with AND, date groups with OR if both present, then append limit
+- Final query: join all groups with space separation, then append limit
 
-**Important distinction:**
-- `text`: Full-text indexed search (faster, finds whole words/tokens)
+**Important architectural change:**
+- **Date searches now use noteProperties**: `{"noteProperties": [{"property": "dateCreated", "op": ">=", "value": "2024-01-01"}]}`
+- **ISO date format required**: MUST use exact ISO date format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss.sssZ). Smart expressions like 'TODAY-7' are NOT allowed in MCP interface
+- **OR logic available**: Mix date searches with other properties using per-item logic
 
 ---
 
 ## Examples
 
-### 1) Created in last 7 days
+### 1) Created in last 7 days (using noteProperties with ISO date)
 - Params
 ```json
 {
-  "created_date_start": "2024-08-11",
-  "created_date_end": "2024-08-18"
+  "noteProperties": [
+    { "property": "dateCreated", "op": ">=", "value": "2024-12-13" }
+  ]
 }
 ```
 - Composed query
 ```
-note.dateCreated >= '2024-08-11' AND note.dateCreated < '2024-08-18'
+note.dateCreated >= '2024-12-13'
 ```
 - MCP call
 ```js
 search_notes({ 
-  created_date_start: "2024-08-11",
-  created_date_end: "2024-08-18"
+  noteProperties: [
+    { property: "dateCreated", op: ">=", value: "2024-12-13" }
+  ]
 })
 ```
 
-### 2) Modified in last 7 days
+### 2) Modified in last 7 days (using noteProperties with ISO date)
 - Params
 ```json
 {
-  "modified_date_start": "2024-08-11",
-  "modified_date_end": "2024-08-18"
+  "noteProperties": [
+    { "property": "dateModified", "op": ">=", "value": "2024-12-13" }
+  ]
 }
 ```
 - Composed query
 ```
-note.dateModified >= '2024-08-11' AND note.dateModified < '2024-08-18'
+note.dateModified >= '2024-12-13'
 ```
 - MCP call
 ```js
 search_notes({ 
-  modified_date_start: "2024-08-11",
-  modified_date_end: "2024-08-18"
+  noteProperties: [
+    { property: "dateModified", op: ">=", value: "2024-12-13" }
+  ]
 })
 ```
 
-### 3) Created OR modified in last 7 days
+### 3) Created OR modified in last 7 days (using noteProperties with OR logic and ISO dates)
 - Params
 ```json
 {
-  "created_date_start": "2024-08-11",
-  "created_date_end": "2024-08-18",
-  "modified_date_start": "2024-08-11",
-  "modified_date_end": "2024-08-18"
+  "noteProperties": [
+    { "property": "dateCreated", "op": ">=", "value": "2024-12-13", "logic": "OR" },
+    { "property": "dateModified", "op": ">=", "value": "2024-12-13" }
+  ]
 }
 ```
 - Composed query
 ```
-~(note.dateCreated >= '2024-08-11' AND note.dateCreated < '2024-08-18') OR (note.dateModified >= '2024-08-11' AND note.dateModified < '2024-08-18')
+~(note.dateCreated >= '2024-12-13' OR note.dateModified >= '2024-12-13')
 ```
-- **Note**: The `~` prefix is required by Trilium when expressions start with parentheses
+- **Note**: The `~` prefix is automatically added by the query builder for OR expressions
 - MCP call
 ```js
 search_notes({ 
-  created_date_start: "2024-08-11",
-  created_date_end: "2024-08-18",
-  modified_date_start: "2024-08-11",
-  modified_date_end: "2024-08-18"
+  noteProperties: [
+    { property: "dateCreated", op: ">=", value: "2024-12-13", logic: "OR" },
+    { property: "dateModified", op: ">=", value: "2024-12-13" }
+  ]
 })
 ```
 
-### 4) Created between 2024 and 2025
+### 4) Created between 2024 and 2025 (using noteProperties)
 - Params
 ```json
 {
-  "created_date_start": "2024-01-01",
-  "created_date_end": "2026-01-01"
+  "noteProperties": [
+    { "property": "dateCreated", "op": ">=", "value": "2024-01-01" },
+    { "property": "dateCreated", "op": "<", "value": "2026-01-01" }
+  ]
 }
 ```
 - Composed query
@@ -116,8 +120,10 @@ note.dateCreated >= '2024-01-01' AND note.dateCreated < '2026-01-01'
 - MCP call
 ```js
 search_notes({ 
-  created_date_start: "2024-01-01",
-  created_date_end: "2026-01-01"
+  noteProperties: [
+    { property: "dateCreated", op: ">=", value: "2024-01-01" },
+    { property: "dateCreated", op: "<", value: "2026-01-01" }
+  ]
 })
 ```
 
@@ -125,25 +131,27 @@ search_notes({
 
 ## Full-Text + Date Logic (AND/OR)
 
-### 5) Created in last year AND full-text search "kubernetes"
+### 5) Created in last year AND full-text search "kubernetes" (using noteProperties with ISO date)
 - Params
 ```json
 {
-  "created_date_start": "2023-08-18",
-  "created_date_end": "2024-08-18",
-  "text": "kubernetes"
+  "text": "kubernetes",
+  "noteProperties": [
+    { "property": "dateCreated", "op": ">=", "value": "2024-01-01" }
+  ]
 }
 ```
 - Composed query
 ```
-kubernetes note.dateCreated >= '2023-08-18' AND note.dateCreated < '2024-08-18'
+kubernetes note.dateCreated >= '2024-01-01'
 ```
 - MCP call
 ```js
 search_notes({ 
   text: "kubernetes",
-  created_date_start: "2023-08-18",
-  created_date_end: "2024-08-18"
+  noteProperties: [
+    { property: "dateCreated", op: ">=", value: "2024-01-01" }
+  ]
 })
 ```
 
@@ -167,12 +175,14 @@ search_notes({
 })
 ```
 
-### 7) Search "n8n" notes created since 2020, ordered by creation date descending, limit 10
+### 7) Search "n8n" notes created since 2020, ordered by creation date descending, limit 10 (using noteProperties)
 - Params
 ```json
 {
   "text": "n8n",
-  "created_date_start": "2020-01-01",
+  "noteProperties": [
+    { "property": "dateCreated", "op": ">=", "value": "2020-01-01" }
+  ],
   "orderBy": "note.dateCreated desc",
   "limit": 10
 }
@@ -185,13 +195,15 @@ n8n note.dateCreated >= '2020-01-01' orderBy note.dateCreated desc limit 10
 ```js
 search_notes({ 
   text: "n8n",
-  created_date_start: "2020-01-01",
+  noteProperties: [
+    { property: "dateCreated", op: ">=", value: "2020-01-01" }
+  ],
   orderBy: "note.dateCreated desc",
   limit: 10
 })
 ```
 
-### 8) ❌ INVALID: Search "n8n" with orderBy but no date filter (orderBy will be skipped)
+### 8) ❌ INVALID: Search "n8n" with orderBy but no date property (orderBy will be skipped)
 - Params
 ```json
 {
@@ -204,7 +216,7 @@ search_notes({
 ```
 n8n limit 10
 ```
-- Explanation: orderBy field `note.dateCreated` not found in filters, so orderBy is ignored
+- Explanation: orderBy field `note.dateCreated` not found in noteProperties, so orderBy is ignored
 - MCP call
 ```js
 search_notes({ 
@@ -212,40 +224,44 @@ search_notes({
   orderBy: "note.dateCreated desc",
   limit: 10
 })
-// orderBy skipped because note.dateCreated not used as filter
+// orderBy skipped because note.dateCreated not used as noteProperty
 ```
 
-### 9) Search "docker" notes modified in last year, ordered by modification date descending
+### 9) Search "docker" notes modified in last year, ordered by modification date descending (using noteProperties)
 - Params
 ```json
 {
   "text": "docker",
-  "modified_date_start": "2023-08-18",
-  "modified_date_end": "2024-08-18",
+  "noteProperties": [
+    { "property": "dateModified", "op": ">=", "value": "YEAR-1" }
+  ],
   "orderBy": "note.dateModified desc",
   "limit": 5
 }
 ```
 - Composed query
 ```
-docker note.dateModified >= '2023-08-18' AND note.dateModified < '2024-08-18' orderBy note.dateModified desc limit 5
+docker note.dateModified >= 'YEAR-1' orderBy note.dateModified desc limit 5
 ```
 - MCP call
 ```js
 search_notes({ 
   text: "docker",
-  modified_date_start: "2023-08-18",
-  modified_date_end: "2024-08-18",
+  noteProperties: [
+    { property: "dateModified", op: ">=", value: "YEAR-1" }
+  ],
   orderBy: "note.dateModified desc",
   limit: 5
 })
 ```
 
-### 10) Search notes created since 2024, ordered by creation date ascending
+### 10) Search notes created since 2024, ordered by creation date ascending (using noteProperties)
 - Params
 ```json
 {
-  "created_date_start": "2024-01-01",
+  "noteProperties": [
+    { "property": "dateCreated", "op": ">=", "value": "2024-01-01" }
+  ],
   "orderBy": "note.dateCreated asc",
   "limit": 15
 }
@@ -257,17 +273,21 @@ note.dateCreated >= '2024-01-01' orderBy note.dateCreated asc limit 15
 - MCP call
 ```js
 search_notes({ 
-  created_date_start: "2024-01-01",
+  noteProperties: [
+    { property: "dateCreated", op: ">=", value: "2024-01-01" }
+  ],
   orderBy: "note.dateCreated asc",
   limit: 15
 })
 ```
 
-### 11) Search notes modified since 2024, ordered by modification date ascending
+### 11) Search notes modified since 2024, ordered by modification date ascending (using noteProperties)
 - Params
 ```json
 {
-  "modified_date_start": "2024-01-01",
+  "noteProperties": [
+    { "property": "dateModified", "op": ">=", "value": "2024-01-01" }
+  ],
   "orderBy": "note.dateModified asc",
   "limit": 20
 }
@@ -279,7 +299,9 @@ note.dateModified >= '2024-01-01' orderBy note.dateModified asc limit 20
 - MCP call
 ```js
 search_notes({ 
-  modified_date_start: "2024-01-01",
+  noteProperties: [
+    { property: "dateModified", op: ">=", value: "2024-01-01" }
+  ],
   orderBy: "note.dateModified asc", 
   limit: 20
 })
@@ -287,26 +309,26 @@ search_notes({
 
 ---
 
-## Advanced Field-Specific Search Examples
+## Advanced noteProperties Search Examples (Using noteProperties)
 
-These examples demonstrate advanced field-specific operators for title and content search. These provide more precise control than basic full-text search.
+These examples demonstrate advanced operators for title and content search using the `noteProperties` parameter. These provide more precise control than basic full-text search.
 
-### Field Operators Reference
-- `*=*` : contains substring
-- `*=` : ends with
-- `=*` : starts with
-- `!=` : not equal to
+### noteProperties Operators Reference
+- `contains` (maps to *=*) : contains substring
+- `ends_with` (maps to *=) : ends with
+- `starts_with` (maps to =*) : starts with  
+- `not_equal` (maps to !=) : not equal to
 
 ### 12) Title contains "Tolkien"
 - Composed query
 ```
 note.title *=* 'Tolkien'
 ```
-- JSON structure for filters parameter
+- JSON structure for noteProperties parameter
 ```json
 {
-  "filters": [
-    { "field": "title", "op": "contains", "value": "Tolkien" }
+  "noteProperties": [
+    { "property": "title", "op": "contains", "value": "Tolkien" }
   ]
 }
 ```
@@ -317,11 +339,11 @@ note.title *=* 'Tolkien'
 ```
 note.title =* 'Project'
 ```
-- JSON structure for filters parameter
+- JSON structure for noteProperties parameter
 ```json
 {
-  "filters": [
-    { "field": "title", "op": "starts_with", "value": "Project" }
+  "noteProperties": [
+    { "property": "title", "op": "starts_with", "value": "Project" }
   ]
 }
 ```
@@ -332,11 +354,11 @@ note.title =* 'Project'
 ```
 note.title *= 'Notes'
 ```
-- JSON structure for filters parameter
+- JSON structure for noteProperties parameter
 ```json
 {
-  "filters": [
-    { "field": "title", "op": "ends_with", "value": "Notes" }
+  "noteProperties": [
+    { "property": "title", "op": "ends_with", "value": "Notes" }
   ]
 }
 ```
@@ -347,11 +369,11 @@ note.title *= 'Notes'
 ```
 note.title != 'Backup'
 ```
-- JSON structure for filters parameter
+- JSON structure for noteProperties parameter
 ```json
 {
-  "filters": [
-    { "field": "title", "op": "not_equal", "value": "Backup" }
+  "noteProperties": [
+    { "property": "title", "op": "not_equal", "value": "Backup" }
   ]
 }
 ```
@@ -362,72 +384,73 @@ note.title != 'Backup'
 ```
 note.content *=* 'dead letter'
 ```
-- JSON structure for filters parameter
+- JSON structure for noteProperties parameter
 ```json
 {
-  "filters": [
-    { "field": "content", "op": "contains", "value": "dead letter" }
+  "noteProperties": [
+    { "property": "content", "op": "contains", "value": "dead letter" }
   ]
 }
 ```
 - Use case: Find notes discussing dead letter patterns/queues
 
-### 17) Complex multi-field search: Title starts with "Meeting" AND content contains "agenda"
+### 17) Complex multi-property search: Title starts with "Meeting" AND content contains "agenda"
 - Composed query
 ```
 note.title =* 'Meeting' AND note.content *=* 'agenda'
 ```
-- JSON structure for filters parameter
+- JSON structure for noteProperties parameter
 ```json
 {
-  "filters": [
-    { "field": "title", "op": "starts_with", "value": "Meeting" },
-    { "field": "content", "op": "contains", "value": "agenda" }
+  "noteProperties": [
+    { "property": "title", "op": "starts_with", "value": "Meeting" },
+    { "property": "content", "op": "contains", "value": "agenda" }
   ]
 }
 ```
 - Use case: Find meeting notes that contain agenda items
 
-### 18) Advanced combination: Full-text + field filters + date range
+### 18) Advanced combination: Full-text + noteProperties searches + date range (using noteProperties with default OR logic)
 - Composed query
 ```
-setup guide note.dateCreated >= '2024-01-01' AND note.title =* 'Tutorial' AND note.content *=* 'steps'
+setup guide ~(note.dateCreated >= '2024-01-01' OR note.title =* 'Tutorial' OR note.content *=* 'steps')
 ```
-- JSON structure for filters parameter
+- JSON structure for combined parameters (default OR logic when logic not specified)
 ```json
 {
   "text": "setup guide",
-  "filters": [
-    { "field": "title", "op": "starts_with", "value": "Tutorial" },
-    { "field": "content", "op": "contains", "value": "steps" }
-  ],
-  "created_date_start": "2024-01-01"
+  "noteProperties": [
+    { "property": "dateCreated", "op": ">=", "value": "2024-01-01" },
+    { "property": "title", "op": "starts_with", "value": "Tutorial" },
+    { "property": "content", "op": "contains", "value": "steps" }
+  ]
 }
 ```
-- Use case: Find recent tutorial guides with step-by-step instructions
+- Use case: Find recent tutorial guides with step-by-step instructions (matches any of the criteria)
+- **Note**: Default logic is OR when not specified. For AND behavior, add `"logic": "AND"` to each item except the last.
 
 ### 19) Content search: Notes containing specific phrases
 - Composed query
 ```
 note.content *=* 'machine learning'
 ```
-- JSON structure for filters parameter
+- JSON structure for noteProperties parameter
 ```json
 {
-  "filters": [
-    { "field": "content", "op": "contains", "value": "machine learning" }
+  "noteProperties": [
+    { "property": "content", "op": "contains", "value": "machine learning" }
   ]
 }
 ```
 - Use case: Find notes discussing machine learning concepts
 
-### 21) Advanced field-specific search with filters parameter
-- Params (using filters parameter)
+### 21) Advanced field-specific search with noteProperties parameter
+- Params (using noteProperties parameter)
 ```json
 {
-  "filters": [
-    { "field": "title", "op": "contains", "value": "Tutorial" },
-    { "field": "content", "op": "contains", "value": "steps" }
+  "noteProperties": [
+    { "property": "title", "op": "contains", "value": "Tutorial" },
+    { "property": "content", "op": "contains", "value": "steps" }
   ],
   "created_date_start": "2024-01-01"
 }
@@ -436,16 +459,16 @@ note.content *=* 'machine learning'
 ```
 note.dateCreated >= '2024-01-01' AND note.title *=* 'Tutorial' AND note.content *=* 'steps'
 ```
-- Use case: Find recent tutorials with step-by-step instructions using structured filters
+- Use case: Find recent tutorials with step-by-step instructions using structured noteProperties
 
-### 22) Multiple field filters with different operators
-- Params (using filters parameter)
+### 22) Multiple noteProperties searches with different operators
+- Params (using noteProperties parameter)
 ```json
 {
-  "filters": [
-    { "field": "title", "op": "starts_with", "value": "Project" },
-    { "field": "content", "op": "not_equal", "value": "incomplete" },
-    { "field": "content", "op": "contains", "value": "documentation" }
+  "noteProperties": [
+    { "property": "title", "op": "starts_with", "value": "Project" },
+    { "property": "content", "op": "not_equal", "value": "incomplete" },
+    { "property": "content", "op": "contains", "value": "documentation" }
   ]
 }
 ```
@@ -455,14 +478,14 @@ note.title =* 'Project' AND note.content != 'incomplete' AND note.content *=* 'd
 ```
 - Use case: Find project notes with documentation that are not marked incomplete
 
-### 23) Combined full-text and field filters
-- Params (using filters parameter)
+### 23) Combined full-text and noteProperties searches
+- Params (using noteProperties parameter)
 ```json
 {
   "text": "machine learning",
-  "filters": [
-    { "field": "title", "op": "ends_with", "value": "Notes" },
-    { "field": "content", "op": "contains", "value": "algorithm" }
+  "noteProperties": [
+    { "property": "title", "op": "ends_with", "value": "Notes" },
+    { "property": "content", "op": "contains", "value": "algorithm" }
   ],
   "limit": 10
 }
@@ -680,18 +703,20 @@ docker note.parents.noteId = 'projectFolderId'
 ```
 - Use case: Find children containing "docker" in a specific folder
 
-### 32) List descendants with date filtering
+### 32) List descendants with date filtering (using noteProperties)
 - Params
 ```json
 {
   "hierarchyType": "descendants", 
   "parentNoteId": "workspaceId",
-  "modified_date_start": "2024-08-01"
+  "noteProperties": [
+    { "property": "dateModified", "op": ">=", "value": "MONTH-1" }
+  ]
 }
 ```
 - Composed query
 ```
-note.dateModified >= '2024-08-01' AND note.ancestors.noteId = 'workspaceId'
+note.dateModified >= 'MONTH-1' AND note.ancestors.noteId = 'workspaceId'
 ```
 - Use case: Find all descendants modified recently in a workspace
 
@@ -909,13 +934,322 @@ note.labelCount = 0
 
 ---
 
-## Notes
+## noteProperties OR Logic Test Examples (Using noteProperties)
+
+These examples test OR logic for noteProperties searches using the unified `noteProperties` parameter with per-item logic support.
+
+### 47) TriliumNext Example: Content OR Search
+- TriliumNext native query (from docs)
+```
+note.content *=* rings OR note.content *=* tolkien
+```
+- Expected behavior: Find notes containing "rings" OR "tolkien" in content
+- Current MCP structure (with OR logic support)
+```json
+{
+  "noteProperties": [
+    { "property": "content", "op": "contains", "value": "rings", "logic": "OR" },
+    { "property": "content", "op": "contains", "value": "tolkien" }
+  ]
+}
+```
+- **Status**: ✅ IMPLEMENTED - noteProperties parameter supports OR logic
+
+### 48) TriliumNext Example: Mixed Field OR Search  
+- TriliumNext native query pattern
+```
+note.title *=* project OR note.content *=* documentation
+```
+- Expected behavior: Find notes with "project" in title OR "documentation" in content
+- Current MCP structure (with OR logic support)
+```json
+{
+  "noteProperties": [
+    { "property": "title", "op": "contains", "value": "project", "logic": "OR" },
+    { "property": "content", "op": "contains", "value": "documentation" }
+  ]
+}
+```
+- **Status**: ✅ IMPLEMENTED - noteProperties parameter supports OR logic across different properties
+
+### 49) Boolean Expression with Parentheses (from TriliumNext docs)
+- TriliumNext native query (requires ~ prefix)
+```
+~author.title *= Tolkien OR (#publicationDate >= 1954 AND #publicationDate <= 1960)
+```
+- Expected behavior: Complex OR with grouped AND conditions
+- Note: Expressions starting with parentheses need "expression separator sign" (# or ~)
+
+### 50) Multiple Content OR Searches
+- TriliumNext pattern for multiple OR conditions
+```
+note.content *=* docker OR note.content *=* kubernetes OR note.content *=* containers
+```
+- Current MCP structure 
+```json
+{
+  "noteProperties": [
+    { "property": "content", "op": "contains", "value": "docker", "logic": "OR" },
+    { "property": "content", "op": "contains", "value": "kubernetes", "logic": "OR" },
+    { "property": "content", "op": "contains", "value": "containers" }
+  ]
+}
+```
+- **Status**: ✅ IMPLEMENTED - noteProperties parameter supports multiple OR conditions
+
+### 51) Title OR Content Mixed Search
+- TriliumNext pattern
+```
+note.title *=* meeting OR note.content *=* agenda OR note.title =* "Project"
+```
+- Current MCP structure
+```json
+{
+  "noteProperties": [
+    { "property": "title", "op": "contains", "value": "meeting", "logic": "OR" },
+    { "property": "content", "op": "contains", "value": "agenda", "logic": "OR" },
+    { "property": "title", "op": "starts_with", "value": "Project" }
+  ]
+}
+```
+- **Status**: ✅ IMPLEMENTED - noteProperties parameter supports mixed property OR logic
+
+### 52) Negation with OR Logic
+- TriliumNext example with NOT
+```
+towers #!book
+```
+- Shows negation support in native syntax
+- Our equivalent for noteProperties search:
+```json
+{
+  "noteProperties": [
+    { "property": "title", "op": "contains", "value": "towers" },
+    { "property": "content", "op": "not_equal", "value": "book" }
+  ]
+}
+```
+
+---
+
+## Enhanced Date Search Examples (Using noteProperties with ISO Format)
+
+### MCP Date Properties Reference
+- **Date properties**: `dateCreated`, `dateModified` - note creation and modification timestamps
+- **Supported operators**: `>=`, `<=`, `>`, `<`, `=`, `!=` for comparison operations
+- **Required date format**: ISO date strings only - `'YYYY-MM-DD'` (e.g., '2024-01-01') or `'YYYY-MM-DDTHH:mm:ss.sssZ'` (e.g., '2024-01-01T00:00:00.000Z')
+- **Smart date expressions**: NOT allowed in MCP interface (TriliumNext supports them natively, but MCP enforces ISO format for consistency)
+- **UTC support**: `dateCreatedUtc`, `dateModifiedUtc` for timezone-aware searches
+
+### 55) Created in last 7 days (ISO date approach)
+- Composed query
+```
+note.dateCreated >= '2024-12-13'
+```
+- JSON structure using noteProperties parameter
+```json
+{
+  "noteProperties": [
+    { "property": "dateCreated", "op": ">=", "value": "2024-12-13" }
+  ]
+}
+```
+- Use case: Find recently created notes using exact ISO date (calculate date 7 days ago)
+
+### 56) Created between specific dates (noteProperties approach)
+- Composed query
+```
+note.dateCreated >= '2024-01-01' AND note.dateCreated < '2024-12-31'
+```
+- JSON structure using noteProperties parameter
+```json
+{
+  "noteProperties": [
+    { "property": "dateCreated", "op": ">=", "value": "2024-01-01" },
+    { "property": "dateCreated", "op": "<", "value": "2024-12-31" }
+  ]
+}
+```
+- Use case: Date range queries with precise ISO date boundaries
+
+### 57) Modified in last month (ISO date)
+- Composed query
+```
+note.dateModified >= '2024-11-20'
+```
+- JSON structure using noteProperties parameter
+```json
+{
+  "noteProperties": [
+    { "property": "dateModified", "op": ">=", "value": "2024-11-20" }
+  ]
+}
+```
+- Use case: Find recently modified notes using exact ISO date (calculate date 30 days ago)
+
+### 58) Created OR modified in last week (unified OR logic with ISO dates)
+- Composed query
+```
+~(note.dateCreated >= '2024-12-13' OR note.dateModified >= '2024-12-13')
+```
+- JSON structure with per-item OR logic
+```json
+{
+  "noteProperties": [
+    { "property": "dateCreated", "op": ">=", "value": "2024-12-13", "logic": "OR" },
+    { "property": "dateModified", "op": ">=", "value": "2024-12-13" }
+  ]
+}
+```
+- Use case: Find notes with recent activity (created or modified) using exact ISO dates
+
+### 59) Advanced date combinations with other properties (ISO dates)
+- Composed query
+```
+note.type = 'text' AND note.dateCreated >= '2024-11-20' AND note.labelCount > 0
+```
+- JSON structure combining dates with other properties
+```json
+{
+  "noteProperties": [
+    { "property": "type", "op": "=", "value": "text" },
+    { "property": "dateCreated", "op": ">=", "value": "2024-11-20" },
+    { "property": "labelCount", "op": ">", "value": "0" }
+  ]
+}
+```
+- Use case: Find well-tagged text notes created in the last month using exact ISO dates
+
+### 60) UTC date search for timezone-aware applications
+- Composed query
+```
+note.dateCreatedUtc >= '2024-01-01T00:00:00Z'
+```
+- JSON structure using UTC date properties
+```json
+{
+  "noteProperties": [
+    { "property": "dateCreatedUtc", "op": ">=", "value": "2024-01-01T00:00:00Z" }
+  ]
+}
+```
+- Use case: Timezone-aware date searches for global applications
+
+### 61) Complex date logic with content search
+- Composed query
+```
+kubernetes ~(note.dateCreated >= 'YEAR-1' OR note.dateModified >= 'MONTH-3') AND note.type = 'text'
+```
+- JSON structure with mixed search criteria
+```json
+{
+  "text": "kubernetes",
+  "noteProperties": [
+    { "property": "dateCreated", "op": ">=", "value": "YEAR-1", "logic": "OR" },
+    { "property": "dateModified", "op": ">=", "value": "MONTH-3" },
+    { "property": "type", "op": "=", "value": "text" }
+  ]
+}
+```
+- Use case: Find kubernetes-related text notes with recent activity
+
+### 62) Date range with exclusions
+- Composed query
+```
+note.dateCreated >= '2024-01-01' AND note.dateCreated < '2024-12-31' AND note.dateModified != '2024-06-15'
+```
+- JSON structure with date ranges and exclusions
+```json
+{
+  "noteProperties": [
+    { "property": "dateCreated", "op": ">=", "value": "2024-01-01" },
+    { "property": "dateCreated", "op": "<", "value": "2024-12-31" },
+    { "property": "dateModified", "op": "!=", "value": "2024-06-15" }
+  ]
+}
+```
+- Use case: Find notes in date range excluding specific modification dates
+
+---
+
+## Regex Search Examples (From TriliumNext Docs)
+- TriliumNext native query
+```
+#publicationYear %= '19[0-9]{2}'
+```
+- Finds labels matching regex pattern for years 1900-1999
+- **Note**: Our MCP doesn't support regex operator `%=` yet
+- **Status**: ⚠️ NOT IMPLEMENTED in current MCP search
+
+### 54) Smart Date Search (TriliumNext Feature)
+- TriliumNext native query
+```
+#dateNote >= TODAY-30
+```
+- Finds notes with dateNote label within last 30 days
+- Supported smart values: NOW ± seconds, TODAY ± days, MONTH ± months, YEAR ± years
+- **Status**: ⚠️ NOT IMPLEMENTED in current MCP search
+
+---
+
+## Critical Testing Notes
+
+### ✅ IMPLEMENTED: Date Parameter Unification with ISO Format Enforcement
+**Architectural Change Completed**: Date parameters (`created_date_start`, `created_date_end`, `modified_date_start`, `modified_date_end`) have been removed and replaced with the unified `noteProperties` parameter approach.
+
+**Implementation Benefits Achieved**:
+- ✅ **Unified API**: All search criteria now use consistent `noteProperties` pattern
+- ✅ **Enhanced OR logic**: Date searches can be mixed with other properties using per-item `logic: "OR"`
+- ✅ **ISO date format enforcement**: MCP interface now requires exact ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss.sssZ) to prevent LLM guessing errors
+- ✅ **UTC timezone support**: Added `dateCreatedUtc`, `dateModifiedUtc` properties for global applications  
+- ✅ **Simplified codebase**: Removed complex date-specific query building logic
+- ✅ **Consistent OR logic**: Same logic pattern works across all noteProperties (dates + content + system properties)
+- ✅ **Date validation**: Added strict ISO date validation in searchQueryBuilder to reject smart expressions
+
+**Migration Examples**:
+- **Before**: `{"created_date_start": "2024-01-01", "created_date_end": "2024-12-31"}`
+- **After**: `{"noteProperties": [{"property": "dateCreated", "op": ">=", "value": "2024-01-01"}, {"property": "dateCreated", "op": "<", "value": "2024-12-31"}]}`
+- **ISO format required**: `{"noteProperties": [{"property": "dateCreated", "op": ">=", "value": "2024-12-13"}]}`
+- **Complex OR**: `{"noteProperties": [{"property": "dateCreated", "op": ">=", "value": "2024-12-13", "logic": "OR"}, {"property": "dateModified", "op": ">=", "value": "2024-12-13"}]}`
+
+**Important Change**: Smart date expressions (e.g., `TODAY-7`, `MONTH-1`) are NO LONGER supported in the MCP interface. Only exact ISO dates are accepted to ensure LLM consistency and prevent incorrect date calculations.
+
+**Status**: ✅ **COMPLETED** - Full implementation with updated schemas, query builders, handlers, date validation, and comprehensive documentation
+
+### ✅ IMPLEMENTED: noteProperties Parameter Unified Field/Content Search
+
+**Current Implementation**:
+- ✅ `noteProperties` parameter: Unified support for all note.* properties including title and content
+- ✅ **Content properties**: `note.title`, `note.content` - for field-specific content searches with operators: `contains`, `starts_with`, `ends_with`, `not_equal`
+- ✅ **System properties**: `note.isArchived`, `note.type`, `note.labelCount` - built into every note with comparison operators
+- ✅ **Per-item logic**: Each property can specify `logic: "OR"` to create OR groups with the next property
+- ✅ **OR logic implementation**: Full support for complex OR expressions like `~(note.title *=* meeting OR note.content *=* agenda)`
+
+**Benefits Achieved**:
+1. **Unified API**: Single parameter handles both system properties and content searches
+2. **Consistent logic**: Same OR logic pattern as `attributes` parameter 
+3. **Simplified usage**: No need to distinguish between filters vs noteProperties for different search types
+4. **Enhanced capabilities**: All noteProperties now support OR logic including title/content searches
+
+### Missing TriliumNext Features
+1. **Regex search** (`%=` operator) - not implemented
+2. **Smart date expressions** (TODAY-30, MONTH+1) - not implemented  
+3. **Relation searches** (`~author.title`) - partially implemented
+4. **Negation operators** (`#!label`) - not implemented
+
+### Recommended Next Steps
+1. **✅ COMPLETED** - Unified field/content search architecture with noteProperties parameter
+2. **Test unified implementation** - Verify OR logic works correctly for title/content searches (examples 47-52)
+3. **Consider implementing regex and smart date features** for completeness with TriliumNext native capabilities
+4. **Performance testing** - Ensure unified noteProperties approach maintains good search performance
 - Quote search terms to handle special characters properly.
 - `text` parameter: Full-text indexed search (bare tokens, faster)
-- `filters` parameter: Array of field-specific conditions with structured operators
-  - Supported fields: `title`, `content`
-  - Supported operators: `contains` (*=*), `starts_with` (=*), `ends_with` (*=), `not_equal` (!=)
-  - **Limitation**: `not_contains` (does not contain) is not reliably supported in Trilium's search DSL
+- `noteProperties` parameter: Array for Trilium built-in note metadata and content searches (note.* properties)
+  - **System properties**: `note.isArchived`, `note.type`, `note.labelCount` - built into every note
+  - **Content properties**: `note.title`, `note.content` - for field-specific content searches
+  - **Supported operators**: `=`, `!=`, `>`, `<`, `>=`, `<=` for system properties; `contains` (*=*), `starts_with` (=*), `ends_with` (*=), `not_equal` (!=) for title/content
+  - **Different namespace**: Always prefixed with `note.` in Trilium DSL
+  - **Per-item logic**: Each item can specify `logic: "OR"` to create OR groups with the next item
 - `attributes` parameter: Array for Trilium user-defined metadata (labels and relations)
   - **Labels**: Use `#book`, `#author` syntax - user-defined tags and categories
   - **Relations**: Use `~author.title` syntax - connections between notes (future support)
@@ -931,6 +1265,6 @@ note.labelCount = 0
 - **Important**: orderBy field must also be used as a filter in the query
 - Valid orderBy examples: `note.dateCreated desc`, `note.dateModified asc`
 - The searchQueryBuilder validates that orderBy fields are present in filters
-- **Field operators**: Use `note.title` and `note.content` with operators `*=*`, `=*`, `*=`, `!=` for precise field matching
-- **Boolean logic**: Combine field filters with `AND`, `OR`, and `NOT` for complex queries
+- **noteProperties operators**: Use `note.title` and `note.content` with operators `*=*`, `=*`, `*=`, `!=` for precise field matching
+- **Boolean logic**: Combine noteProperties searches with `AND`, `OR`, and `NOT` for complex queries
 - **Critical**: Trilium requires an "expression separator sign" (`~` or `#`) before parentheses when they start an expression - this is automatically handled by the searchQueryBuilder for OR date queries
