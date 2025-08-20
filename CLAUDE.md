@@ -240,20 +240,40 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 
 ## Attribute OR Logic Support
 
-### Clean Two-Parameter Approach
+### Clean Two-Parameter Approach - AND Logic Default Aligned with TriliumNext
 - **`attributes` parameter**: For Trilium user-defined metadata (`#book`, `~author.title`)
   - **Labels**: `#book`, `#author` - user-defined tags and categories  
   - **Relations**: `~author.title *= 'Tolkien'` - connections between notes (**IMPLEMENTED**)
   - **Per-item logic**: Each attribute can specify `logic: "OR"` to combine with next attribute
+  - **Default logic**: AND when not specified (matches TriliumNext behavior: `#book #publicationYear = 1954`)
   - **Trilium syntax**: Automatically handles proper `#` and `~` prefixes, OR grouping with `~(#book OR #author)`
 - **`noteProperties` parameter**: For Trilium built-in note metadata (`note.isArchived`, `note.type`)
   - **System properties**: Built into every note - `note.isArchived`, `note.type`, `note.labelCount`
   - **Different namespace**: Always prefixed with `note.` in Trilium DSL  
   - **Per-item logic**: Each property can specify `logic: "OR"` to combine with next property
+  - **Default logic**: AND when not specified (matches TriliumNext behavior: `note.type = 'text' AND note.isArchived = false`)
 - **Conceptual clarity**: Matches Trilium's architectural separation between user metadata and system metadata
-- **Edge case handling**: Auto-cleanup of logic on last items, OR default logic, proper grouping
+- **Edge case handling**: Auto-cleanup of logic on last items, AND default logic, proper grouping
 
 ## Recent Enhancements (Latest)
+
+### Logic Default Alignment - AND Default Implementation Completed
+- **Major behavior change**: Updated default logic for both `attributes` and `noteProperties` parameters from OR to AND
+- **TriliumNext alignment**: Verified against TriliumNext documentation that default behavior is AND logic
+- **Evidence from TriliumNext docs**: `#book #publicationYear = 1954` demonstrates AND behavior without explicit operators
+- **Enhanced compatibility achieved**:
+  - **Attribute searches**: Multiple labels/relations now use AND by default - `#book #author` finds notes with BOTH labels
+  - **Note property searches**: Multiple properties now use AND by default - `note.type = 'text' note.isArchived = false` finds text notes that are not archived
+  - **Explicit OR available**: Users can still specify `logic: "OR"` for OR behavior when needed
+  - **Backward compatibility**: All existing functionality preserved, only default behavior changed
+- **Implementation details**:
+  - Updated `buildAttributeExpressions()` default logic from 'OR' to 'AND' in searchQueryBuilder.ts
+  - Updated `buildNotePropertyExpressions()` default logic from 'OR' to 'AND' in searchQueryBuilder.ts
+  - Updated tool schema descriptions to reflect AND default in toolDefinitions.ts
+  - Added comprehensive documentation examples showing both AND default and explicit OR usage
+  - Enhanced examples with clear TriliumNext behavior alignment
+- **Documentation impact**: Added examples 71-72 demonstrating AND default behavior with clear explanations
+- **Status**: ✅ **COMPLETED** - Full implementation with TriliumNext behavior alignment and comprehensive documentation
 
 ### Relation Search Implementation - Full Support Completed
 - **Major capability addition**: Implemented comprehensive relation search support in `buildAttributeQuery()` function

@@ -242,7 +242,7 @@ function createSearchProperties() {
           logic: {
             type: "string",
             enum: ["AND", "OR"],
-            description: "Logic operator to combine with NEXT attribute. Default is OR if not specified."
+            description: "Logic operator to combine with NEXT attribute. Default is AND if not specified."
           }
         },
         required: ["type", "name"]
@@ -272,7 +272,7 @@ function createSearchProperties() {
           logic: {
             type: "string",
             enum: ["AND", "OR"],
-            description: "Logic operator to combine with NEXT property. Default is OR if not specified."
+            description: "Logic operator to combine with NEXT property. Default is AND if not specified."
           }
         },
         required: ["property", "value"]

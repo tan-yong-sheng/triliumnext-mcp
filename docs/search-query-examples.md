@@ -19,8 +19,8 @@ Input parameters:
 
 Query composition:
 - text: `<token>` (bare token for full-text search)
-- noteProperties: Individual `note.*` conditions joined with AND/OR based on logic parameter
-- attributes: `#label` and `~relation` expressions with AND/OR logic
+- noteProperties: Individual `note.*` conditions joined with AND/OR based on logic parameter (default: AND)
+- attributes: `#label` and `~relation` expressions with AND/OR logic (default: AND)
 - hierarchyType: `note.parents.noteId` (children) or `note.ancestors.noteId` (descendants)
 - limit: `limit <number>` (appended to query)
 - Final query: join all groups with space separation, then append limit
@@ -28,7 +28,8 @@ Query composition:
 **Important architectural change:**
 - **Date searches now use noteProperties**: `{"noteProperties": [{"property": "dateCreated", "op": ">=", "value": "2024-01-01"}]}`
 - **ISO date format required**: MUST use exact ISO date format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss.sssZ). Smart expressions like 'TODAY-7' are NOT allowed in MCP interface
-- **OR logic available**: Mix date searches with other properties using per-item logic
+- **Default logic is AND**: Multiple attributes or noteProperties use AND logic by default, matching TriliumNext behavior
+- **OR logic available**: Mix searches with other properties using per-item logic
 
 ---
 
@@ -108,7 +109,7 @@ search_notes({
 ```json
 {
   "noteProperties": [
-    { "property": "dateCreated", "op": ">=", "value": "2024-01-01" },
+    { "property": "dateCreated", "op": ">=", "value": "2024-01-01" , "logic": "AND"},
     { "property": "dateCreated", "op": "<", "value": "2026-01-01" }
   ]
 }
@@ -410,24 +411,24 @@ note.title =* 'Meeting' AND note.content *=* 'agenda'
 ```
 - Use case: Find meeting notes that contain agenda items
 
-### 18) Advanced combination: Full-text + noteProperties searches + date range (using noteProperties with default OR logic)
+### 18) Advanced combination: Full-text + noteProperties searches + date range (using noteProperties with explicit OR logic)
 - Composed query
 ```
 setup guide ~(note.dateCreated >= '2024-01-01' OR note.title =* 'Tutorial' OR note.content *=* 'steps')
 ```
-- JSON structure for combined parameters (default OR logic when logic not specified)
+- JSON structure for combined parameters (explicit OR logic when needed)
 ```json
 {
   "text": "setup guide",
   "noteProperties": [
-    { "property": "dateCreated", "op": ">=", "value": "2024-01-01" },
-    { "property": "title", "op": "starts_with", "value": "Tutorial" },
+    { "property": "dateCreated", "op": ">=", "value": "2024-01-01", "logic": "OR" },
+    { "property": "title", "op": "starts_with", "value": "Tutorial", "logic": "OR" },
     { "property": "content", "op": "contains", "value": "steps" }
   ]
 }
 ```
 - Use case: Find recent tutorial guides with step-by-step instructions (matches any of the criteria)
-- **Note**: Default logic is OR when not specified. For AND behavior, add `"logic": "AND"` to each item except the last.
+- **Note**: Default logic is AND when not specified. For OR behavior, add `"logic": "OR"` to each item except the last.
 
 ### 19) Content search: Notes containing specific phrases
 - Composed query
@@ -638,6 +639,41 @@ tolkien ~author
 }
 ```
 - Use case: Find Tolkien-related content that has author metadata
+
+### 71) Multiple Attributes with Default AND Logic
+- Composed query: Find books published in 1954 (demonstrates default AND behavior)
+```
+#book #publicationYear = 1954
+```
+- JSON structure showing default AND logic for attributes
+```json
+{
+  "attributes": [
+    { "type": "label", "name": "book" },
+    { "type": "label", "name": "publicationYear", "op": "=", "value": "1954" }
+  ]
+}
+```
+- Use case: Find notes that have BOTH the book label AND publicationYear set to 1954
+- **Note**: When logic is not specified, attributes are combined with AND (TriliumNext default behavior)
+
+### 72) Multiple Note Properties with Default AND Logic
+- Composed query: Find text notes that are not archived and have content
+```
+note.type = 'text' AND note.isArchived = false AND note.contentSize > 0
+```
+- JSON structure showing default AND logic for noteProperties
+```json
+{
+  "noteProperties": [
+    { "property": "type", "op": "=", "value": "text" },
+    { "property": "isArchived", "op": "=", "value": "false" },
+    { "property": "contentSize", "op": ">", "value": "0" }
+  ]
+}
+```
+- Use case: Find active text notes with content (ALL conditions must be met)
+- **Note**: When logic is not specified, noteProperties are combined with AND (TriliumNext default behavior)
 
 ### 24) Book Label Search
 - Composed query: Find all notes with "book" label
@@ -1385,11 +1421,13 @@ note.dateCreated >= '2024-01-01' AND note.dateCreated < '2024-12-31' AND note.da
   - **Relations**: Use `~author.title` syntax - connections between notes (**IMPLEMENTED**)
   - Supported operators: `exists`, `not_exists`, `=`, `!=`, `>=`, `<=`, `>`, `<`, `contains`, `starts_with`, `ends_with`
   - **Per-item logic**: Each item can specify `logic: "OR"` to create OR groups with the next item
+  - **Default logic**: AND when logic not specified (matches TriliumNext behavior)
 - `noteProperties` parameter: Array for Trilium built-in note metadata (note.* properties)
   - **System properties**: `note.isArchived`, `note.type`, `note.labelCount` - built into every note
   - **Different namespace**: Always prefixed with `note.` in Trilium DSL
   - Supported operators: `=`, `!=`, `>`, `<`, `>=`, `<=`
   - **Per-item logic**: Each item can specify `logic: "OR"` to create OR groups with the next item
+  - **Default logic**: AND when logic not specified (matches TriliumNext behavior)
 - **Conceptual separation**: Attributes are user-defined, noteProperties are system-defined
 - `orderBy` parameter: Sort results by specified field and direction (asc/desc)  
 - **Important**: orderBy field must also be used as a filter in the query

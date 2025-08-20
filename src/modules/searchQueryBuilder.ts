@@ -129,7 +129,7 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
 function buildAttributeExpressions(attributes: AttributeCondition[]): string[] {
   const expressions: string[] = [];
   let currentGroup: string[] = [];
-  let groupLogic: 'AND' | 'OR' = 'OR'; // Default to OR as requested
+  let groupLogic: 'AND' | 'OR' = 'AND'; // Default to AND as per TriliumNext behavior
   
   for (let i = 0; i < attributes.length; i++) {
     const attribute = attributes[i];
@@ -263,7 +263,7 @@ function validateISODate(value: string, property: string): string {
 function buildNotePropertyExpressions(noteProperties: NotePropertyCondition[]): string[] {
   const expressions: string[] = [];
   let currentGroup: string[] = [];
-  let groupLogic: 'AND' | 'OR' = 'OR'; // Default to OR as requested
+  let groupLogic: 'AND' | 'OR' = 'AND'; // Default to AND as per TriliumNext behavior
   
   for (let i = 0; i < noteProperties.length; i++) {
     const noteProperty = noteProperties[i];
