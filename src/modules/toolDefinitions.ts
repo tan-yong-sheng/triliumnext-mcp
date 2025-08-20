@@ -103,6 +103,43 @@ export function createWriteTools(): any[] {
         },
         required: ["noteId"],
       },
+    },
+    {
+      name: "search_and_replace",
+      description: "Search for text patterns and replace them in a specific note. Supports both exact string matching and regex patterns. Use dryRun=true to preview changes before applying them. IMPORTANT: When dryRun=false, STRONGLY RECOMMENDED to keep createRevision=true (default) to create a backup before making changes, unless user explicitly requests no revision.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          noteId: {
+            type: "string",
+            description: "ID of the note to perform search and replace on"
+          },
+          searchPattern: {
+            type: "string",
+            description: "Text or regex pattern to search for"
+          },
+          replacement: {
+            type: "string",
+            description: "Replacement text (supports regex capture groups if useRegex=true)"
+          },
+          useRegex: {
+            type: "boolean",
+            description: "Whether to treat searchPattern as regex (default: false)",
+            default: false
+          },
+          dryRun: {
+            type: "boolean",
+            description: "Preview changes without applying them (default: true). When true, createRevision is automatically ignored.",
+            default: true
+          },
+          createRevision: {
+            type: "boolean",
+            description: "Create backup revision before changes (default: true). STRONGLY RECOMMENDED to keep true when dryRun=false to prevent data loss. Only set to false if user explicitly requests no backup. Ignored when dryRun=true.",
+            default: true
+          }
+        },
+        required: ["noteId", "searchPattern", "replacement"]
+      }
     }
   ];
 }

@@ -125,6 +125,57 @@ This guide provides a comprehensive roadmap for refactoring the TriliumNext MCP 
 
 **Migration Impact**: Breaking change - existing date parameter usage must migrate to `noteProperties`
 
+### 4. Search and Replace Tool Implementation (Completed ✅)
+
+**Change**: Added comprehensive `search_and_replace` tool for single-note text modification
+
+**Problem Solved**: 
+- Enabled AI assistants to perform text replacements in TriliumNext notes
+- Provided safe dry-run capability for previewing changes
+- Implemented rule enforcement for conflicting parameters
+- Added safety-first approach with revision control
+
+**TriliumNext Integration:**
+- Uses ETAPI `/notes/{noteId}/content` endpoints for content retrieval and updates
+- Supports both string and regex search patterns
+- Integrates with TriliumNext revision system for backup creation
+- Handles content processing through existing contentProcessor module
+
+**Key Features:**
+```typescript
+// Basic string replacement
+{
+  "noteId": "abc123",
+  "searchPattern": "old text",
+  "replacement": "new text",
+  "dryRun": true  // Preview changes first
+}
+
+// Regex replacement with safety
+{
+  "noteId": "abc123", 
+  "searchPattern": "\\b(\\w+)@example\\.com\\b",
+  "replacement": "$1@company.com",
+  "useRegex": true,
+  "dryRun": false,
+  "createRevision": true  // Backup before changes
+}
+```
+
+**Safety Features:**
+- **Rule enforcement**: `dryRun=true` automatically sets `createRevision=false` (dry runs never create revisions)
+- **Default safety**: `createRevision=true` by default when `dryRun=false` to prevent data loss
+- **Match counting**: Accurate match detection for both string and regex patterns
+- **Warning system**: Logs warnings when conflicting parameters are provided
+
+**Files Modified:**
+- `src/modules/noteManager.ts` - Added `handleSearchAndReplace` function with core business logic
+- `src/modules/noteHandler.ts` - Added `handleSearchAndReplaceRequest` with permission validation
+- `src/modules/toolDefinitions.ts` - Added tool schema with safety-focused descriptions
+- `src/index.ts` - Added case for "search_and_replace" in tool request handler
+
+**Migration Impact**: New tool addition - no breaking changes to existing functionality
+
 ## Migration Steps
 
 ### Phase 1: Extract Business Logic Modules
@@ -336,6 +387,9 @@ describe('AttributeHandler', () => {
 - [x] Added UTC timezone support (Date Parameter Unification)
 - [x] Updated all documentation examples (All Changes)
 - [x] Updated migration guide documentation (All Changes)
+- [x] Implemented search_and_replace tool (Search and Replace Tool Implementation)
+- [x] Added safety features and rule enforcement (Search and Replace Tool Implementation)
+- [x] Updated tool schemas and handlers (Search and Replace Tool Implementation)
 
 ### 🔄 **Optional Next Steps**
 - [ ] Add comprehensive unit tests

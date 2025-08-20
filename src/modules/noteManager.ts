@@ -37,6 +37,25 @@ export interface NoteGetResponse {
   content?: string;
 }
 
+export interface SearchAndReplaceOperation {
+  noteId: string;
+  searchPattern: string;
+  replacement: string;
+  useRegex?: boolean;
+  dryRun?: boolean;
+  createRevision?: boolean;
+}
+
+export interface SearchAndReplaceResponse {
+  noteId: string;
+  matched: boolean;
+  matchCount: number;
+  originalContent?: string;
+  updatedContent?: string;
+  message: string;
+  revisionCreated?: boolean;
+}
+
 /**
  * Handle create note operation
  */
@@ -220,4 +239,131 @@ export async function handleGetNote(
     note: noteResponse.data,
     content: noteContent
   };
+}
+
+/**
+ * Handle search and replace operation
+ */
+export async function handleSearchAndReplace(
+  args: SearchAndReplaceOperation,
+  axiosInstance: any
+): Promise<SearchAndReplaceResponse> {
+  const { 
+    noteId, 
+    searchPattern, 
+    replacement, 
+    useRegex = false, 
+    dryRun = true, 
+    createRevision = true 
+  } = args;
+
+  if (!noteId || !searchPattern || replacement === undefined) {
+    throw new Error("noteId, searchPattern, and replacement are required for search and replace operation.");
+  }
+
+  // Enforce rule: dry run never creates revisions
+  const effectiveCreateRevision = dryRun ? false : createRevision;
+  
+  // Log warning if user passed conflicting parameters
+  if (dryRun && createRevision) {
+    console.warn(`Note: Ignoring createRevision=true because dryRun=true. Dry runs never create revisions.`);
+  }
+
+  // Get current note content
+  const { data: originalContent } = await axiosInstance.get(`/notes/${noteId}/content`, {
+    responseType: 'text'
+  });
+
+  let updatedContent: string;
+  let matchCount = 0;
+
+  try {
+    if (useRegex) {
+      // Use regex replacement
+      const regex = new RegExp(searchPattern, 'g');
+      const matches = originalContent.match(regex);
+      matchCount = matches ? matches.length : 0;
+      updatedContent = originalContent.replace(regex, replacement);
+    } else {
+      // Use simple string replacement
+      const beforeLength = originalContent.length;
+      updatedContent = originalContent.split(searchPattern).join(replacement);
+      const afterLength = updatedContent.length;
+      const searchLength = searchPattern.length;
+      const replacementLength = replacement.length;
+      
+      // Calculate match count based on length change
+      if (searchLength !== replacementLength) {
+        const lengthDiff = beforeLength - afterLength;
+        const perReplacementDiff = searchLength - replacementLength;
+        matchCount = perReplacementDiff !== 0 ? lengthDiff / perReplacementDiff : 0;
+      } else {
+        // Same length - count direct matches
+        matchCount = (originalContent.match(new RegExp(escapeRegex(searchPattern), 'g')) || []).length;
+      }
+    }
+  } catch (error) {
+    throw new Error(`Search and replace failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+
+  const matched = matchCount > 0;
+  const contentChanged = originalContent !== updatedContent;
+
+  // If dry run or no matches, return without updating
+  if (dryRun || !matched) {
+    return {
+      noteId,
+      matched,
+      matchCount,
+      originalContent: dryRun ? originalContent : undefined,
+      updatedContent: dryRun ? updatedContent : undefined,
+      message: dryRun 
+        ? `Dry run: Found ${matchCount} matches in note ${noteId}` 
+        : `No matches found for pattern "${searchPattern}" in note ${noteId}`,
+      revisionCreated: false
+    };
+  }
+
+  // Perform actual update
+  let revisionCreated = false;
+
+  // Create revision if requested
+  if (effectiveCreateRevision && contentChanged) {
+    try {
+      await axiosInstance.post(`/notes/${noteId}/revision`);
+      revisionCreated = true;
+    } catch (error) {
+      console.error(`Warning: Failed to create revision for note ${noteId}:`, error);
+      // Continue with update even if revision creation fails
+    }
+  }
+
+  // Update note content
+  if (contentChanged) {
+    const response = await axiosInstance.put(`/notes/${noteId}/content`, updatedContent, {
+      headers: {
+        "Content-Type": "text/plain"
+      }
+    });
+
+    if (response.status !== 204) {
+      throw new Error(`Unexpected response status: ${response.status}`);
+    }
+  }
+
+  const revisionMsg = revisionCreated ? " (revision created)" : " (no revision)";
+  return {
+    noteId,
+    matched,
+    matchCount,
+    message: `Replaced ${matchCount} occurrences in note ${noteId}${revisionMsg}`,
+    revisionCreated
+  };
+}
+
+/**
+ * Escape special regex characters for use in regex
+ */
+function escapeRegex(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

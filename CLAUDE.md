@@ -87,6 +87,7 @@ node build/index.js   # Run the server directly
 - `update_note`: Update existing note content with revision control (defaults to revision=true for safety)
 - `append_note`: Add content to existing notes without replacement (defaults to revision=false for performance)
 - `delete_note`: Delete notes by ID (permanent operation with caution warnings)
+- `search_and_replace`: Search for text patterns and replace them in specific notes with string or regex support. Features dry-run previews, safety-first revision control, and rule enforcement for conflicting parameters
 
 ## Search Query Architecture
 
@@ -203,7 +204,9 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 ### Content Operation Guidelines
 - Use `append_note` for adding content while preserving existing content (logs, journals, incremental updates)
 - Use `update_note` for complete content replacement (rewrites, major edits)
-- Both functions support explicit revision control override via `revision` parameter
+- Use `search_and_replace` for targeted text modifications within notes (find and replace operations)
+- Both `update_note` and `append_note` functions support explicit revision control override via `revision` parameter
+- `search_and_replace` enforces safety rules: dry-run mode automatically disables revision creation, and defaults to creating revisions when making actual changes
 - `delete_note` includes strong caution warnings as it's irreversible
 
 ## Field-Specific Search Implementation
@@ -251,6 +254,28 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - **Edge case handling**: Auto-cleanup of logic on last items, AND default logic, proper grouping
 
 ## Recent Enhancements (Latest)
+
+### Search and Replace Tool Implementation - Full Implementation Completed
+- **Major capability addition**: Implemented comprehensive `search_and_replace` tool for single-note text modification
+- **TriliumNext integration**: Uses ETAPI `/notes/{noteId}/content` endpoints for content retrieval and updates
+- **Enhanced capabilities achieved**:
+  - **Dual search modes**: Support for both exact string matching and regex patterns
+  - **Safe dry-run mode**: Preview changes before applying them with detailed match counting
+  - **Rule enforcement**: Automatic parameter validation to prevent conflicting settings
+  - **Safety-first approach**: Defaults to creating revision backups when making actual changes
+  - **Match counting**: Accurate detection and counting for both string and regex replacements
+- **Implementation details**:
+  - Added `SearchAndReplaceOperation` and `SearchAndReplaceResponse` interfaces to noteManager.ts
+  - Implemented `handleSearchAndReplace` function with comprehensive safety features
+  - Added `escapeRegex` utility function for proper regex handling
+  - Created tool schema with safety-focused descriptions encouraging best practices
+  - Integrated permission validation and detailed response formatting in noteHandler.ts
+- **Safety features**:
+  - **Rule enforcement**: `dryRun=true` automatically sets `createRevision=false` (dry runs never create revisions)
+  - **Default safety**: `createRevision=true` by default when `dryRun=false` to prevent data loss
+  - **Warning system**: Logs warnings when users pass conflicting parameters
+  - **LLM guidance**: Tool descriptions strongly encourage safe practices
+- **Status**: ✅ **COMPLETED** - Full implementation with comprehensive safety features and rule enforcement
 
 ### Regex Search Support - Full Support Completed
 - **Major capability addition**: Implemented comprehensive regex search support in `buildAttributeQuery()` and `buildNotePropertyQuery()` functions

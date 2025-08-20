@@ -6,11 +6,13 @@
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
 import {
   NoteOperation,
+  SearchAndReplaceOperation,
   handleCreateNote,
   handleUpdateNote,
   handleAppendNote,
   handleDeleteNote,
-  handleGetNote
+  handleGetNote,
+  handleSearchAndReplace
 } from "./noteManager.js";
 
 export interface PermissionChecker {
@@ -186,6 +188,57 @@ export async function handleGetNoteRequest(
       content: [{
         type: "text",
         text: JSON.stringify(responseData, null, 2)
+      }]
+    };
+  } catch (error) {
+    if (error instanceof McpError) {
+      throw error;
+    }
+    throw new McpError(ErrorCode.InvalidParams, error instanceof Error ? error.message : String(error));
+  }
+}
+
+/**
+ * Handle search_and_replace tool requests
+ */
+export async function handleSearchAndReplaceRequest(
+  args: any,
+  axiosInstance: any,
+  permissionChecker: PermissionChecker
+): Promise<{ content: Array<{ type: string; text: string }> }> {
+  if (!permissionChecker.hasPermission("WRITE")) {
+    throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to perform search and replace operations.");
+  }
+
+  try {
+    const searchAndReplaceOperation: SearchAndReplaceOperation = {
+      noteId: args.noteId,
+      searchPattern: args.searchPattern,
+      replacement: args.replacement,
+      useRegex: args.useRegex ?? false,
+      dryRun: args.dryRun ?? true,
+      createRevision: args.createRevision ?? true
+    };
+
+    const result = await handleSearchAndReplace(searchAndReplaceOperation, axiosInstance);
+
+    // Format response with detailed information
+    let responseText = result.message;
+    
+    if (args.dryRun && result.matched) {
+      responseText += `\n\nDry Run Results:`;
+      responseText += `\n- Found ${result.matchCount} matches`;
+      if (result.originalContent && result.updatedContent) {
+        responseText += `\n- Original content length: ${result.originalContent.length} characters`;
+        responseText += `\n- Updated content length: ${result.updatedContent.length} characters`;
+        responseText += `\n\nSet dryRun=false to apply these changes.`;
+      }
+    }
+
+    return {
+      content: [{
+        type: "text",
+        text: responseText
       }]
     };
   } catch (error) {
