@@ -243,6 +243,7 @@ export async function handleResolveNoteId(
       property: "title",
       op: exactMatch ? "=" : "contains",
       value: noteName.trim()
+      // No logic needed for single property
     }]
   };
 
@@ -253,12 +254,21 @@ export async function handleResolveNoteId(
   if (prioritizeFolders) {
     const folderSearchParams: SearchOperation = {
       ...baseSearchParams,
-      // Prioritize notes with children (folders/containers)
-      noteProperties: [{
-        property: "childrenCount",
-        op: ">",
-        value: "0"
-      }]
+      // Combine title matching with folder criteria
+      noteProperties: [
+        {
+          property: "title",
+          op: exactMatch ? "=" : "contains",
+          value: noteName.trim(),
+          logic: "AND"  // Explicit AND to combine with childrenCount
+        },
+        {
+          property: "childrenCount",
+          op: ">", 
+          value: "0"
+          // No logic needed on last item (auto-cleaned)
+        }
+      ]
     };
 
     const folderQuery = buildSearchQuery(folderSearchParams);
