@@ -22,8 +22,6 @@ import {
 } from "./modules/noteHandler.js";
 import {
   handleSearchNotesRequest,
-  handleListChildNotesRequest,
-  handleListDescendantNotesRequest,
   handleResolveNoteIdRequest
 } from "./modules/searchHandler.js";
 
@@ -116,13 +114,6 @@ class TriliumServer {
 
           case "resolve_note_id":
             return await handleResolveNoteIdRequest(request.params.arguments, this.axiosInstance, this);
-
-          case "list_child_notes":
-            return await handleListChildNotesRequest(request.params.arguments, this.axiosInstance, this);
-
-          case "list_descendant_notes":
-            return await handleListDescendantNotesRequest(request.params.arguments, this.axiosInstance, this);
-
 
           default:
             throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${request.params.name}`);

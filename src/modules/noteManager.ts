@@ -283,14 +283,18 @@ export async function handleSearchAndReplace(
       const regex = new RegExp(searchPattern, 'g');
       const matches = originalContent.match(regex);
       matchCount = matches ? matches.length : 0;
-      updatedContent = originalContent.replace(regex, replacement);
+      // Process replacement text for Markdown conversion
+      const processedReplacement = await processContent(replacement);
+      updatedContent = originalContent.replace(regex, processedReplacement);
     } else {
       // Use simple string replacement
+      // Process replacement text for Markdown conversion
+      const processedReplacement = await processContent(replacement);
       const beforeLength = originalContent.length;
-      updatedContent = originalContent.split(searchPattern).join(replacement);
+      updatedContent = originalContent.split(searchPattern).join(processedReplacement);
       const afterLength = updatedContent.length;
       const searchLength = searchPattern.length;
-      const replacementLength = replacement.length;
+      const replacementLength = processedReplacement.length;
       
       // Calculate match count based on length change
       if (searchLength !== replacementLength) {

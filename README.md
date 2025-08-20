@@ -139,17 +139,14 @@ The server provides the following tools for note management:
 
 ### Note Discovery Tools
 
-- `list_child_notes` - List direct children of a parent note (like Unix `ls` command)
-  - Uses `search_notes` with `hierarchyType="children"` internally
-  - Supports all `search_notes` parameters for powerful filtering of child notes
-  - Use when browsing note hierarchy or listing immediate children only
+- `search_notes` - Unified search with comprehensive filtering and hierarchy navigation
+  - Use `hierarchyType="children"` with `parentNoteId` for direct children listing (like Unix `ls` command)
+  - Use `hierarchyType="descendants"` with `parentNoteId` for recursive listing (like Unix `find` command)
+  - Supports all search parameters: text search, date filtering, attributes, note properties, and more
+  - **For "list all notes" requests**: Use `hierarchyType="descendants"` with `parentNoteId="root"`
+  - **For browsing folders**: Use `hierarchyType="children"` with specific parent ID
 
-- `list_descendant_notes` - List ALL descendant notes recursively in database or subtree (like Unix `find` command)
-  - Uses `search_notes` with `hierarchyType="descendants"` internally  
-  - Supports all `search_notes` parameters for powerful filtering of descendant notes
-  - Use when you need complete note inventory, discovery, or bulk operations
-
-> **Function Comparison**: `list_child_notes` shows only direct children (like `ls`), while `list_descendant_notes` shows ALL descendants recursively (like `find`). Both support the full range of search parameters including date filtering, text search, attribute filtering, and more.
+> **Hierarchy Navigation**: Use `hierarchyType="children"` for immediate children (like `ls`) or `hierarchyType="descendants"` for complete recursive discovery (like `find`). All search parameters work with both hierarchy types for powerful filtering capabilities.
 
 ### Note Management Tools
 

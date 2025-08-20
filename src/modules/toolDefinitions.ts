@@ -106,7 +106,7 @@ export function createWriteTools(): any[] {
     },
     {
       name: "search_and_replace",
-      description: "Search for text patterns and replace them in a specific note. Supports both exact string matching and regex patterns. Use dryRun=true to preview changes before applying them. IMPORTANT: When dryRun=false, STRONGLY RECOMMENDED to keep createRevision=true (default) to create a backup before making changes, unless user explicitly requests no revision.",
+      description: "Search for text patterns and replace them in a specific note. Supports both exact string matching and regex patterns. Use dryRun=true to preview changes before applying them. Replacement text supports Markdown (automatically converted to HTML). IMPORTANT: When dryRun=false, STRONGLY RECOMMENDED to keep createRevision=true (default) to create a backup before making changes, unless user explicitly requests no revision.",
       inputSchema: {
         type: "object",
         properties: {
@@ -120,7 +120,7 @@ export function createWriteTools(): any[] {
           },
           replacement: {
             type: "string",
-            description: "Replacement text (supports regex capture groups if useRegex=true)"
+            description: "Replacement text (supports regex capture groups if useRegex=true). Markdown content is automatically converted to HTML."
           },
           useRegex: {
             type: "boolean",
@@ -172,7 +172,7 @@ export function createReadTools(): any[] {
     },
     {
       name: "resolve_note_id",
-      description: "Resolves a note/folder name to its actual note ID for use with other tools. You MUST call this function before 'list_descendant_notes' or 'list_child_notes' when users provide note names instead of note IDs (e.g., 'wqd7006', 'My Project') UNLESS the user explicitly provides a note ID.",
+      description: "Resolves a note/folder name to its actual note ID for use with other tools. You MUST call this function before using 'search_notes' with hierarchyType when users provide note names instead of note IDs (e.g., 'wqd7006', 'My Project') UNLESS the user explicitly provides a note ID.",
       inputSchema: {
         type: "object",
         properties: {
@@ -198,40 +198,10 @@ export function createReadTools(): any[] {
     },
     {
       name: "search_notes",
-      description: "Unified search with structured parameters. Supports: full-text search, date filtering, field-specific searches (title/content), attribute searches (#labels), note properties (isArchived), and hierarchy navigation (children/descendants). Use OR/AND logic within arrays for complex conditions (e.g., 'created OR modified' dates) instead of multiple separate search calls. Automatically optimizes with fast search when only text search is used.",
+      description: "Unified search with comprehensive filtering capabilities. Supports full-text search, attributes, note properties, date ranges, and hierarchy navigation. For 'list all notes' requests: use hierarchyType='descendants' with parentNoteId='root'. For browsing specific folders: use hierarchyType='children'.",
       inputSchema: {
         type: "object",
         properties: searchProperties,
-      },
-    },
-    {
-      name: "list_descendant_notes",
-      description: "List ALL descendant notes recursively in database or subtree (like Unix 'find' command). PREFERRED for 'list all notes' requests - provides complete note inventory. Use when user wants to see everything, discovery, or bulk operations. Supports all search_notes parameters for powerful filtering.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          ...searchProperties,
-          parentNoteId: {
-            type: "string", 
-            description: "Parent note ID for listing descendants. Use 'root' for entire note tree, or omit to search entire database.",
-            default: "root"
-          },
-        },
-      },
-    },
-    {
-      name: "list_child_notes",
-      description: "List direct child notes of a parent note (like Unix 'ls' command). Use for browsing/navigating note hierarchy or when user specifically wants only direct children. Supports all search_notes parameters for powerful filtering.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          ...searchProperties,
-          parentNoteId: {
-            type: "string", 
-            description: "Parent note ID for listing children. Use 'root' for top-level notes.",
-            default: "root"
-          },
-        },
       },
     }
   ];
@@ -319,7 +289,7 @@ function createSearchProperties() {
     hierarchyType: {
       type: "string",
       enum: ["children", "descendants"],
-      description: "Optional hierarchy search type: 'children' for direct children only (like 'ls'), 'descendants' for all descendants recursively (like 'find')"
+      description: "Hierarchy navigation: 'descendants' lists ALL notes recursively (like Unix 'find') - PREFERRED for 'list all notes' requests. 'children' lists direct children only (like Unix 'ls') - use for browsing specific folders. Requires parentNoteId parameter."
     },
     parentNoteId: {
       type: "string", 

@@ -29,7 +29,7 @@ This guide provides a comprehensive roadmap for refactoring the TriliumNext MCP 
 **Files Created:**
 - `src/modules/attributeManager.ts` - CRUD operations for labels and relations
 - `src/modules/noteManager.ts` - Note creation, update, append, delete, and retrieval
-- `src/modules/searchManager.ts` - Search, list_child_notes, and list_descendant_notes operations
+- `src/modules/searchManager.ts` - Search and note listing operations
 - `src/modules/attributeHandler.ts` - Attribute tool request handling with permission validation
 - `src/modules/noteHandler.ts` - Note tool request handling with permission validation
 - `src/modules/searchHandler.ts` - Search tool request handling with permission validation
@@ -175,6 +175,50 @@ This guide provides a comprehensive roadmap for refactoring the TriliumNext MCP 
 - `src/index.ts` - Added case for "search_and_replace" in tool request handler
 
 **Migration Impact**: New tool addition - no breaking changes to existing functionality
+
+### 5. Tool Simplification - Redundant Tool Removal (Completed ✅)
+
+**Change**: Removed redundant `list_child_notes` and `list_descendant_notes` tools
+
+**Problem Solved**: 
+- Eliminated code duplication across multiple modules
+- Reduced cognitive load for LLMs choosing between similar tools
+- Simplified maintenance and testing overhead
+- Enhanced flexibility by unifying all listing operations
+
+**Enhanced Approach:**
+- Unified all listing operations under `search_notes` with `hierarchyType` parameter
+- Added clear Unix command analogies (ls vs find) in tool descriptions
+- Enhanced LLM guidance for hierarchy type selection
+
+**Key Benefits:**
+```typescript
+// Enhanced flexibility: All search parameters work with hierarchy
+search_notes({ 
+  hierarchyType: "descendants", 
+  parentNoteId: "root",
+  noteProperties: [{ property: "type", op: "=", value: "text" }]
+})
+```
+
+**Code Reduction:**
+- **~150+ lines removed**: Eliminated duplicate functionality across 4 modules
+- **Simpler API surface**: Fewer tools for LLMs to choose from
+- **Enhanced flexibility**: All search parameters now work with hierarchy operations
+- **Maintained functionality**: Same capabilities with cleaner interface
+
+**Files Modified:**
+- `src/modules/toolDefinitions.ts` - Removed tool definitions, enhanced search_notes description
+- `src/modules/searchHandler.ts` - Removed handler functions and imports
+- `src/modules/searchManager.ts` - Removed business logic functions
+- `src/index.ts` - Removed tool case handlers and imports
+
+**Usage Patterns:**
+- **List all notes**: `search_notes` with `hierarchyType='descendants'` and `parentNoteId='root'`
+- **Browse specific folder**: `search_notes` with `hierarchyType='children'` and specific `parentNoteId`
+- **Filtered listing**: Add any search parameters (attributes, noteProperties, etc.) for powerful filtering
+
+**Migration Impact**: Tool removal - existing clients using removed tools must migrate to `search_notes` with `hierarchyType`
 
 ## Migration Steps
 
@@ -390,6 +434,9 @@ describe('AttributeHandler', () => {
 - [x] Implemented search_and_replace tool (Search and Replace Tool Implementation)
 - [x] Added safety features and rule enforcement (Search and Replace Tool Implementation)
 - [x] Updated tool schemas and handlers (Search and Replace Tool Implementation)
+- [x] Removed redundant list tools (Tool Simplification)
+- [x] Enhanced search_notes with hierarchy guidance (Tool Simplification)
+- [x] Simplified codebase and API surface (Tool Simplification)
 
 ### 🔄 **Optional Next Steps**
 - [ ] Add comprehensive unit tests
