@@ -154,11 +154,6 @@ export function createReadTools(): any[] {
             default: 3,
             minimum: 1,
             maximum: 10
-          },
-          prioritizeFolders: {
-            type: "boolean",
-            description: "Whether to prioritize notes with children (folders) in search results. Set to true for list_descendant_notes/list_child_notes workflows, false for get_note workflows (default: false)",
-            default: true
           }
         },
         required: ["noteName"],

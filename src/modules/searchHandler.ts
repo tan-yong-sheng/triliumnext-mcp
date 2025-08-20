@@ -173,8 +173,7 @@ export async function handleResolveNoteIdRequest(
     const resolveOperation: ResolveNoteOperation = {
       noteName: args.noteName,
       exactMatch: args.exactMatch,
-      maxResults: args.maxResults,
-      prioritizeFolders: args.prioritizeFolders
+      maxResults: args.maxResults
     };
 
     const result = await handleResolveNoteId(resolveOperation, axiosInstance);

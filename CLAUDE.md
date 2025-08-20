@@ -74,10 +74,9 @@ node build/index.js   # Run the server directly
 ### READ Permission Tools
 - `search_notes`: Unified search with comprehensive filtering capabilities including full-text search, date ranges, field-specific searches, attribute searches, note properties, and hierarchy navigation
 - `resolve_note_id`: Find note ID by name/title - use when users provide note names (like "wqd7006") instead of IDs. Essential for LLM workflows where users reference notes by name. Features:
-  - **Configurable folder prioritization**: `prioritizeFolders` parameter (default: false) controls whether to prioritize notes with children (folders)
-  - **Smart search strategy**: When `prioritizeFolders=true`, searches folders first (`note.childrenCount > 0`), then falls back to all notes
+  - **Smart fuzzy search**: `exactMatch` parameter (default: false) controls search precision - fuzzy search handles typos and partial matches while prioritizing exact matches
   - **Configurable results**: `maxResults` parameter (default: 3, range: 1-10) controls number of alternatives returned
-  - **Context-aware usage**: Enable folder prioritization for listing workflows (`list_descendant_notes`/`list_child_notes`), disable for content workflows (`get_note`)
+  - **Intelligent prioritization**: Automatically prioritizes exact matches, then folder-type notes (book), then most recent
   - **JSON response format**: Returns structured data with selectedNote, totalMatches, topMatches array, and nextSteps guidance
 - `list_descendant_notes`: List ALL descendant notes recursively (like Unix `find`) - uses `search_notes` with `hierarchyType="descendants"` - **PREFERRED for "list all notes"**
 - `list_child_notes`: List direct child notes only (like Unix `ls`) - uses `search_notes` with `hierarchyType="children"` - for navigation/browsing
@@ -131,8 +130,7 @@ node build/index.js   # Run the server directly
 function handleResolveNoteId(args: ResolveNoteOperation) {
   // Internal logic to build search_notes parameters
   const searchParams: SearchOperation = {
-    filters: [{ field: "title", op: "contains", value: args.noteName }],
-    noteProperties: args.prioritizeFolders ? [{ property: "childrenCount", op: ">", value: "0" }] : []
+    noteProperties: [{ property: "title", op: "contains", value: args.noteName }]
   };
   // Call search_notes with existing interface
   return handleSearchNotes(searchParams, axiosInstance);
@@ -144,7 +142,7 @@ function handleResolveNoteId(args: ResolveNoteOperation) {
 // ❌ WRONG: Adding new parameter to search_notes
 interface SearchOperation {
   // ... existing parameters
-  prioritizeFolders?: boolean; // ❌ Don't do this
+  // ❌ Don't add parameters to existing search_notes interface
 }
 ```
 
@@ -372,12 +370,10 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - **Problem solved**: Eliminates LLM confusion when users provide note names instead of IDs
 - **Key features**: 
   - JSON response format with top N alternatives (configurable via `maxResults`)
-  - Context-aware folder prioritization via `prioritizeFolders` parameter
-  - Smart search strategy: folders first → all notes fallback
+  - Smart fuzzy search with intelligent prioritization (exact matches → folders → recent)
   - Clear workflow guidance in responses
 - **Usage patterns**:
-  - Listing: `resolve_note_id(name, prioritizeFolders=true) → list_descendant_notes`
-  - Content: `resolve_note_id(name, prioritizeFolders=false) → get_note`
+  - General: `resolve_note_id(name) → use returned noteId with other tools`
 
 ### Permission Case Mismatch Fix
 - **Issue**: Search functions were checking for lowercase `"read"` while environment uses uppercase `"READ"`

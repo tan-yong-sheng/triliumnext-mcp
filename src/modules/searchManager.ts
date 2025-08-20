@@ -27,7 +27,6 @@ export interface ResolveNoteOperation {
   noteName: string;
   exactMatch?: boolean;
   maxResults?: number;
-  prioritizeFolders?: boolean;
 }
 
 export interface ResolveNoteResponse {
@@ -231,14 +230,14 @@ export async function handleResolveNoteId(
   args: ResolveNoteOperation,
   axiosInstance: any
 ): Promise<ResolveNoteResponse> {
-  const { noteName, exactMatch = false, maxResults = 3, prioritizeFolders = false } = args;
+  const { noteName, exactMatch = false, maxResults = 3 } = args;
   
   if (!noteName?.trim()) {
     throw new Error("Note name must be provided");
   }
 
   // Build search query for title matching
-  const baseSearchParams: SearchOperation = {
+  const searchParams: SearchOperation = {
     noteProperties: [{
       property: "title",
       op: exactMatch ? "=" : "contains",
@@ -247,53 +246,17 @@ export async function handleResolveNoteId(
     }]
   };
 
-  let searchResults: any[] = [];
-  let totalMatches = 0;
-
-  // If prioritizeFolders is enabled, try searching folders first
-  if (prioritizeFolders) {
-    const folderSearchParams: SearchOperation = {
-      ...baseSearchParams,
-      // Combine title matching with folder criteria
-      noteProperties: [
-        {
-          property: "title",
-          op: exactMatch ? "=" : "contains",
-          value: noteName.trim(),
-          logic: "AND"  // Explicit AND to combine with childrenCount
-        },
-        {
-          property: "childrenCount",
-          op: ">", 
-          value: "0"
-          // No logic needed on last item (auto-cleaned)
-        }
-      ]
-    };
-
-    const folderQuery = buildSearchQuery(folderSearchParams);
-    const folderParams = new URLSearchParams();
-    folderParams.append("search", folderQuery);
-    folderParams.append("fastSearch", "false");
-    folderParams.append("includeArchivedNotes", "true");
-
-    const folderResponse = await axiosInstance.get(`/notes?${folderParams.toString()}`);
-    searchResults = folderResponse.data.results || [];
-  }
+  // Search for notes matching the title
+  const query = buildSearchQuery(searchParams);
+  const params = new URLSearchParams();
+  params.append("search", query);
+  params.append("fastSearch", "false");
+  params.append("includeArchivedNotes", "true");
   
-  // If no folder results found (or prioritizeFolders disabled), search all notes
-  if (searchResults.length === 0) {
-    const allNotesQuery = buildSearchQuery(baseSearchParams);
-    const allNotesParams = new URLSearchParams();
-    allNotesParams.append("search", allNotesQuery);
-    allNotesParams.append("fastSearch", "false");
-    allNotesParams.append("includeArchivedNotes", "true");
-    
-    const allNotesResponse = await axiosInstance.get(`/notes?${allNotesParams.toString()}`);
-    searchResults = allNotesResponse.data.results || [];
-  }
+  const response = await axiosInstance.get(`/notes?${params.toString()}`);
+  let searchResults = response.data.results || [];
   
-  totalMatches = searchResults.length;
+  const totalMatches = searchResults.length;
 
   if (searchResults.length === 0) {
     return {
@@ -345,17 +308,9 @@ export async function handleResolveNoteId(
       if (aExact && !bExact) return -1;
       if (!aExact && bExact) return 1;
       
-      // Second priority: notes with children (folders) - only if prioritizeFolders is enabled
-      if (prioritizeFolders) {
-        const aHasChildren = a.childrenCount > 0;
-        const bHasChildren = b.childrenCount > 0;
-        if (aHasChildren && !bHasChildren) return -1;
-        if (!aHasChildren && bHasChildren) return 1;
-        
-        // Third priority: book type (for additional folder indication)
-        if (a.type === 'book' && b.type !== 'book') return -1;
-        if (a.type !== 'book' && b.type === 'book') return 1;
-      }
+      // Second priority: book type (folders)
+      if (a.type === 'book' && b.type !== 'book') return -1;
+      if (a.type !== 'book' && b.type === 'book') return 1;
       
       // Final priority: most recent
       return new Date(b.dateModified).getTime() - new Date(a.dateModified).getTime();
