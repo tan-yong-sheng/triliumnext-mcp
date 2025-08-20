@@ -15,15 +15,16 @@ Input parameters:
 - hierarchyType: string ('children' or 'descendants' for hierarchy searches)
 - parentNoteId: string (parent note for hierarchy searches)
 - limit: number (max results to return, e.g., 10)
-- orderBy: string (sort order, e.g., 'note.dateCreated desc')
+- orderBy: array (structured sorting criteria with type, field, direction, and optional attributeType)
 
 Query composition:
 - text: `<token>` (bare token for full-text search)
 - noteProperties: Individual `note.*` conditions joined with AND/OR based on logic parameter (default: AND)
 - attributes: `#label` and `~relation` expressions with AND/OR logic (default: AND)
 - hierarchyType: `note.parents.noteId` (children) or `note.ancestors.noteId` (descendants)
+- orderBy: Structured array `[{type, field, direction, attributeType?}]` converted to `orderBy field1 direction1, field2 direction2`
 - limit: `limit <number>` (appended to query)
-- Final query: join all groups with space separation, then append limit
+- Final query: join all groups with space separation, then append orderBy and limit
 
 **Important architectural change:**
 - **Date searches now use noteProperties**: `{"noteProperties": [{"property": "dateCreated", "op": ">=", "value": "2024-01-01"}]}`
@@ -184,7 +185,9 @@ search_notes({
   "noteProperties": [
     { "property": "dateCreated", "op": ">=", "value": "2020-01-01" }
   ],
-  "orderBy": "note.dateCreated desc",
+  "orderBy": [
+    { "type": "noteProperty", "field": "dateCreated", "direction": "desc" }
+  ],
   "limit": 10
 }
 ```
@@ -199,33 +202,39 @@ search_notes({
   noteProperties: [
     { property: "dateCreated", op: ">=", value: "2020-01-01" }
   ],
-  orderBy: "note.dateCreated desc",
+  orderBy: [
+    { type: "noteProperty", field: "dateCreated", direction: "desc" }
+  ],
   limit: 10
 })
 ```
 
-### 8) ❌ INVALID: Search "n8n" with orderBy but no date property (orderBy will be skipped)
+### 8) ✅ VALID: Search "n8n" with orderBy (structured orderBy works independently)
 - Params
 ```json
 {
   "text": "n8n",
-  "orderBy": "note.dateCreated desc",
+  "orderBy": [
+    { "type": "noteProperty", "field": "dateCreated", "direction": "desc" }
+  ],
   "limit": 10
 }
 ```
-- Composed query (orderBy skipped due to validation)
+- Composed query
 ```
-n8n limit 10
+n8n orderBy note.dateCreated desc limit 10
 ```
-- Explanation: orderBy field `note.dateCreated` not found in noteProperties, so orderBy is ignored
+- Explanation: With structured orderBy, sorting works independently of filtering - no need for matching noteProperties
 - MCP call
 ```js
 search_notes({ 
   text: "n8n",
-  orderBy: "note.dateCreated desc",
+  orderBy: [
+    { type: "noteProperty", field: "dateCreated", direction: "desc" }
+  ],
   limit: 10
 })
-// orderBy skipped because note.dateCreated not used as noteProperty
+// orderBy works with structured schema
 ```
 
 ### 9) Search "docker" notes modified in last year, ordered by modification date descending (using noteProperties)
@@ -236,7 +245,9 @@ search_notes({
   "noteProperties": [
     { "property": "dateModified", "op": ">=", "value": "YEAR-1" }
   ],
-  "orderBy": "note.dateModified desc",
+  "orderBy": [
+    { "type": "noteProperty", "field": "dateModified", "direction": "desc" }
+  ],
   "limit": 5
 }
 ```
@@ -251,7 +262,9 @@ search_notes({
   noteProperties: [
     { property: "dateModified", op: ">=", value: "YEAR-1" }
   ],
-  orderBy: "note.dateModified desc",
+  orderBy: [
+    { type: "noteProperty", field: "dateModified", direction: "desc" }
+  ],
   limit: 5
 })
 ```
@@ -263,7 +276,9 @@ search_notes({
   "noteProperties": [
     { "property": "dateCreated", "op": ">=", "value": "2024-01-01" }
   ],
-  "orderBy": "note.dateCreated asc",
+  "orderBy": [
+    { "type": "noteProperty", "field": "dateCreated", "direction": "asc" }
+  ],
   "limit": 15
 }
 ```
@@ -277,7 +292,9 @@ search_notes({
   noteProperties: [
     { property: "dateCreated", op: ">=", value: "2024-01-01" }
   ],
-  orderBy: "note.dateCreated asc",
+  orderBy: [
+    { type: "noteProperty", field: "dateCreated", direction: "asc" }
+  ],
   limit: 15
 })
 ```
@@ -289,7 +306,9 @@ search_notes({
   "noteProperties": [
     { "property": "dateModified", "op": ">=", "value": "2024-01-01" }
   ],
-  "orderBy": "note.dateModified asc",
+  "orderBy": [
+    { "type": "noteProperty", "field": "dateModified", "direction": "asc" }
+  ],
   "limit": 20
 }
 ```
@@ -303,7 +322,9 @@ search_notes({
   noteProperties: [
     { property: "dateModified", op: ">=", value: "2024-01-01" }
   ],
-  orderBy: "note.dateModified asc", 
+  orderBy: [
+    { type: "noteProperty", field: "dateModified", direction: "asc" }
+  ], 
   limit: 20
 })
 ```
@@ -572,12 +593,25 @@ towers #!book
 }
 ```
 
-### 26) Combined Attributes with Ordering
+### 26) Combined Attributes with Ordering - TriliumNext Pattern with Structured OrderBy
 - Composed query: Find Tolkien books ordered by publication date
 ```
 #author=Tolkien orderBy #publicationDate desc, note.title limit 10
 ```
-- Use case: Sorted attribute-based searches with secondary ordering
+- JSON structure with structured orderBy
+```json
+{
+  "attributes": [
+    { "type": "label", "name": "author", "op": "=", "value": "Tolkien" }
+  ],
+  "orderBy": [
+    { "type": "attribute", "field": "publicationDate", "direction": "desc", "attributeType": "label" },
+    { "type": "noteProperty", "field": "title", "direction": "asc" }
+  ],
+  "limit": 10
+}
+```
+- Use case: Sorted attribute-based searches with multiple ordering criteria
 
 ### 27) Attribute OR Logic - Book OR Author Label
 - Composed query: Find notes containing "towers" with book OR author label
@@ -1424,3 +1458,121 @@ note.dateCreated >= '2024-01-01' AND note.dateCreated < '2024-12-31' AND note.da
 - **noteProperties operators**: Use `note.title` and `note.content` with operators `*=*`, `=*`, `*=`, `!=` for precise field matching
 - **Boolean logic**: Combine noteProperties searches with `AND`, `OR`, and `NOT` for complex queries
 - **Critical**: Trilium requires an "expression separator sign" (`~` or `#`) before parentheses when they start an expression - this is automatically handled by the searchQueryBuilder for OR date queries
+
+---
+
+## Structured OrderBy Examples
+
+### 73) Basic Note Property Ordering
+- Composed query: Sort all notes by modification date
+```
+note.noteId != '' orderBy note.dateModified desc
+```
+- JSON structure with structured orderBy
+```json
+{
+  "orderBy": [
+    { "type": "noteProperty", "field": "dateModified", "direction": "desc" }
+  ]
+}
+```
+- Use case: Simple sorting by note properties without filtering
+
+### 74) Multiple Note Property Ordering  
+- Composed query: Sort by creation date, then by title
+```
+note.noteId != '' orderBy note.dateCreated desc, note.title asc
+```
+- JSON structure with multiple orderBy criteria
+```json
+{
+  "orderBy": [
+    { "type": "noteProperty", "field": "dateCreated", "direction": "desc" },
+    { "type": "noteProperty", "field": "title", "direction": "asc" }
+  ]
+}
+```
+- Use case: Primary and secondary sorting for better organization
+
+### 75) Attribute-Based Ordering
+- Composed query: Sort books by publication year
+```
+#book orderBy #publicationYear desc
+```
+- JSON structure with attribute orderBy
+```json
+{
+  "attributes": [
+    { "type": "label", "name": "book" }
+  ],
+  "orderBy": [
+    { "type": "attribute", "field": "publicationYear", "direction": "desc", "attributeType": "label" }
+  ]
+}
+```
+- Use case: Sorting by user-defined label values
+
+### 76) Mixed Attribute and Note Property Ordering
+- Composed query: Sort by priority label, then by creation date
+```
+note.noteId != '' orderBy #priority desc, note.dateCreated desc
+```
+- JSON structure mixing attribute and note property ordering
+```json
+{
+  "orderBy": [
+    { "type": "attribute", "field": "priority", "direction": "desc", "attributeType": "label" },
+    { "type": "noteProperty", "field": "dateCreated", "direction": "desc" }
+  ]
+}
+```
+- Use case: Combined user-defined and system property sorting
+
+### 77) Relation-Based Ordering
+- Composed query: Sort notes by author relation
+```
+note.noteId != '' orderBy ~author asc
+```
+- JSON structure with relation orderBy
+```json
+{
+  "orderBy": [
+    { "type": "attribute", "field": "author", "direction": "asc", "attributeType": "relation" }
+  ]
+}
+```
+- Use case: Sorting by relation connections
+
+### 78) Complex Search with Multiple Ordering
+- Composed query: Find recent work notes sorted by priority and date
+```
+work note.dateCreated >= '2024-01-01' orderBy #priority desc, note.dateModified desc limit 20
+```
+- JSON structure with complex filtering and ordering
+```json
+{
+  "text": "work",
+  "noteProperties": [
+    { "property": "dateCreated", "op": ">=", "value": "2024-01-01" }
+  ],
+  "orderBy": [
+    { "type": "attribute", "field": "priority", "direction": "desc", "attributeType": "label" },
+    { "type": "noteProperty", "field": "dateModified", "direction": "desc" }
+  ],
+  "limit": 20
+}
+```
+- Use case: Real-world search with filtering, sorting, and limits
+
+### 79) OrderBy Benefits Summary
+**Key Advantages of Structured OrderBy**:
+- ✅ **LLM Consistency**: No confusion about `note.dateCreated` vs `dateCreated` 
+- ✅ **Multiple Sorting**: Support for primary/secondary/tertiary sorting
+- ✅ **Attribute Support**: Can sort by labels and relations, not just note properties
+- ✅ **Type Safety**: Clear distinction between note properties and attributes
+- ✅ **TriliumNext Compatibility**: Matches native `orderBy #label desc, note.title` syntax
+- ✅ **Future Extensible**: Can add more complex sorting criteria as needed
+
+**Migration from Old Format**:
+- **Before**: `"orderBy": "note.dateCreated desc"`
+- **After**: `"orderBy": [{"type": "noteProperty", "field": "dateCreated", "direction": "desc"}]`

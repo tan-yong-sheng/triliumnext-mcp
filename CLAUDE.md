@@ -254,11 +254,30 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 
 ## Recent Enhancements (Latest)
 
+### Structured OrderBy Implementation - LLM Consistency Enhancement
+- **Issue identified**: LLM inconsistently used `"note.dateCreated"` vs `"dateCreated"` in orderBy parameter, causing confusion and validation errors
+- **TriliumNext research**: Extracted documentation showing orderBy supports both note properties (`note.title`) and attributes (`#publicationDate desc`) with multiple sorting criteria
+- **Solution implemented**: Redesigned orderBy from free-form string to structured array format matching noteProperties and attributes patterns
+- **Enhanced capabilities achieved**:
+  - **LLM consistency**: Always use `"dateCreated"` (never `"note.dateCreated"`) with explicit type specification
+  - **Multiple sorting**: Support for primary/secondary/tertiary ordering like TriliumNext native syntax
+  - **Attribute support**: Can sort by labels (`#priority desc`) and relations (`~author asc`), not just note properties
+  - **Type safety**: Clear distinction between `noteProperty` and `attribute` types with required `attributeType` for attributes
+  - **Future extensible**: Structured format allows for complex sorting enhancements
+- **Implementation details**:
+  - Added `OrderByCondition` interface with `type`, `field`, `direction`, and optional `attributeType`
+  - Created `buildOrderByExpressions()` and `buildOrderByExpression()` functions in searchQueryBuilder
+  - Updated tool schema to require structured array format with comprehensive field validation
+  - Enhanced fastSearch logic to handle array-based orderBy parameter
+  - Added 7 comprehensive orderBy examples (examples 73-79) in documentation
+- **Schema change**: `"orderBy": "note.dateCreated desc"` → `"orderBy": [{"type": "noteProperty", "field": "dateCreated", "direction": "desc"}]`
+- **Status**: ✅ **COMPLETED** - Full implementation with comprehensive examples, TriliumNext compatibility, and LLM consistency
+
 ### FastSearch Logic Fix - Critical Bug Resolution
 - **Issue identified**: `hasOnlyText` logic was missing `!args.limit` check, causing incorrect `fastSearch=true` when limit parameter was present
 - **Root cause**: TriliumNext's fastSearch mode does not support `limit` or `orderBy` clauses, but MCP was incorrectly enabling fastSearch when these parameters were present
 - **Symptom**: Queries like `"n8n limit 5"` would return empty results despite being valid Trilium queries
-- **Fix implemented**: Added `!args.limit` check to fastSearch logic in all search functions (searchManager.ts lines 69, 124, 189)
+- **Fix implemented**: Added `!args.limit` and array-based `!args.orderBy` checks to fastSearch logic in all search functions (searchManager.ts lines 69, 124, 189)
 - **Rule clarified**: FastSearch is now used ONLY when ONLY text parameter is provided (no attributes, noteProperties, hierarchyType, orderBy, or limit)
 - **Documentation updated**: Enhanced CLAUDE.md with clear fastSearch compatibility rules
 - **Status**: ✅ **COMPLETED** - All search functions now correctly handle limit and orderBy parameters with proper fastSearch detection

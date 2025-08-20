@@ -285,8 +285,34 @@ function createSearchProperties() {
       description: "Maximum number of results to return",
     },
     orderBy: {
-      type: "string",
-      description: "Sort order for results (e.g., 'note.dateCreated desc', 'note.dateModified asc', 'note.title')",
+      type: "array",
+      description: "Array of sorting criteria for results. Supports both note properties (e.g., dateCreated, title) and attributes (e.g., publicationDate label). Results are sorted by first item, then second item as tiebreaker, etc.",
+      items: {
+        type: "object",
+        properties: {
+          type: {
+            type: "string",
+            enum: ["noteProperty", "attribute"],
+            description: "Type of field to sort by: 'noteProperty' for built-in note fields, 'attribute' for labels/relations"
+          },
+          field: {
+            type: "string",
+            description: "Field name. For noteProperty: use property names like 'dateCreated', 'title', 'dateModified'. For attribute: use attribute names like 'publicationDate', 'priority'"
+          },
+          direction: {
+            type: "string",
+            enum: ["asc", "desc"],
+            description: "Sort direction: 'asc' for ascending, 'desc' for descending",
+            default: "asc"
+          },
+          attributeType: {
+            type: "string",
+            enum: ["label", "relation"],
+            description: "Required when type='attribute'. Specify whether sorting by label or relation"
+          }
+        },
+        required: ["type", "field", "direction"]
+      }
     },
     hierarchyType: {
       type: "string",
