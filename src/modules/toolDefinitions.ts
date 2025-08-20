@@ -145,7 +145,7 @@ export function createReadTools(): any[] {
           },
           exactMatch: {
             type: "boolean",
-            description: "Whether to require exact title match. If false, searches for notes containing the name.",
+            description: "Whether to require exact title match. RECOMMENDED: Use false (default) for best user experience - fuzzy search finds partial matches and handles typos, while still prioritizing exact matches when found. Only set to true when user explicitly requests exact matching.",
             default: false
           },
           maxResults: {
