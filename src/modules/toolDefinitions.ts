@@ -252,7 +252,7 @@ function createSearchProperties() {
     hierarchyType: {
       type: "string",
       enum: ["children", "descendants"],
-      description: "Optional hierarchy search type: 'children' for direct children only (like 'ls'), 'descendants' for all descendants recursively (like 'find')"
+      description: "Optional hierarchy search type: 'descendants' (can list all notes, including subfolders); 'children' (can list direct children only)"
     },
     parentNoteId: {
       type: "string", 
