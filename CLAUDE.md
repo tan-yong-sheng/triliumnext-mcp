@@ -12,7 +12,7 @@ This is a Model Context Protocol (MCP) server for TriliumNext Notes that provide
 - **Main Server**: `src/index.ts` - Lightweight MCP server setup (~150 lines, down from 1400+)
 - **Business Logic Modules**: `src/modules/` - Core functionality separated by domain:
   - `noteManager.ts` - Note creation, update, append, delete, and retrieval
-  - `searchManager.ts` - Search, list_child_notes, and list_descendant_notes operations
+  - `searchManager.ts` - Search operations with hierarchy navigation support
 - **Request Handlers**: `src/modules/` - MCP request/response processing:
   - `noteHandler.ts` - Note tool request handling with permission validation
   - `searchHandler.ts` - Search tool request handling with permission validation
@@ -26,9 +26,8 @@ This is a Model Context Protocol (MCP) server for TriliumNext Notes that provide
 
 ### MCP Tool Architecture
 - **Permission-based tools**: READ vs WRITE permissions control available tools
-- **Tool ordering**: `list_descendant_notes` appears before `list_child_notes` to prioritize comprehensive listing
-- **Unified search architecture**: Single `search_notes` function with smart performance optimization
-- **List function integration**: `list_child_notes` and `list_descendant_notes` use `search_notes` as parent function with different `hierarchyType` parameters
+- **Unified search architecture**: Single `search_notes` function with smart performance optimization and hierarchy navigation
+- **Hierarchy navigation**: `search_notes` supports hierarchyType='children' (like Unix `ls`) and hierarchyType='descendants' (like Unix `find`)
 - **Critical Trilium syntax handling**: OR queries with parentheses require `~` prefix per Trilium parser requirements
 - **Modular design patterns**: Separation of concerns with Manager (business logic) → Handler (request processing) → Tool Definition (schemas)
 
@@ -73,13 +72,13 @@ node build/index.js   # Run the server directly
 
 ### READ Permission Tools
 - `search_notes`: Unified search with comprehensive filtering capabilities including full-text search, date ranges, field-specific searches, attribute searches, note properties, and hierarchy navigation
+  - Use hierarchyType='descendants' with parentNoteId='root' for listing all notes (like Unix `find`)
+  - Use hierarchyType='children' for direct children only (like Unix `ls`) - for navigation/browsing
 - `resolve_note_id`: Find note ID by name/title - use when users provide note names (like "wqd7006") instead of IDs. Essential for LLM workflows where users reference notes by name. Features:
   - **Smart fuzzy search**: `exactMatch` parameter (default: false) controls search precision - fuzzy search handles typos and partial matches while prioritizing exact matches
   - **Configurable results**: `maxResults` parameter (default: 3, range: 1-10) controls number of alternatives returned
   - **Intelligent prioritization**: Automatically prioritizes exact matches, then folder-type notes (book), then most recent
   - **JSON response format**: Returns structured data with selectedNote, totalMatches, topMatches array, and nextSteps guidance
-- `list_descendant_notes`: List ALL descendant notes recursively (like Unix `find`) - uses `search_notes` with `hierarchyType="descendants"` - **PREFERRED for "list all notes"**
-- `list_child_notes`: List direct child notes only (like Unix `ls`) - uses `search_notes` with `hierarchyType="children"` - for navigation/browsing
 - `get_note`: Retrieve note content by ID
 
 ### WRITE Permission Tools
@@ -94,8 +93,8 @@ node build/index.js   # Run the server directly
 - **Single search function**: `search_notes` handles all search scenarios with automatic performance optimization
 - **Smart fastSearch logic**: Automatically uses `fastSearch=true` ONLY when ONLY text parameter is provided (no attributes, noteProperties, hierarchyType, or limit), `fastSearch=false` for all other scenarios
 - **FastSearch compatibility**: TriliumNext's fastSearch mode does not support `limit` clauses - these automatically disable fastSearch
-- **Hierarchical integration**: `list_child_notes` and `list_descendant_notes` use `search_notes` internally with different `hierarchyType` parameters
-- **Parameter inheritance**: List functions support all `search_notes` parameters for powerful filtering capabilities
+- **Hierarchical integration**: `search_notes` supports hierarchyType parameter for hierarchy navigation (children/descendants)
+- **Parameter inheritance**: Hierarchy navigation supports all `search_notes` parameters for powerful filtering capabilities
 
 ### Query Builder System
 - **Structured → DSL**: `searchQueryBuilder.ts` converts JSON parameters to Trilium search strings
@@ -188,9 +187,9 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - **Universal search**: Uses `note.noteId != ''` as universal match condition for ETAPI
 
 ### Tool Descriptions Optimized for LLM Selection
-- `list_descendant_notes` marked as "PREFERRED for 'list all notes' requests"
-- Clear Unix command analogies: `ls` vs `find` behavior for `list_child_notes` and `list_descendant_notes` respectively
-- Specific guidance on when to use each tool for better LLM decision-making
+- `search_notes` with hierarchyType='descendants' marked as "PREFERRED for 'list all notes' requests"
+- Clear Unix command analogies: `ls` vs `find` behavior for hierarchyType='children' and hierarchyType='descendants' respectively
+- Specific guidance on when to use each hierarchyType for better LLM decision-making
 - `resolve_note_id` provides clear workflow: resolve name → get ID → use with other tools (eliminates confusion when users provide note names instead of IDs)
 
 ## Content Modification Tools Strategy

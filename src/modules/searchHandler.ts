@@ -8,8 +8,6 @@ import {
   SearchOperation,
   ResolveNoteOperation,
   handleSearchNotes,
-  handleListChildNotes,
-  handleListDescendantNotes,
   handleResolveNoteId
 } from "./searchManager.js";
 import { formatNotesForListing } from "./noteFormatter.js";
@@ -47,106 +45,6 @@ export async function handleSearchNotesRequest(
       content: [{
         type: "text",
         text: `${result.debugInfo || ''}${resultsText}`
-      }]
-    };
-  } catch (error) {
-    if (error instanceof McpError) {
-      throw error;
-    }
-    throw new McpError(ErrorCode.InvalidParams, error instanceof Error ? error.message : String(error));
-  }
-}
-
-/**
- * Handle list_child_notes tool requests
- */
-export async function handleListChildNotesRequest(
-  args: any,
-  axiosInstance: any,
-  permissionChecker: PermissionChecker
-): Promise<{ content: Array<{ type: string; text: string }> }> {
-  if (!permissionChecker.hasPermission("READ")) {
-    throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to list child notes.");
-  }
-
-  try {
-    const searchOperation: SearchOperation = {
-      text: args.text,
-      attributes: args.attributes,
-      noteProperties: args.noteProperties,
-      limit: args.limit,
-      parentNoteId: args.parentNoteId || "root"
-    };
-
-    const result = await handleListChildNotes(searchOperation, axiosInstance);
-
-    if (result.summary && result.results.length === 0) {
-      return {
-        content: [{
-          type: "text",
-          text: result.summary
-        }]
-      };
-    }
-
-    // Format notes as "date title (noteId)" similar to ls -l output
-    const formattedNotes = formatNotesForListing(result.results);
-    const output = formattedNotes.join('\n');
-
-    return {
-      content: [{
-        type: "text",
-        text: `${result.debugInfo || ''}${output}${result.summary || ''}`
-      }]
-    };
-  } catch (error) {
-    if (error instanceof McpError) {
-      throw error;
-    }
-    throw new McpError(ErrorCode.InvalidParams, error instanceof Error ? error.message : String(error));
-  }
-}
-
-/**
- * Handle list_descendant_notes tool requests
- */
-export async function handleListDescendantNotesRequest(
-  args: any,
-  axiosInstance: any,
-  permissionChecker: PermissionChecker
-): Promise<{ content: Array<{ type: string; text: string }> }> {
-  if (!permissionChecker.hasPermission("READ")) {
-    throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to list descendant notes.");
-  }
-
-  try {
-    const searchOperation: SearchOperation = {
-      text: args.text,
-      attributes: args.attributes,
-      noteProperties: args.noteProperties,
-      limit: args.limit,
-      parentNoteId: args.parentNoteId || "root"
-    };
-
-    const result = await handleListDescendantNotes(searchOperation, axiosInstance);
-
-    if (result.summary && result.results.length === 0) {
-      return {
-        content: [{
-          type: "text",
-          text: result.summary
-        }]
-      };
-    }
-
-    // Use formatted output like list_child_notes (ls-like format)
-    const formattedNotes = formatNotesForListing(result.results);
-    const output = formattedNotes.join('\n');
-
-    return {
-      content: [{
-        type: "text",
-        text: `${result.debugInfo || ''}${output}\n${result.summary || ''}`
       }]
     };
   } catch (error) {
@@ -244,7 +142,7 @@ Suggested search strategies:
    - Try resolve_note_id with exactMatch=false for fuzzy matching
 
 3. Alternative approaches if searches continue to fail:
-   - Browse parent folders using list_child_notes or list_descendant_notes
+   - Browse parent folders using search_notes with hierarchyType='children' or 'descendants'
    - Check if the note exists under a different name or structure
    - Verify note isn't in a restricted or archived state
    - Consider if the note might be in a different TriliumNext instance
@@ -273,7 +171,7 @@ REMINDER: Adapt these suggestions based on user context, domain knowledge, and p
       },
       totalMatches: result.matches,
       topMatches: result.topMatches || [],
-      nextSteps: "Use the selectedNote.noteId with list_descendant_notes or list_child_notes"
+      nextSteps: "Use the selectedNote.noteId with search_notes for hierarchy navigation"
     };
 
     return {

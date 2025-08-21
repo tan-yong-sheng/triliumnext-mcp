@@ -46,7 +46,7 @@ export function createWriteTools(): any[] {
     },
     {
       name: "update_note",
-      description: "Update the content of an existing note with optional revision creation. WARNING: This completely replaces the note's content. Consider using 'append_note' for adding content without replacement. STRONGLY RECOMMENDED: Keep revision=true (default) to create a backup before overwriting, unless explicitly instructed otherwise to prevent irreversible data loss.",
+      description: "Update note content by complete replacement. Best for major restructuring, complete rewrites, or when managing overall note organization. WARNING: This replaces ALL note content. PRIORITY GUIDANCE: Consider 'append_note' for adding content first, but use 'update_note' when it's the most appropriate tool for the task (e.g., major structural changes, complete content reorganization). STRONGLY RECOMMENDED: Keep revision=true (default) to create a backup before overwriting.",
       inputSchema: {
         type: "object",
         properties: {
@@ -69,7 +69,7 @@ export function createWriteTools(): any[] {
     },
     {
       name: "append_note",
-      description: "Appends new content to an existing note without overwriting it. Use this instead of update_note when you want to add text below the existing content (e.g., logs, journals). For full content replacement, use update_note. By default, it avoids creating revisions (revision=false) to improve performance during frequent additions.",
+      description: "🥇 RECOMMENDED: Appends new content to an existing note without overwriting anything. Ideal for adding text below existing content (e.g., logs, journals, additional sections). By default, avoids creating revisions (revision=false) for performance during frequent additions. PRIORITY GUIDANCE: This is often the best choice for adding content, but use the tool that best fits your specific task.",
       inputSchema: {
         type: "object",
         properties: {
@@ -135,7 +135,7 @@ export function createReadTools(): any[] {
     },
     {
       name: "resolve_note_id",
-      description: "Resolves a note/folder name to its actual note ID for use with other tools. You MUST call this function before 'list_descendant_notes' or 'list_child_notes' when users provide note names instead of note IDs (e.g., 'wqd7006', 'My Project') UNLESS the user explicitly provides a note ID.",
+      description: "Resolves a note/folder name to its actual note ID for use with other tools. You MUST call this function when users provide note names instead of note IDs (e.g., 'wqd7006', 'My Project') UNLESS the user explicitly provides a note ID.",
       inputSchema: {
         type: "object",
         properties: {
@@ -161,42 +161,12 @@ export function createReadTools(): any[] {
     },
     {
       name: "search_notes",
-      description: "Unified search with structured parameters. Supports: full-text search, date filtering, field-specific searches (title/content), attribute searches (#labels), note properties (isArchived), and hierarchy navigation (children/descendants). Use OR/AND logic within arrays for complex conditions (e.g., 'created OR modified' dates) instead of multiple separate search calls. Automatically optimizes with fast search when only text search is used.",
+      description: "Unified search with comprehensive filtering capabilities. Supports full-text search, attributes, note properties, date ranges, and hierarchy navigation. For 'list all notes' requests: use hierarchyType='descendants' with parentNoteId='root' (like Unix 'find'). For browsing specific folders: use hierarchyType='children' (like Unix 'ls').",
       inputSchema: {
         type: "object",
         properties: searchProperties,
       },
     },
-    {
-      name: "list_descendant_notes",
-      description: "List ALL descendant notes recursively in database or subtree (like Unix 'find' command). PREFERRED for 'list all notes' requests - provides complete note inventory. Use when user wants to see everything, discovery, or bulk operations. Supports all search_notes parameters for powerful filtering.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          ...searchProperties,
-          parentNoteId: {
-            type: "string", 
-            description: "Parent note ID for listing descendants. Use 'root' for entire note tree, or omit to search entire database.",
-            default: "root"
-          },
-        },
-      },
-    },
-    {
-      name: "list_child_notes",
-      description: "List direct child notes of a parent note (like Unix 'ls' command). Use for browsing/navigating note hierarchy or when user specifically wants only direct children. Supports all search_notes parameters for powerful filtering.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          ...searchProperties,
-          parentNoteId: {
-            type: "string", 
-            description: "Parent note ID for listing children. Use 'root' for top-level notes.",
-            default: "root"
-          },
-        },
-      },
-    }
   ];
 }
 

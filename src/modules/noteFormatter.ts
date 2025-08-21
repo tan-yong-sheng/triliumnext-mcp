@@ -62,7 +62,7 @@ export function getTypeIndicator(type: string): string {
 }
 
 /**
- * Formats notes for list_children_notes output in ls-like format
+ * Formats notes for hierarchical search output in ls-like format
  */
 export function formatNotesForListing(notes: any[]): string[] {
   return notes.map((note: any) => {

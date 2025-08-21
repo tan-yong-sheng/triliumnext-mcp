@@ -29,7 +29,7 @@ This guide provides a comprehensive roadmap for refactoring the TriliumNext MCP 
 **Files Created:**
 - `src/modules/attributeManager.ts` - CRUD operations for labels and relations
 - `src/modules/noteManager.ts` - Note creation, update, append, delete, and retrieval
-- `src/modules/searchManager.ts` - Search, list_child_notes, and list_descendant_notes operations
+- `src/modules/searchManager.ts` - Search operations with hierarchy navigation support
 - `src/modules/attributeHandler.ts` - Attribute tool request handling with permission validation
 - `src/modules/noteHandler.ts` - Note tool request handling with permission validation
 - `src/modules/searchHandler.ts` - Search tool request handling with permission validation
