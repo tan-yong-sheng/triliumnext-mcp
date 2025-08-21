@@ -4,79 +4,42 @@ This document outlines planned features and enhancements for the TriliumNext MCP
 
 ## High Priority Features
 
-### 1. Advanced Search Templates
-- Pre-built search templates for common use cases
-- Template system for complex queries
-- User-customizable search patterns
-- Support regex search
+### 1. Double check search notes by relation (~author.title)
 
-
-### 2. search_replace feature
-- Performs search-and-replace operations in a note.
-- Proposed arguments: targetType, replacements, useRegex?, replaceAll?
-
-
-### 3. Documentation Discovery Function (`get_documentation` or `get_help`)
-
-**Purpose**: Provide users with comprehensive guidance on what they can accomplish using the TriliumNext MCP server.
-
-**Challenge**: How to mantain docs of different versions for different users (e.g., breaking change in function name, etc...)?
-
-**Implementation Plan**:
-- Create a new MCP tool function that fetches documentation from a static GitHub raw URL
-- URL would point to a comprehensive guide (e.g., `https://raw.githubusercontent.com/user/repo/main/docs/user-guide.md`)
-- Function would cache the documentation locally for performance
-- Support for different documentation sections (getting started, examples, troubleshooting)
-
-**Benefits**:
-- **User Discovery**: Helps users understand the full capabilities of the MCP server
-- **Self-Service Help**: Reduces support burden by providing instant access to documentation
-- **Up-to-Date Info**: GitHub-hosted docs can be updated independently of MCP releases
-- **Context-Aware**: AI assistants can reference current documentation when helping users
-
-**Technical Approach**:
-```typescript
-// Tool definition
-{
-  name: "get_documentation",
-  description: "Get comprehensive documentation and examples for TriliumNext MCP capabilities",
-  inputSchema: {
-    type: "object",
-    properties: {
-      section: {
-        type: "string",
-        enum: ["overview", "getting-started", "examples", "troubleshooting", "api-reference"],
-        description: "Specific documentation section to retrieve",
-        default: "overview"
-      }
-    }
-  }
-}
-
-// Implementation would:
-// 1. Fetch from GitHub raw URL with caching
-// 2. Parse markdown sections if needed
-// 3. Return formatted documentation
-// 4. Handle network errors gracefully with cached fallback
-```
-
-**Documentation Structure** (GitHub-hosted):
-- **Overview**: What TriliumNext MCP can do
-- **Getting Started**: Setup and basic usage
-- **Examples**: Common use cases and code samples
-- **API Reference**: Complete tool documentation
-- **Troubleshooting**: Common issues and solutions
-
-**Advantages of This Approach**:
-- ✅ **Always Current**: Documentation updates don't require MCP releases
-- ✅ **Version Control**: Documentation changes are tracked in Git
-- ✅ **Collaborative**: Multiple contributors can improve docs
-- ✅ **Discoverable**: Users can find capabilities they didn't know existed
-- ✅ **AI-Friendly**: Assistants can provide better help with current info
+**Status**: Currently implemented, but still needs testing if it works properly or not
 
 ## Medium Priority Features
 
-### 4. Negation Support Enhancement
+### 2. Attribute Management System - **NEEDS REIMPLEMENTATION**
+
+**Status**: Removed due to reliability issues - requires redesign and testing
+
+**Reliability Issues Identified**:
+- ❌ **List operation confusion**: Implementation unclear about noteId requirements vs database-wide discovery
+- ❌ **ETAPI compatibility concerns**: Uncertain reliability with TriliumNext External API endpoints
+- ❌ **Error handling gaps**: Insufficient validation and error recovery mechanisms  
+- ❌ **Testing gaps**: Insufficient validation against actual TriliumNext instances
+- ❌ **User experience issues**: Confusing operation semantics (list vs get operations)
+
+**Future Implementation Requirements**:
+- **Thorough ETAPI testing**: Validate all operations against live TriliumNext instances
+- **Clear operation semantics**: Redesign with unambiguous operation purposes and requirements
+- **Comprehensive error handling**: Robust validation and user-friendly error messages
+- **Progressive rollout**: Implement and test one operation at a time (starting with read-only operations)
+- **Documentation first**: Complete API documentation before implementation
+- **User feedback integration**: Design based on actual user needs and workflows
+
+**Proposed Features for Future Implementation**:
+- ⏳ `list_attributes`: Database-wide attribute discovery with clear semantics
+- ⏳ `get_attribute`: Specific attribute instance details with attributeId
+- ⏳ `create_attribute`: Add labels and relations with full validation
+- ⏳ `update_attribute`: Modify existing attributes with constraint checking
+- ⏳ `delete_attribute`: Remove attributes with safety confirmations
+
+After adding this function to manage attributes, create_note(), update_note() should natively support adding labels + relation...
+
+
+### 3. Negation Support Enhancement for search_note() function
 
 **Status**: Future consideration - `not()` syntax support
 
@@ -98,7 +61,7 @@ This document outlines planned features and enhancements for the TriliumNext MCP
 
 **Priority**: Low - existing `!=` and `not_exists` operators cover most negation use cases effectively
 
-### 6. OrderBy/Sorting Support - **NEEDS REIMPLEMENTATION** (But perhaps not support natively for noteProperties like what I think before, so may not be re-implemented if still don't know its rule)
+### 4. OrderBy/Sorting Support for search_notes() function - **NEEDS REIMPLEMENTATION** (But perhaps not support natively for noteProperties like what I think before, so may not be re-implemented if still don't know its rule)
 
 **Status**: Removed due to complexity and inconsistencies - requires redesign and testing
 
@@ -137,31 +100,6 @@ This document outlines planned features and enhancements for the TriliumNext MCP
 - ✅ **Better reliability**: Less chance for edge cases and parameter interaction issues
 - ✅ **Lower maintenance**: Fewer moving parts and integration points
 
-### 7. Attribute Management System - **NEEDS REIMPLEMENTATION**
-
-**Status**: Removed due to reliability issues - requires redesign and testing
-
-**Reliability Issues Identified**:
-- ❌ **List operation confusion**: Implementation unclear about noteId requirements vs database-wide discovery
-- ❌ **ETAPI compatibility concerns**: Uncertain reliability with TriliumNext External API endpoints
-- ❌ **Error handling gaps**: Insufficient validation and error recovery mechanisms  
-- ❌ **Testing gaps**: Insufficient validation against actual TriliumNext instances
-- ❌ **User experience issues**: Confusing operation semantics (list vs get operations)
-
-**Future Implementation Requirements**:
-- **Thorough ETAPI testing**: Validate all operations against live TriliumNext instances
-- **Clear operation semantics**: Redesign with unambiguous operation purposes and requirements
-- **Comprehensive error handling**: Robust validation and user-friendly error messages
-- **Progressive rollout**: Implement and test one operation at a time (starting with read-only operations)
-- **Documentation first**: Complete API documentation before implementation
-- **User feedback integration**: Design based on actual user needs and workflows
-
-**Proposed Features for Future Implementation**:
-- ⏳ `list_attributes`: Database-wide attribute discovery with clear semantics
-- ⏳ `get_attribute`: Specific attribute instance details with attributeId
-- ⏳ `create_attribute`: Add labels and relations with full validation
-- ⏳ `update_attribute`: Modify existing attributes with constraint checking
-- ⏳ `delete_attribute`: Remove attributes with safety confirmations
 
 **Implementation Strategy**:
 1. **Research phase**: Comprehensive ETAPI endpoint analysis and testing
@@ -192,14 +130,12 @@ This document outlines planned features and enhancements for the TriliumNext MCP
 - **Permission Handling**: Respect note protection and access controls
 - **Conflict Resolution**: Handle concurrent modifications gracefully
 - **Data Integrity**: Validate relation targets and label constraints
-- **Performance**: Bulk operations should be efficient for large note collections
 
 ## Timeline
 
 **Phase 1** (Immediate): Documentation discovery function
 **Phase 2** (Next): Relation search support completion
 **Phase 3** (Future): Label and relation management tools
-**Phase 4** (Advanced): Bulk operations and analytics features
 
 ## Implementation Status
 
@@ -217,3 +153,13 @@ This document outlines planned features and enhancements for the TriliumNext MCP
 - Resource availability and priorities
 
 *This plan is subject to change based on user feedback and technical constraints.*
+
+
+---
+
+## DISPOSED PLAN:
+
+### search_and_replace feature [Don't want, it's hard to implement because Trilium Note doesn't support it natively]
+- Performs search-and-replace operations in a note.
+- Proposed arguments: targetType, replacements, useRegex?, replaceAll?
+
