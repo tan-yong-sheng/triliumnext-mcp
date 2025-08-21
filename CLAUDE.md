@@ -8,21 +8,36 @@ This is a Model Context Protocol (MCP) server for TriliumNext Notes that provide
 
 ## Key Architecture
 
-### Modular Structure (Evolved from Single File)
-- **Main Server**: `src/index.ts` - MCP server setup, tool definitions, and request handling
-- **Helper Modules**: `src/modules/` - Specialized functionality split into focused modules:
+### Modular Structure (Refactored from Monolithic)
+- **Main Server**: `src/index.ts` - Lightweight MCP server setup (~150 lines, down from 1400+)
+- **Business Logic Modules**: `src/modules/` - Core functionality separated by domain:
+  - `noteManager.ts` - Note creation, update, append, delete, and retrieval
+  - `searchManager.ts` - Search operations with hierarchy navigation support
+- **Request Handlers**: `src/modules/` - MCP request/response processing:
+  - `noteHandler.ts` - Note tool request handling with permission validation
+  - `searchHandler.ts` - Search tool request handling with permission validation
+- **Schema Definitions**: `src/modules/` - Tool schema generation:
+  - `toolDefinitions.ts` - Permission-based tool schema generation and definitions
+- **Utility Modules**: `src/modules/` - Specialized helper functions:
   - `searchQueryBuilder.ts` - Builds Trilium search query strings from structured parameters
-  - `listChildHelper.ts` - Handles direct children listing (like Unix `ls`)
-  - `listDescendantNotesHelper.ts` - Handles recursive note listing (like Unix `find`)
   - `contentProcessor.ts` - Markdown detection and HTML conversion
   - `noteFormatter.ts` - Output formatting for note listings
   - `responseUtils.ts` - Debug info and response formatting utilities
 
 ### MCP Tool Architecture
 - **Permission-based tools**: READ vs WRITE permissions control available tools
-- **Tool ordering**: `list_descendant_notes` appears before `list_child_notes` to prioritize comprehensive listing
-- **Search hierarchy**: Basic `search_notes` → Advanced `search_notes_advanced` → Listing tools
+- **Unified search architecture**: Single `search_notes` function with smart performance optimization and hierarchy navigation
+- **Hierarchy navigation**: `search_notes` supports hierarchyType='children' (like Unix `ls`) and hierarchyType='descendants' (like Unix `find`)
 - **Critical Trilium syntax handling**: OR queries with parentheses require `~` prefix per Trilium parser requirements
+- **Modular design patterns**: Separation of concerns with Manager (business logic) → Handler (request processing) → Tool Definition (schemas)
+
+### Refactoring Benefits Achieved
+- **91% reduction in main file size**: From 1400+ lines to ~150 lines
+- **Complete separation of concerns**: Each module has single responsibility
+- **Enhanced maintainability**: Business logic isolated from request handling
+- **Improved testability**: Individual modules can be unit tested independently
+- **Better extensibility**: New operations can be added without touching existing code
+- **Type safety**: Strong TypeScript interfaces throughout the modular architecture
 
 ## Environment Variables
 
@@ -56,10 +71,14 @@ node build/index.js   # Run the server directly
 ## MCP Tools Available
 
 ### READ Permission Tools
-- `search_notes`: Fast full-text search using simple keyword searches
-- `search_notes_advanced`: Advanced filtered search with date ranges, field-specific searches
-- `list_descendant_notes`: List ALL descendant notes recursively (like Unix `find`) - **PREFERRED for "list all notes"**
-- `list_child_notes`: List direct child notes only (like Unix `ls`) - for navigation/browsing
+- `search_notes`: Unified search with comprehensive filtering capabilities including full-text search, date ranges, field-specific searches, attribute searches, note properties, and hierarchy navigation
+  - Use hierarchyType='descendants' with parentNoteId='root' for listing all notes (like Unix `find`)
+  - Use hierarchyType='children' for direct children only (like Unix `ls`) - for navigation/browsing
+- `resolve_note_id`: Find note ID by name/title - use when users provide note names (like "wqd7006") instead of IDs. Essential for LLM workflows where users reference notes by name. Features:
+  - **Smart fuzzy search**: `exactMatch` parameter (default: false) controls search precision - fuzzy search handles typos and partial matches while prioritizing exact matches
+  - **Configurable results**: `maxResults` parameter (default: 3, range: 1-10) controls number of alternatives returned
+  - **Intelligent prioritization**: Automatically prioritizes exact matches, then folder-type notes (book), then most recent
+  - **JSON response format**: Returns structured data with selectedNote, totalMatches, topMatches array, and nextSteps guidance
 - `get_note`: Retrieve note content by ID
 
 ### WRITE Permission Tools
@@ -70,11 +89,63 @@ node build/index.js   # Run the server directly
 
 ## Search Query Architecture
 
+### Unified Search System
+- **Single search function**: `search_notes` handles all search scenarios with automatic performance optimization
+- **Smart fastSearch logic**: Automatically uses `fastSearch=true` ONLY when ONLY text parameter is provided (no attributes, noteProperties, hierarchyType, or limit), `fastSearch=false` for all other scenarios
+- **FastSearch compatibility**: TriliumNext's fastSearch mode does not support `limit` clauses - these automatically disable fastSearch
+- **Hierarchical integration**: `search_notes` supports hierarchyType parameter for hierarchy navigation (children/descendants)
+- **Parameter inheritance**: Hierarchy navigation supports all `search_notes` parameters for powerful filtering capabilities
+
 ### Query Builder System
 - **Structured → DSL**: `searchQueryBuilder.ts` converts JSON parameters to Trilium search strings
 - **Critical fix**: OR queries with parentheses automatically get `~` prefix (required by Trilium parser)
-- **Field operators**: `*=*` (contains), `=*` (starts with), `*=` (ends with), `!=` (not equal)
-- **Documentation**: `docs/search-query-examples.md` contains 21+ examples with JSON structure for future filters parameter
+- **Field operators**: `*=*` (contains), `=*` (starts with), `*=` (ends with), `!=` (not equal), `%=` (regex)
+- **Documentation**: `docs/search-query-examples.md` contains 30+ examples with JSON structure for all parameters
+
+### Development Guidelines for Search Functions
+
+**CRITICAL RULE: `search_notes` Parameter Immutability**
+
+⚠️ **NEVER modify the parameters of the existing `search_notes` function** when creating new MCP functions that build on top of it. This includes:
+
+- **Do NOT add new parameters** to `search_notes` interface
+- **Do NOT remove existing parameters** from `search_notes`
+- **Do NOT modify existing parameter types** or behavior
+
+**Allowed modifications to `search_notes`:**
+- ✅ **Direct capability enhancements**: Adding new core search functionality (e.g., regex search, advanced operators)
+- ✅ **Bug fixes**: Correcting existing parameter behavior
+- ✅ **Performance improvements**: Optimizing existing functionality
+
+**When building new functions (like `resolve_note_id`):**
+- ✅ **Create wrapper functions** with their own parameters
+- ✅ **Use internal logic** to transform parameters before calling `search_notes`
+- ✅ **Add filters via existing parameters** (`noteProperties`, `filters`, etc.)
+- ✅ **Implement custom sorting/filtering** in the wrapper function
+
+**Example of CORRECT approach** (`resolve_note_id`):
+```typescript
+// ✅ CORRECT: New function with own parameters
+function handleResolveNoteId(args: ResolveNoteOperation) {
+  // Internal logic to build search_notes parameters
+  const searchParams: SearchOperation = {
+    noteProperties: [{ property: "title", op: "contains", value: args.noteName }]
+  };
+  // Call search_notes with existing interface
+  return handleSearchNotes(searchParams, axiosInstance);
+}
+```
+
+**Example of INCORRECT approach**:
+```typescript
+// ❌ WRONG: Adding new parameter to search_notes
+interface SearchOperation {
+  // ... existing parameters
+  // ❌ Don't add parameters to existing search_notes interface
+}
+```
+
+This ensures backward compatibility and prevents breaking changes to the core search functionality.
 
 ### Trilium Search DSL Integration
 - **Parent-child queries**: Uses `note.parents.noteId = 'parentId'` for direct children
@@ -116,9 +187,10 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - **Universal search**: Uses `note.noteId != ''` as universal match condition for ETAPI
 
 ### Tool Descriptions Optimized for LLM Selection
-- `list_descendant_notes` marked as "PREFERRED for 'list all notes' requests"
-- Clear Unix command analogies: `ls` vs `find` behavior for `list_child_notes` and `list_descendant_notes` respectively
-- Specific guidance on when to use each tool for better LLM decision-making
+- `search_notes` with hierarchyType='descendants' marked as "PREFERRED for 'list all notes' requests"
+- Clear Unix command analogies: `ls` vs `find` behavior for hierarchyType='children' and hierarchyType='descendants' respectively
+- Specific guidance on when to use each hierarchyType for better LLM decision-making
+- `resolve_note_id` provides clear workflow: resolve name → get ID → use with other tools (eliminates confusion when users provide note names instead of IDs)
 
 ## Content Modification Tools Strategy
 
@@ -133,9 +205,225 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - Both functions support explicit revision control override via `revision` parameter
 - `delete_note` includes strong caution warnings as it's irreversible
 
-## Field-Specific Search Limitations
+## Field-Specific Search Implementation
 
-### Supported Operators
-- `contains` (*=*), `starts_with` (=*), `ends_with` (*=), `not_equal` (!=)
+### Unified noteProperties Approach
+- **Architectural design**: Field-specific searches for `title` and `content` integrated into `noteProperties` parameter  
+- **Supported operators**: `contains` (*=*), `starts_with` (=*), `ends_with` (*=), `not_equal` (!=), `regex` (%=)
 - **Known limitation**: `not_contains` (does not contain) is not reliably supported in Trilium's search DSL
-- Field-specific searches work on `title` and `content` fields through the `filters` parameter
+- **OR logic support**: Full per-item logic support for title/content searches via `logic: "OR"` parameter
+- **Consistent API**: Same interface pattern as system properties (note.isArchived, note.type, etc.)
+
+### Enhanced Integration Benefits
+- **Single parameter**: No distinction needed between field searches and property searches
+- **Unified OR logic**: Same logic pattern works across all noteProperties (system + content)
+- **Query optimization**: Consistent query building for all note.* properties
+- **Documentation consistency**: All examples use the same noteProperties structure
+
+## Note Properties Search Support
+
+### Enhanced Note Properties Support
+- **Boolean properties**: `isArchived`, `isProtected` - support `=`, `!=` operators with `"true"`/`"false"` values
+- **String properties**: `type` - support all operators with string values
+- **Content properties**: `title`, `content` - support field-specific operators (`contains`, `starts_with`, `ends_with`, `not_equal`, `regex`)
+- **Date properties**: `dateCreated`, `dateModified`, `dateCreatedUtc`, `dateModifiedUtc` - support comparison operators (`>=`, `<=`, `>`, `<`, `=`, `!=`) with ISO date strings and smart date expressions
+- **Numeric properties**: `labelCount`, `ownedLabelCount`, `attributeCount`, `relationCount`, `parentCount`, `childrenCount`, `contentSize`, `revisionCount` - support numeric comparisons (`>`, `<`, `>=`, `<=`, `=`, `!=`) with unquoted numeric values
+- **Automatic type handling**: Query builder properly handles boolean, string, content, date, and numeric value formatting
+- **Smart date expressions**: Support TriliumNext native syntax like `TODAY-7`, `MONTH-1`, `YEAR+1` for dynamic date queries
+- **Examples**: `note.labelCount > 5`, `note.type = 'text'`, `note.isArchived = true`, `note.title *=* 'project'`, `note.content =* 'introduction'`, `note.dateCreated >= 'TODAY-7'`
+
+## Attribute OR Logic Support
+
+### Clean Two-Parameter Approach - AND Logic Default Aligned with TriliumNext
+- **`attributes` parameter**: For Trilium user-defined metadata (`#book`, `~author.title`)
+  - **Labels**: `#book`, `#author` - user-defined tags and categories  
+  - **Relations**: `~author.title *= 'Tolkien'` - connections between notes (**IMPLEMENTED - UNTESTED**)
+  - **Per-item logic**: Each attribute can specify `logic: "OR"` to combine with next attribute
+  - **Default logic**: AND when not specified (matches TriliumNext behavior: `#book #publicationYear = 1954`)
+  - **Trilium syntax**: Automatically handles proper `#` and `~` prefixes, OR grouping with `~(#book OR #author)`
+- **`noteProperties` parameter**: For Trilium built-in note metadata (`note.isArchived`, `note.type`)
+  - **System properties**: Built into every note - `note.isArchived`, `note.type`, `note.labelCount`
+  - **Different namespace**: Always prefixed with `note.` in Trilium DSL  
+  - **Per-item logic**: Each property can specify `logic: "OR"` to combine with next property
+  - **Default logic**: AND when not specified (matches TriliumNext behavior: `note.type = 'text' AND note.isArchived = false`)
+- **Conceptual clarity**: Matches Trilium's architectural separation between user metadata and system metadata
+- **Edge case handling**: Auto-cleanup of logic on last items, AND default logic, proper grouping
+
+## Recent Enhancements (Latest)
+
+### Regex Search Support - Full Support Completed
+- **Major capability addition**: Implemented comprehensive regex search support in `buildAttributeQuery()` and `buildNotePropertyQuery()` functions
+- **TriliumNext integration**: Full support for `%=` operator for both attributes and note properties
+- **Enhanced capabilities achieved**:
+  - **Complete regex support**: All TriliumNext regex patterns now supported for labels, relations, titles, and content
+  - **Mixed searches**: Regex can be combined with other search types
+- **Implementation details**:
+  - Added `regex` operator to `AttributeCondition` and `NotePropertyCondition` interfaces
+  - Updated `buildAttributeQuery()` and `buildNotePropertyQuery()` to handle `%=` operator
+  - Updated tool schemas to include `regex` operator
+  - Added comprehensive documentation with regex search examples
+- **Status**: ✅ **IMPLEMENTED - UNTESTED** - Full implementation with comprehensive examples and updated schemas, but not validated against live TriliumNext instances
+
+### OrderBy Support Removal - Complexity Reduction
+- **Issue identified**: Structured orderBy implementation created excessive complexity with multiple edge cases and TriliumNext compatibility concerns
+- **Problems encountered**: Query generation complexity, expression separator conflicts with `~` prefix usage, fastSearch integration issues, and uncertain TriliumNext behavior validation
+- **Decision made**: Remove orderBy functionality entirely to focus on core search reliability and eliminate complexity-related bugs
+- **Benefits achieved**:
+  - **Simplified query building**: Removed complex orderBy expression generation and validation logic
+  - **Reduced edge cases**: Eliminated interaction between sorting parameters and other search features
+  - **Better reliability**: Focus on core search functionality without sorting-related complexity
+  - **Cleaner codebase**: Removed OrderByCondition interface and all associated query building functions
+- **Implementation details**:
+  - Removed `orderBy` parameter from tool schema in toolDefinitions.ts
+  - Removed `OrderByCondition` interface and all orderBy functions from searchQueryBuilder.ts
+  - Updated `SearchOperation` interface to remove orderBy field
+  - Simplified fastSearch logic by removing orderBy parameter checks
+  - Added comprehensive orderBy implementation to future-plan.md with simpler string-based approach
+- **Future approach**: Simple string-based orderBy parameter with direct TriliumNext syntax validation
+- **Status**: ✅ **COMPLETED** - OrderBy functionality removed, codebase simplified, future implementation planned
+
+### FastSearch Logic Fix - Critical Bug Resolution
+- **Issue identified**: `hasOnlyText` logic was missing `!args.limit` check, causing incorrect `fastSearch=true` when limit parameter was present
+- **Root cause**: TriliumNext's fastSearch mode does not support `limit` or `orderBy` clauses, but MCP was incorrectly enabling fastSearch when these parameters were present
+- **Symptom**: Queries like `"n8n limit 5"` would return empty results despite being valid Trilium queries
+- **Fix implemented**: Added `!args.limit` check to fastSearch logic in all search functions (searchManager.ts lines 68)
+- **Rule clarified**: FastSearch is now used ONLY when ONLY text parameter is provided (no attributes, noteProperties, hierarchyType, or limit)
+- **Documentation updated**: Enhanced CLAUDE.md with clear fastSearch compatibility rules
+- **Status**: ✅ **COMPLETED** - All search functions now correctly handle limit parameters with proper fastSearch detection
+
+### Logic Default Alignment - AND Default Implementation Completed
+- **Major behavior change**: Updated default logic for both `attributes` and `noteProperties` parameters from OR to AND
+- **TriliumNext alignment**: Verified against TriliumNext documentation that default behavior is AND logic
+- **Evidence from TriliumNext docs**: `#book #publicationYear = 1954` demonstrates AND behavior without explicit operators
+- **Enhanced compatibility achieved**:
+  - **Attribute searches**: Multiple labels/relations now use AND by default - `#book #author` finds notes with BOTH labels
+  - **Note property searches**: Multiple properties now use AND by default - `note.type = 'text' note.isArchived = false` finds text notes that are not archived
+  - **Explicit OR available**: Users can still specify `logic: "OR"` for OR behavior when needed
+  - **Backward compatibility**: All existing functionality preserved, only default behavior changed
+- **Implementation details**:
+  - Updated `buildAttributeExpressions()` default logic from 'OR' to 'AND' in searchQueryBuilder.ts
+  - Updated `buildNotePropertyExpressions()` default logic from 'OR' to 'AND' in searchQueryBuilder.ts
+  - Updated tool schema descriptions to reflect AND default in toolDefinitions.ts
+  - Added comprehensive documentation examples showing both AND default and explicit OR usage
+  - Enhanced examples with clear TriliumNext behavior alignment
+- **Documentation impact**: Added examples 71-72 demonstrating AND default behavior with clear explanations
+- **Status**: ✅ **COMPLETED** - Full implementation with TriliumNext behavior alignment and comprehensive documentation
+
+### Relation Search Implementation - Full Support Completed
+- **Major capability addition**: Implemented comprehensive relation search support in `buildAttributeQuery()` function
+- **TriliumNext integration**: Full support for `~relationName` and `~relationName.property` syntax patterns
+- **Query building enhancement**: Added `~` prefix handling for relations vs `#` prefix for labels
+- **Enhanced capabilities achieved**:
+  - **Complete relation support**: All TriliumNext relation patterns now supported - `~author`, `~author.title`, `~author.relations.publisher.title`
+  - **Mixed searches**: Labels and relations can be combined in same query with proper syntax
+  - **OR logic compatibility**: Relations work with existing per-item logic system
+  - **Property access**: Support for nested relation properties like `~author.title *=* 'Tolkien'`
+  - **All operators**: Full operator support for relations: `exists`, `=`, `!=`, `>=`, `<=`, `>`, `<`, `contains`, `starts_with`, `ends_with`
+- **Implementation details**:
+  - Modified `buildAttributeQuery()` to support both `type: "label"` and `type: "relation"`
+  - Added prefix selection logic: `#` for labels, `~` for relations
+  - Updated tool schema description to remove "future support" notation
+  - Enhanced documentation with 8 comprehensive relation search examples (examples 63-70)
+  - Updated architectural status from "partially implemented" to "IMPLEMENTED"
+- **Documentation impact**: Added comprehensive relation search examples in `docs/search-query-examples.md`
+- **Status**: ✅ **IMPLEMENTED - UNTESTED** - Full implementation with comprehensive examples and updated schemas, but not validated against live TriliumNext instances
+
+### Date Parameter Unification Implementation - noteProperties Enhancement Completed
+- **Major architectural change**: Removed all legacy date parameters (`created_date_start`, `created_date_end`, `modified_date_start`, `modified_date_end`) and unified them into `noteProperties` parameter
+- **TriliumNext integration**: Full support for `note.dateCreated`, `note.dateModified`, `note.dateCreatedUtc`, `note.dateModifiedUtc` properties
+- **Smart date expressions**: Implemented TriliumNext native syntax support (`TODAY±days`, `NOW±seconds`, `MONTH±months`, `YEAR±years`)
+- **Enhanced capabilities achieved**:
+  - **Unified API**: All search criteria now use consistent `noteProperties` pattern
+  - **Enhanced OR logic**: Date searches can be mixed with other properties using per-item `logic: "OR"`
+  - **Smart date expressions**: Full support for dynamic date queries like `TODAY-7`, `MONTH-1`
+  - **UTC timezone support**: Added `dateCreatedUtc`, `dateModifiedUtc` for global applications
+  - **Simplified codebase**: Removed complex date-specific query building logic
+  - **Range queries**: Use multiple properties for precise date ranges
+- **Implementation details**:
+  - Added `dateCreated`, `dateModified`, `dateCreatedUtc`, `dateModifiedUtc` to noteProperties enum
+  - Updated query builder to handle date properties with quotes and smart expressions
+  - Removed legacy date handling logic from searchQueryBuilder
+  - Updated all interfaces, handlers, and tool schemas
+  - Migrated all documentation examples to use noteProperties approach
+- **Migration impact**: Breaking change - existing date parameter usage must migrate to `noteProperties`
+- **Status**: ✅ **COMPLETED** - Full implementation with comprehensive testing documentation
+
+### Date Parameter Unification Research - noteProperties Enhancement Feasibility
+- **Research completed**: Comprehensive analysis of moving date parameters to `noteProperties` parameter
+- **TriliumNext validation**: Confirmed native support for `note.dateCreated`, `note.dateModified` with all comparison operators
+- **Smart date discovery**: TriliumNext supports native smart date expressions (`TODAY±days`, `NOW±seconds`, `MONTH±months`, `YEAR±years`)
+- **UTC timezone support**: `dateCreatedUtc`, `dateModifiedUtc` properties available for global applications
+- **Architecture benefits identified**:
+  - **Unified API**: All search criteria use consistent `noteProperties` pattern
+  - **Enhanced OR logic**: Mix dates with other properties using per-item `logic: "OR"`
+  - **Smart date expressions**: Enable TriliumNext's native smart date syntax like `TODAY-7`
+  - **Simplified codebase**: Remove complex date-specific query building logic
+  - **Range queries**: Use multiple properties for precise date ranges
+- **Migration strategy documented**: Clear path from current separate date parameters to unified noteProperties approach
+- **Status**: ⚠️ **READY FOR IMPLEMENTATION** - All research completed, examples documented, architecture validated
+
+### Unified Search Architecture - noteProperties Parameter Enhancement
+- **Major architectural change**: Removed `filters` parameter and moved `note.title`/`note.content` searches to `noteProperties` parameter
+- **Problem solved**: Eliminated API inconsistency between field-specific searches and note property searches
+- **Key benefits**: 
+  - **Unified API**: Single `noteProperties` parameter handles both system properties and content searches
+  - **Consistent OR logic**: Same per-item logic pattern as `attributes` parameter 
+  - **Enhanced capabilities**: All noteProperties now support OR logic including title/content searches
+  - **Simplified usage**: No need to distinguish between different search parameter types
+- **Implementation details**:
+  - Added `title` and `content` to noteProperties enum with operators: `contains`, `starts_with`, `ends_with`, `not_equal`
+  - Updated query builder to handle string operators for title/content properties
+  - Migrated all field-specific examples to use noteProperties syntax
+  - Removed deprecated `filters` parameter from interfaces and handlers
+- **Migration impact**: Breaking change - existing `filters` usage must migrate to `noteProperties`
+
+### `resolve_note_id` Function Implementation
+- **Purpose**: LLM-friendly note ID resolution from note names/titles
+- **Problem solved**: Eliminates LLM confusion when users provide note names instead of IDs
+- **Key features**: 
+  - **JSON response format**: with top N alternatives (configurable via `maxResults`)
+  - **Smart fuzzy search**: with intelligent prioritization (exact matches → folders → recent)
+  - **Clear workflow guidance**: in responses
+- **Usage patterns**:
+  - General: `resolve_note_id(name) → use returned noteId with other tools`
+
+### Permission Case Mismatch Fix
+- **Issue**: Search functions were checking for lowercase `"read"` while environment uses uppercase `"READ"`
+- **Resolution**: Updated all permission checks in search handlers to use uppercase `"READ"` to match `PERMISSIONS` environment variable format
+- **Impact**: Fixed authorization errors preventing search, list, and resolve operations
+
+### Modular Architecture Refactoring  
+- **Transformation**: Monolithic 1400+ line `index.ts` → modular architecture (~150 lines main file)
+- **Modules created**: 6 specialized modules for business logic, request handling, and schema definitions
+- **Benefits**: 91% size reduction, complete separation of concerns, enhanced maintainability and testability
+- **Pattern**: Manager (business logic) → Handler (request processing) → Tool Definition (schemas)
+
+### `manage_attributes` Tool Enhancement - **REMOVED**
+
+**Status**: Removed due to reliability issues and implementation complexity
+
+**Issues identified**:
+- Unclear operation semantics (list vs get confusion)
+- ETAPI compatibility concerns
+- Insufficient testing against live TriliumNext instances
+- User experience confusion about requirements
+
+**Future consideration**: Full redesign with comprehensive testing planned for future implementation (see `docs/future-plan.md`)
+
+## Documentation Status
+
+### Testing Status
+- ⚠️ **NEEDS TESTING**: Regex search examples in `docs/search-query-examples.md` need validation against actual TriliumNext instances
+- ⚠️ **NEEDS TESTING**: Relation search examples in `docs/search-query-examples.md` (examples 63-70) need validation against actual TriliumNext instances
+- ⚠️ **UNTESTED**: Attribute search examples from "## Attribute Search Examples" section (examples 24-33) have not been tested against actual TriliumNext instances  
+- ⚠️ **UNTESTED**: Two-parameter approach with per-item logic needs validation
+- ✅ **COMPLETED**: Field-specific search unification - `filters` parameter removed and `title`/`content` moved to `noteProperties`
+- ✅ **UPDATED**: All documentation examples migrated from `filters` to `noteProperties` syntax (examples 12-23, 47-52)
+- ✅ **RESEARCHED**: Date parameter unification feasibility - confirmed TriliumNext native support for date properties and smart date expressions
+- ✅ **DOCUMENTED**: Enhanced date search examples (examples 55-62) showing unified noteProperties approach with smart dates and UTC support
+- ✅ **IMPLEMENTED**: Date parameter unification - removed legacy date parameters and unified into noteProperties with smart date support
+- ✅ **MIGRATED**: All date examples (1-11, 18, 32) updated to use noteProperties syntax with smart date expressions
+- ✅ **IMPLEMENTED - UNTESTED**: Relation search support - full implementation with comprehensive examples and updated schemas, but not validated against live TriliumNext instances
+- **Reminder**: All attribute and relation examples need validation to ensure the generated Trilium search strings work correctly with the ETAPI
+- **Priority**: Test unified `noteProperties` implementation and new relation search functionality  
+- **Next**: Consider performance testing of unified approach vs legacy specialized parameters

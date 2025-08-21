@@ -9,8 +9,6 @@ A model context protocol server for TriliumNext Notes. This server provides tool
 
 > Note: Suggest to use with Cline extension in VSCode, instead of Claude Desktop
 
-> You could now install the beta version via the command: `npx -y triliumnext-mcp@beta`
-
 
 ## Quick Start
 
@@ -93,6 +91,8 @@ Location of the configuration file:
 - MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
 
+**Feedback**: Please report issues and test results at [GitHub Issues](https://github.com/TriliumNext/Notes/issues)
+
 
 ## Available Tools
 
@@ -100,27 +100,28 @@ The server provides the following tools for note management:
 
 ### Search Tools
 
-- `search_notes` - Fast full-text search for finding notes by keywords
-  - Requires: search query
-  - Optional: includeArchivedNotes, includeProtectedNotes
+- `search_notes` - Unified search with advanced filtering capabilities
+  - Supports: full-text search, date ranges, field-specific searches, attribute searches, note properties, hierarchy navigation
+  - Parameters: text, attributes, noteProperties, hierarchyType, parentNoteId, limit  
+  - Use hierarchyType='descendants' with parentNoteId='root' for listing all notes (like Unix 'find')
+  - Use hierarchyType='children' for browsing direct children (like Unix 'ls')
+  - Automatically optimizes with fast search when only text search is used
 
-- `search_notes_advanced` - Advanced filtered search with date ranges and text search
-  - Optional: created_date_start, created_date_end, modified_date_start, modified_date_end
-  - Optional: text (full-text search token), limit, includeArchivedNotes, includeProtectedNotes
+- `manage_attributes` - Comprehensive attribute management system for CRUD operations on both labels and relations
+  - **Operations**: list (discover attributes), create (add to note), update (modify), delete (remove), get (details)
+  - **Types**: Supports both labels (#tags) and relations (~connections) with `attributeType` parameter
+  - **Discovery**: Find all unique attribute names across notes with usage counts and values, filtered by type
+  - **Management**: Create, update, and delete labels and relations on notes with full ETAPI integration
+  - **Features**: Support for attribute values, positioning, inheritance, validation, and type-specific constraints
 
 ### Note Discovery Tools
 
-- `list_child_notes` - List direct children of a parent note (like Unix `ls` command)
-  - Optional: parentNoteId (default: "root" for top-level notes)
-  - Optional: orderBy, orderDirection, limit, includeArchivedNotes, includeProtectedNotes
-  - Use when browsing note hierarchy or listing immediate children only
-
-- `list_descendant_notes` - List ALL descendant notes recursively in database or subtree (like Unix `find` command)
-  - Optional: parentNoteId (default: "root" to search entire note tree, omit for entire database)
-  - Optional: orderBy, orderDirection, limit, includeArchivedNotes, includeProtectedNotes
-  - Use when you need complete note inventory, discovery, or bulk operations
-
-> **Function Comparison**: `list_child_notes` shows only direct children (like `ls`), while `list_descendant_notes` shows ALL descendants recursively (like `find`). Both support security defaults excluding protected and archived notes.
+- `search_notes` - Unified search and discovery tool with hierarchy navigation
+  - Use hierarchyType='children' for direct children only (like Unix `ls` command)
+  - Use hierarchyType='descendants' for ALL descendant notes recursively (like Unix `find` command)  
+  - Supports all advanced search parameters for powerful filtering
+  - For complete note inventory: `search_notes` with hierarchyType='descendants' and parentNoteId='root'
+  - For browsing note hierarchy: `search_notes` with hierarchyType='children'
 
 ### Note Management Tools
 
@@ -141,9 +142,9 @@ The server provides the following tools for note management:
 - "Search for 'kubernetes' in notes created between January and June"
 
 ### Navigation & Browsing
-- "List all notes" (shows top-level notes)
-- "Show me what's in my project folder" 
-- "Show me everything I have" (complete inventory)
+- "List all notes" → Uses `search_notes` with hierarchyType='descendants' and parentNoteId='root'
+- "Show me what's in my project folder" → Uses `search_notes` with hierarchyType='children' and specific parentNoteId
+- "Show me everything I have" → Uses `search_notes` with hierarchyType='descendants' for complete inventory
 
 ### Content Management
 - "Add today's update to my work log" (uses `append_note`)
@@ -181,7 +182,7 @@ npm run watch
 Contributions are welcome! If you are looking to improve the server, especially the search functionality, please familiarize yourself with the following resources:
 
 - **Trilium Search DSL**: The [official documentation](https://triliumnext.github.io/Docs/Wiki/search.html) provides the foundation for all search queries.
-- **Internal Search Implementation**: Our [Search Query Examples](docs/search-query-examples.md) document details how `search_notes_advanced` parameters are translated into Trilium search strings. This is crucial for understanding and extending the current implementation.
+- **Internal Search Implementation**: Our [Search Query Examples](docs/search-query-examples.md) document details how `search_notes` parameters are translated into Trilium search strings. This is crucial for understanding and extending the current implementation.
 
 Please feel free to open an issue or submit a pull request.
 

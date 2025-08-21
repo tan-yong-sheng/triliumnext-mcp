@@ -1,0 +1,9 @@
+{
+  "hooks": {
+    "conversation_turn_complete": {
+      "command": "npm run build",
+      "description": "Build TypeScript project after LLM completes responses",
+      "timeout": 30000
+    }
+  }
+}

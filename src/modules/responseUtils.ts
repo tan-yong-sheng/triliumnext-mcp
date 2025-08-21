@@ -17,17 +17,6 @@ export function createSearchDebugInfo(query: string, inputParams: any): string {
 }
 
 /**
- * Creates debug information for list child operations
- */
-export function createListChildDebugInfo(parentNoteId: string, urlParams: URLSearchParams, resultCount: number): string {
-  if (!isVerboseMode()) {
-    return "";
-  }
-  
-  return `--- List Child Debug ---\nParent Note ID: ${parentNoteId}\nURL Params: ${urlParams.toString()}\nRaw Result Count: ${resultCount}\n--- End Debug ---\n\n`;
-}
-
-/**
  * Creates a summary line for list operations
  */
 export function createListSummary(count: number): string {

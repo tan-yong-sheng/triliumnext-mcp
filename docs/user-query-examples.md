@@ -20,10 +20,10 @@ This document provides examples of natural language queries that demonstrate how
 ## Note Navigation and Browsing
 
 ### Hierarchical Navigation
-- "Show me what's in my 'n8n' note folder " → Uses `list_child_notes` with specific parentNoteId
-- "What are the direct children of this note?" → `list_child_notes` for immediate children only
-- "Show me everything I have" → Uses `list_descendant_notes` to recursively list all notes
-- "Find all notes" → Uses `list_descendant_notes` with parentNoteId for subtree search
+- "Show me what's in my 'n8n' note folder " → Uses `search_notes` with hierarchyType='children' and specific parentNoteId
+- "What are the direct children of this note?" → `search_notes` with hierarchyType='children' for immediate children only
+- "Show me everything I have" → Uses `search_notes` with hierarchyType='descendants' to recursively list all notes
+- "Find all notes" → Uses `search_notes` with hierarchyType='descendants' and parentNoteId for subtree search
 
 ## Content Modification Examples (Exprimental)
 
@@ -46,12 +46,12 @@ This document provides examples of natural language queries that demonstrate how
 
 ## Function Selection Guide (for Developer)
 
-### When AI Should Use list_child_notes
+### When AI Should Use search_notes with hierarchyType='children'
 - User asks for "direct children", "immediate children", "what's in this folder"
 - Browsing/navigation scenarios
 - When user wants to see folder structure (like `ls` command in Unix)
 
-### When AI Should Use list_descendant_notes  
+### When AI Should Use search_notes with hierarchyType='descendants'  
 - User asks for "everything", "all notes"
 - Discovery and bulk operations
 - When user wants comprehensive search (like `find` command in Unix)
@@ -67,12 +67,12 @@ This document provides examples of natural language queries that demonstrate how
 - Major document revisions
 
 ### Search Tool Selection
-- Use `search_notes` for simple keyword searches
-- Use `search_notes_advanced` for date ranges, field-specific searches, or complex queries
+- Use `search_notes` for both simple keyword searches and advanced filtering
+- `search_notes` automatically optimizes performance based on query complexity
 
-## search_notes_advanced Parameters Guide
+## search_notes Parameters Guide
 
-The `search_notes_advanced` function is the most powerful search tool with these key parameters:
+The `search_notes` function is the unified search tool with these key parameters:
 
 ### Keyword Search
 - **keyword**: Basic text search across all note content
