@@ -9,8 +9,6 @@ A model context protocol server for TriliumNext Notes. This server provides tool
 
 > Note: Suggest to use with Cline extension in VSCode, instead of Claude Desktop
 
-> You could now install the beta version via the command: `npx -y triliumnext-mcp@beta`
-
 
 ## Quick Start
 
@@ -92,29 +90,6 @@ Location of the configuration file:
 - Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 - MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
-## Beta Testing
-
-🧪 **Want to test the latest features before they're stable?**
-
-To install the beta version with cutting-edge features:
-
-```bash
-npm install -g triliumnext-mcp@beta
-```
-
-**Beta Features (v0.3.0-beta.1)**:
-- ⚠️ **Relation search support**: Search by note relations (`~author.title`, `~relatedTo`) - *Implementation complete but untested*
-- ✅ **Enhanced attribute logic**: Improved AND/OR logic handling with explicit parameter requirements
-- ✅ **FastSearch logic fixes**: Resolved issues with `limit` and `orderBy` parameters causing empty results
-- ✅ **Logic consistency**: Required `logic` field for all array items prevents LLM confusion
-
-**⚠️ Beta Disclaimer**: 
-- Beta versions may contain bugs or untested features
-- Relation search functionality is implemented but not validated against live TriliumNext instances
-- Use stable version (`npm install -g triliumnext-mcp`) for production environments
-- Always backup your notes before testing beta features
-
-**Beta Configuration**: Use the same configuration as above, but the beta version will be used automatically.
 
 **Feedback**: Please report issues and test results at [GitHub Issues](https://github.com/TriliumNext/Notes/issues)
 
