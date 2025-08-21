@@ -1,5 +1,10 @@
 import { marked } from "marked";
 
+// Configure marked to convert single newlines to <br> tags
+marked.use({
+  breaks: true
+});
+
 /**
  * Detects if content is likely Markdown based on common indicators
  */

@@ -46,7 +46,7 @@ export function createWriteTools(): any[] {
     },
     {
       name: "update_note",
-      description: "Update note content by complete replacement. Best for major restructuring, complete rewrites, or when managing overall note organization. WARNING: This replaces ALL note content. PRIORITY GUIDANCE: Consider 'append_note' for adding content first, but use 'update_note' when it's the most appropriate tool for the task (e.g., major structural changes, complete content reorganization). STRONGLY RECOMMENDED: Keep revision=true (default) to create a backup before overwriting.",
+      description: "Complete content replacement with automatic backup. Ideal for major restructuring, complete rewrites, or final document organization after iterative building with append_note. SAFE: Creates revision backup by default (revision=true). WORKFLOW: Often used after building content with append_note when restructuring is needed.",
       inputSchema: {
         type: "object",
         properties: {
@@ -69,7 +69,7 @@ export function createWriteTools(): any[] {
     },
     {
       name: "append_note",
-      description: "🥇 RECOMMENDED: Appends new content to an existing note without overwriting anything. Ideal for adding text below existing content (e.g., logs, journals, additional sections). By default, avoids creating revisions (revision=false) for performance during frequent additions. PRIORITY GUIDANCE: This is often the best choice for adding content, but use the tool that best fits your specific task.",
+      description: "Append content without overwriting existing text. Perfect for iterative building (logs, drafts, sections). WORKFLOW: Build content incrementally, then use update_note for major restructuring when needed. Performance optimized with revision=false by default.",
       inputSchema: {
         type: "object",
         properties: {
