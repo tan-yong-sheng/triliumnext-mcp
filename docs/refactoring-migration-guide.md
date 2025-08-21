@@ -71,8 +71,6 @@ This guide provides a comprehensive roadmap for refactoring the TriliumNext MCP 
 
 ### 3. Date Parameter Unification (Completed ✅)
 
-**Change**: Removed legacy date parameters (`created_date_start`, `created_date_end`, `modified_date_start`, `modified_date_end`) and unified them into `noteProperties` parameter
-
 **Problem Solved**: 
 - Eliminated parameter proliferation
 - Enabled OR logic between date and other properties

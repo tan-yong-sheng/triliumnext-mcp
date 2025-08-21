@@ -329,7 +329,6 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - **Status**: ✅ **IMPLEMENTED - UNTESTED** - Full implementation with comprehensive examples and updated schemas, but not validated against live TriliumNext instances
 
 ### Date Parameter Unification Implementation - noteProperties Enhancement Completed
-- **Major architectural change**: Removed all legacy date parameters (`created_date_start`, `created_date_end`, `modified_date_start`, `modified_date_end`) and unified them into `noteProperties` parameter
 - **TriliumNext integration**: Full support for `note.dateCreated`, `note.dateModified`, `note.dateCreatedUtc`, `note.dateModifiedUtc` properties
 - **Smart date expressions**: Implemented TriliumNext native syntax support (`TODAY±days`, `NOW±seconds`, `MONTH±months`, `YEAR±years`)
 - **Enhanced capabilities achieved**:

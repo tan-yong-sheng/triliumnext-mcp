@@ -1394,7 +1394,6 @@ note.dateCreated >= '2024-01-01' AND note.dateCreated < '2024-12-31' AND note.da
 ## Critical Testing Notes
 
 ### ✅ IMPLEMENTED: Date Parameter Unification with ISO Format Enforcement
-**Architectural Change Completed**: Date parameters (`created_date_start`, `created_date_end`, `modified_date_start`, `modified_date_end`) have been removed and replaced with the unified `noteProperties` parameter approach.
 
 **Implementation Benefits Achieved**:
 - ✅ **Unified API**: All search criteria now use consistent `noteProperties` pattern

@@ -142,9 +142,12 @@ The server provides the following tools for note management:
 - "Search for 'kubernetes' in notes created between January and June"
 
 ### Navigation & Browsing
-- "List all notes" → Uses `search_notes` with hierarchyType='descendants' and parentNoteId='root'
-- "Show me what's in my project folder" → Uses `search_notes` with hierarchyType='children' and specific parentNoteId
+- "List all notes including subfolders" → Uses `search_notes` with hierarchyType='descendants' and parentNoteId='root'
 - "Show me everything I have" → Uses `search_notes` with hierarchyType='descendants' for complete inventory
+- "List all notes" → Uses `search_notes` with hierarchyType='children' and specific parentNoteId
+- "List all notes under 'n8n Template' folder" → Uses `search_notes` with hierarchyType='children' and specific parentNoteId
+- "List all notes under 'n8n Template' folder, including subfolders" → Uses `search_notes` with hierarchyType='descendants' and specific parentNoteId
+
 
 ### Content Management
 - "Add today's update to my work log" (uses `append_note`)
