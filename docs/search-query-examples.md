@@ -1237,7 +1237,6 @@ towers #!book
 - **Supported operators**: `>=`, `<=`, `>`, `<`, `=`, `!=` for comparison operations
 - **Required date format**: ISO date strings only - `'YYYY-MM-DD'` (e.g., '2024-01-01') or `'YYYY-MM-DDTHH:mm:ss.sssZ'` (e.g., '2024-01-01T00:00:00.000Z')
 - **Smart date expressions**: NOT allowed in MCP interface (TriliumNext supports them natively, but MCP enforces ISO format for consistency)
-- **UTC support**: `dateCreatedUtc`, `dateModifiedUtc` for timezone-aware searches
 
 ### 55) Created in last 7 days (ISO date approach)
 - Composed query
@@ -1318,21 +1317,6 @@ note.type = 'text' AND note.dateCreated >= '2024-11-20' AND note.labelCount > 0
 ```
 - Use case: Find well-tagged text notes created in the last month using exact ISO dates
 
-### 60) UTC date search for timezone-aware applications
-- Composed query
-```
-note.dateCreatedUtc >= '2024-01-01T00:00:00Z'
-```
-- JSON structure using UTC date properties
-```json
-{
-  "noteProperties": [
-    { "property": "dateCreatedUtc", "op": ">=", "value": "2024-01-01T00:00:00Z" }
-  ]
-}
-```
-- Use case: Timezone-aware date searches for global applications
-
 ### 61) Complex date logic with content search
 - Composed query
 ```
@@ -1398,8 +1382,7 @@ note.dateCreated >= '2024-01-01' AND note.dateCreated < '2024-12-31' AND note.da
 **Implementation Benefits Achieved**:
 - ✅ **Unified API**: All search criteria now use consistent `noteProperties` pattern
 - ✅ **Enhanced OR logic**: Date searches can be mixed with other properties using per-item `logic: "OR"`
-- ✅ **ISO date format enforcement**: MCP interface now requires exact ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss.sssZ) to prevent LLM guessing errors
-- ✅ **UTC timezone support**: Added `dateCreatedUtc`, `dateModifiedUtc` properties for global applications  
+- ✅ **ISO date format enforcement**: MCP interface now requires exact ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss.sssZ) to prevent LLM guessing errors  
 - ✅ **Simplified codebase**: Removed complex date-specific query building logic
 - ✅ **Consistent OR logic**: Same logic pattern works across all noteProperties (dates + content + system properties)
 - ✅ **Date validation**: Added strict ISO date validation in searchQueryBuilder to reject smart expressions

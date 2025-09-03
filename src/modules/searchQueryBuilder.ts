@@ -313,12 +313,6 @@ function buildNotePropertyQuery(noteProperty: NotePropertyCondition): string {
     case 'dateModified':
       triliumProperty = 'note.dateModified';
       break;
-    case 'dateCreatedUtc':
-      triliumProperty = 'note.dateCreatedUtc';
-      break;
-    case 'dateModifiedUtc':
-      triliumProperty = 'note.dateModifiedUtc';
-      break;
     case 'labelCount':
       triliumProperty = 'note.labelCount';
       break;
@@ -409,8 +403,7 @@ function buildNotePropertyQuery(noteProperty: NotePropertyCondition): string {
   } else if (property === 'title' || property === 'content') {
     // Title and content properties need quotes for string operators
     processedValue = `'${value.replace(/'/g, "\\'")}'`;
-  } else if (property === 'dateCreated' || property === 'dateModified' || 
-             property === 'dateCreatedUtc' || property === 'dateModifiedUtc') {
+  } else if (property === 'dateCreated' || property === 'dateModified') {
     // Date properties - validate ISO format and wrap in quotes
     const validatedValue = validateISODate(value, property);
     processedValue = `'${validatedValue.replace(/'/g, "\\'")}'`;

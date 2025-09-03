@@ -216,13 +216,13 @@ function createSearchProperties() {
     },
     noteProperties: {
       type: "array",
-      description: "Array of note property conditions for built-in note metadata and content searches (e.g., note.isArchived, note.type, note.title, note.content). System-level properties with note.* prefix. For title/content: use 'contains', 'starts_with', 'ends_with', 'not_equal' operators. For other properties: use comparison operators. Use OR logic between items for 'either/or' searches (e.g., 'created OR modified in last 7 days' → set logic:'OR' on first item). Use single search_notes call instead of multiple separate searches. IMPORTANT: For date properties (dateCreated, dateModified, dateCreatedUtc, dateModifiedUtc), you MUST use exact ISO date format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss.sssZ). DO NOT use smart expressions like 'TODAY-7' or 'MONTH-1'.",
+      description: "Array of note property conditions for built-in note metadata and content searches (e.g., note.isArchived, note.type, note.title, note.content). System-level properties with note.* prefix. For title/content: use 'contains', 'starts_with', 'ends_with', 'not_equal' operators. For other properties: use comparison operators. Use OR logic between items for 'either/or' searches (e.g., 'created OR modified in last 7 days' → set logic:'OR' on first item). Use single search_notes call instead of multiple separate searches. IMPORTANT: For date properties (dateCreated, dateModified), you MUST use exact ISO date format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss.sssZ). DO NOT use smart expressions like 'TODAY-7' or 'MONTH-1'.",
       items: {
         type: "object",
         properties: {
           property: {
             type: "string",
-            enum: ["isArchived", "isProtected", "type", "title", "content", "dateCreated", "dateModified", "dateCreatedUtc", "dateModifiedUtc", "labelCount", "ownedLabelCount", "attributeCount", "relationCount", "parentCount", "childrenCount", "contentSize", "revisionCount"],
+            enum: ["isArchived", "isProtected", "type", "title", "content", "dateCreated", "dateModified", "labelCount", "ownedLabelCount", "attributeCount", "relationCount", "parentCount", "childrenCount", "contentSize", "revisionCount"],
             description: "Note property name"
           },
           op: {
@@ -233,7 +233,7 @@ function createSearchProperties() {
           },
           value: {
             type: "string",
-            description: "Value to compare against. For date properties (dateCreated, dateModified, dateCreatedUtc, dateModifiedUtc): MUST use ISO date format only - either 'YYYY-MM-DD' (e.g., '2024-01-01') or full ISO datetime 'YYYY-MM-DDTHH:mm:ss.sssZ' (e.g., '2024-01-01T00:00:00.000Z'). For title/content: any string value. For boolean properties: 'true' or 'false'. For numeric properties: numeric string (e.g., '5', '10')."
+            description: "Value to compare against. For date properties (dateCreated, dateModified): MUST use ISO date format only - either 'YYYY-MM-DD' (e.g., '2024-01-01') or full ISO datetime 'YYYY-MM-DDTHH:mm:ss.sssZ' (e.g., '2024-01-01T00:00:00.000Z'). For title/content: any string value. For boolean properties: 'true' or 'false'. For numeric properties: numeric string (e.g., '5', '10')."
           },
           logic: {
             type: "string",

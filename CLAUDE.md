@@ -226,7 +226,7 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - **Boolean properties**: `isArchived`, `isProtected` - support `=`, `!=` operators with `"true"`/`"false"` values
 - **String properties**: `type` - support all operators with string values
 - **Content properties**: `title`, `content` - support field-specific operators (`contains`, `starts_with`, `ends_with`, `not_equal`, `regex`)
-- **Date properties**: `dateCreated`, `dateModified`, `dateCreatedUtc`, `dateModifiedUtc` - support comparison operators (`>=`, `<=`, `>`, `<`, `=`, `!=`) with ISO date strings and smart date expressions
+- **Date properties**: `dateCreated`, `dateModified` - support comparison operators (`>=`, `<=`, `>`, `<`, `=`, `!=`) with ISO date strings and smart date expressions
 - **Numeric properties**: `labelCount`, `ownedLabelCount`, `attributeCount`, `relationCount`, `parentCount`, `childrenCount`, `contentSize`, `revisionCount` - support numeric comparisons (`>`, `<`, `>=`, `<=`, `=`, `!=`) with unquoted numeric values
 - **Automatic type handling**: Query builder properly handles boolean, string, content, date, and numeric value formatting
 - **Smart date expressions**: Support TriliumNext native syntax like `TODAY-7`, `MONTH-1`, `YEAR+1` for dynamic date queries
@@ -329,17 +329,16 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - **Status**: ✅ **IMPLEMENTED - UNTESTED** - Full implementation with comprehensive examples and updated schemas, but not validated against live TriliumNext instances
 
 ### Date Parameter Unification Implementation - noteProperties Enhancement Completed
-- **TriliumNext integration**: Full support for `note.dateCreated`, `note.dateModified`, `note.dateCreatedUtc`, `note.dateModifiedUtc` properties
+- **TriliumNext integration**: Full support for `note.dateCreated`, `note.dateModified` properties
 - **Smart date expressions**: Implemented TriliumNext native syntax support (`TODAY±days`, `NOW±seconds`, `MONTH±months`, `YEAR±years`)
 - **Enhanced capabilities achieved**:
   - **Unified API**: All search criteria now use consistent `noteProperties` pattern
   - **Enhanced OR logic**: Date searches can be mixed with other properties using per-item `logic: "OR"`
   - **Smart date expressions**: Full support for dynamic date queries like `TODAY-7`, `MONTH-1`
-  - **UTC timezone support**: Added `dateCreatedUtc`, `dateModifiedUtc` for global applications
   - **Simplified codebase**: Removed complex date-specific query building logic
   - **Range queries**: Use multiple properties for precise date ranges
 - **Implementation details**:
-  - Added `dateCreated`, `dateModified`, `dateCreatedUtc`, `dateModifiedUtc` to noteProperties enum
+  - Added `dateCreated`, `dateModified` to noteProperties enum
   - Updated query builder to handle date properties with quotes and smart expressions
   - Removed legacy date handling logic from searchQueryBuilder
   - Updated all interfaces, handlers, and tool schemas
@@ -351,7 +350,6 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - **Research completed**: Comprehensive analysis of moving date parameters to `noteProperties` parameter
 - **TriliumNext validation**: Confirmed native support for `note.dateCreated`, `note.dateModified` with all comparison operators
 - **Smart date discovery**: TriliumNext supports native smart date expressions (`TODAY±days`, `NOW±seconds`, `MONTH±months`, `YEAR±years`)
-- **UTC timezone support**: `dateCreatedUtc`, `dateModifiedUtc` properties available for global applications
 - **Architecture benefits identified**:
   - **Unified API**: All search criteria use consistent `noteProperties` pattern
   - **Enhanced OR logic**: Mix dates with other properties using per-item `logic: "OR"`

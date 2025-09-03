@@ -78,9 +78,8 @@ This guide provides a comprehensive roadmap for refactoring the TriliumNext MCP 
 - Unified API for all search criteria
 
 **TriliumNext Integration:**
-- Full support for `note.dateCreated`, `note.dateModified`, `note.dateCreatedUtc`, `note.dateModifiedUtc` properties
+- Full support for `note.dateCreated`, `note.dateModified` properties
 - Smart date expressions: `TODAY±days`, `NOW±seconds`, `MONTH±months`, `YEAR±years`
-- UTC timezone support for global applications
 
 **Migration Required:**
 ```typescript

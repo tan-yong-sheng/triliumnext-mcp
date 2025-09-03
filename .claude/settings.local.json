@@ -1,8 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "mcp__tavily-mcp__tavily_search",
-      "mcp__tavily-mcp__tavily_extract",
+      "WebSearch",
+      "WebFetch",
       "Bash(mkdir:*)",
       "Bash(npm run build)"
     ],
