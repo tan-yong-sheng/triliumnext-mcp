@@ -1663,219 +1663,193 @@ note.dateCreated >= '2024-01-01' AND note.dateCreated < '2024-12-31' AND note.da
 
 ---
 
-## Enhanced resolve_note_id Examples (Template and Type Awareness)
+## Enhanced resolve_note_id Examples (Simplified Implementation)
 
-The `resolve_note_id` function has been enhanced with template and type awareness to better handle specialized TriliumNext note types.
+The `resolve_note_id` function has been simplified to focus on title-based search with user choice workflow for multiple matches.
 
-### Enhanced Parameters
+### Current Parameters
 - **noteName**: Note name/title to find (required)
 - **exactMatch**: Require exact title match (default: false)
 - **maxResults**: Maximum results in topMatches (default: 3)
 - **autoSelect**: Auto-select best match vs user choice (default: false)
-- **noteType**: Optional note type filter ("text", "code", "book", "canvas", "mermaid", "mindMap", etc.)
-- **templateHint**: Optional template hint ("calendar", "board", "text snippet")
 
-### Enhanced Prioritization
-1. **Template matches** (highest priority when templateHint provided)
-2. **Type matches** (when noteType provided)
-3. **Exact title matches**
-4. **Folder-type notes (book)**
-5. **Most recent** (fallback)
+### Simple Prioritization
+1. **Exact title matches** (highest priority)
+2. **Folder-type notes (book)** (second priority)
+3. **Most recent** (fallback)
 
-### Template-Based Resolution Examples
+### Simple Resolution Examples
 
-#### 76) Find Calendar Template Note
-- Enhanced resolve_note_id usage
+#### 76) Find Calendar Note
+- Simple resolve_note_id usage
 ```json
 {
-  "noteName": "calendar",
-  "templateHint": "calendar"
+  "noteName": "calendar"
 }
 ```
 - Internal searchCriteria generated
 ```json
 {
   "searchCriteria": [
-    {"property": "template.title", "type": "relation", "op": "=", "value": "Calendar", "logic": "OR"},
     {"property": "title", "type": "noteProperty", "op": "contains", "value": "calendar"}
   ]
 }
 ```
-- Use case: Find calendar notes using template relation with title fallback
-- **Priority**: Template matches ranked highest, then title matches
+- Use case: Find notes with "calendar" in title using simple title-based search
+- **Priority**: Simple prioritization (exact matches → folders → most recent)
 
-#### 77) Find Task Board Template Note
-- Enhanced resolve_note_id usage
+#### 77) Find Task Board Note
+- Simple resolve_note_id usage
 ```json
 {
-  "noteName": "board",
-  "templateHint": "board"
+  "noteName": "board"
 }
 ```
 - Internal searchCriteria generated
 ```json
 {
   "searchCriteria": [
-    {"property": "template.title", "type": "relation", "op": "=", "value": "Board", "logic": "OR"},
     {"property": "title", "type": "noteProperty", "op": "contains", "value": "board"}
   ]
 }
 ```
-- Use case: Find task board notes using template relation with title fallback
-- **Priority**: Template matches ranked highest, then title matches
+- Use case: Find notes with "board" in title using simple title-based search
+- **Priority**: Simple prioritization (exact matches → folders → most recent)
 
-#### 78) Find Text Snippet Template Note
-- Enhanced resolve_note_id usage
+#### 78) Find Text Snippet Note
+- Simple resolve_note_id usage
 ```json
 {
-  "noteName": "snippet",
-  "templateHint": "text snippet"
+  "noteName": "snippet"
 }
 ```
 - Internal searchCriteria generated
 ```json
 {
   "searchCriteria": [
-    {"property": "template.title", "type": "relation", "op": "=", "value": "Text Snippet", "logic": "OR"},
     {"property": "title", "type": "noteProperty", "op": "contains", "value": "snippet"}
   ]
 }
 ```
-- Use case: Find text snippet notes using template relation with title fallback
-- **Priority**: Template matches ranked highest, then title matches
+- Use case: Find notes with "snippet" in title using simple title-based search
+- **Priority**: Simple prioritization (exact matches → folders → most recent)
 
-### Type-Based Resolution Examples
+### Title-Based Search Examples
 
-#### 79) Find Canvas Note by Type
-- Enhanced resolve_note_id usage
+#### 79) Find Diagram Note
+- Simple resolve_note_id usage
 ```json
 {
-  "noteName": "diagram",
-  "noteType": "canvas"
+  "noteName": "diagram"
 }
 ```
 - Internal searchCriteria generated
 ```json
 {
   "searchCriteria": [
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "canvas", "logic": "OR"},
     {"property": "title", "type": "noteProperty", "op": "contains", "value": "diagram"}
   ]
 }
 ```
-- Use case: Find canvas diagrams with type filtering
-- **Priority**: Canvas type matches ranked highest, then title matches
+- Use case: Find notes with "diagram" in title using simple title-based search
+- **Priority**: Simple prioritization (exact matches → folders → most recent)
 
-#### 80) Find Mermaid Diagram by Type
-- Enhanced resolve_note_id usage
+#### 80) Find Flowchart Note
+- Simple resolve_note_id usage
 ```json
 {
-  "noteName": "flowchart",
-  "noteType": "mermaid"
+  "noteName": "flowchart"
 }
 ```
 - Internal searchCriteria generated
 ```json
 {
   "searchCriteria": [
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "mermaid", "logic": "OR"},
     {"property": "title", "type": "noteProperty", "op": "contains", "value": "flowchart"}
   ]
 }
 ```
-- Use case: Find mermaid flowcharts with type filtering
-- **Priority**: Mermaid type matches ranked highest, then title matches
+- Use case: Find notes with "flowchart" in title using simple title-based search
+- **Priority**: Simple prioritization (exact matches → folders → most recent)
 
-#### 81) Find Mind Map by Type
-- Enhanced resolve_note_id usage
+#### 81) Find Brainstorm Note
+- Simple resolve_note_id usage
 ```json
 {
-  "noteName": "brainstorm",
-  "noteType": "mindMap"
+  "noteName": "brainstorm"
 }
 ```
 - Internal searchCriteria generated
 ```json
 {
   "searchCriteria": [
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "mindMap", "logic": "OR"},
     {"property": "title", "type": "noteProperty", "op": "contains", "value": "brainstorm"}
   ]
 }
 ```
-- Use case: Find mind map notes for brainstorming sessions
-- **Priority**: MindMap type matches ranked highest, then title matches
+- Use case: Find notes with "brainstorm" in title using simple title-based search
+- **Priority**: Simple prioritization (exact matches → folders → most recent)
 
-#### 82) Find Code Note by Type
-- Enhanced resolve_note_id usage
+#### 82) Find Script Note
+- Simple resolve_note_id usage
 ```json
 {
-  "noteName": "script",
-  "noteType": "code"
+  "noteName": "script"
 }
 ```
 - Internal searchCriteria generated
 ```json
 {
   "searchCriteria": [
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "code", "logic": "OR"},
     {"property": "title", "type": "noteProperty", "op": "contains", "value": "script"}
   ]
 }
 ```
-- Use case: Find code scripts with type filtering
-- **Priority**: Code type matches ranked highest, then title matches
+- Use case: Find notes with "script" in title using simple title-based search
+- **Priority**: Simple prioritization (exact matches → folders → most recent)
 
-### Combined Template and Type Examples
+### Multiple Word Search Examples
 
-#### 83) Find Calendar with Combined Criteria
-- Enhanced resolve_note_id usage
+#### 83) Find Calendar Note
+- Simple resolve_note_id usage
 ```json
 {
-  "noteName": "calendar",
-  "noteType": "book",
-  "templateHint": "calendar"
+  "noteName": "calendar"
 }
 ```
 - Internal searchCriteria generated
 ```json
 {
   "searchCriteria": [
-    {"property": "template.title", "type": "relation", "op": "=", "value": "Calendar", "logic": "OR"},
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "book", "logic": "OR"},
     {"property": "title", "type": "noteProperty", "op": "contains", "value": "calendar"}
   ]
 }
 ```
-- Use case: Find calendar template notes with book type and title fallback
-- **Priority**: Template matches → Type matches → Title matches
+- Use case: Find notes with "calendar" in title using simple title-based search
+- **Priority**: Simple prioritization (exact matches → folders → most recent)
 
-#### 84) Find Task Board with Combined Criteria
-- Enhanced resolve_note_id usage
+#### 84) Find Project Board Note
+- Simple resolve_note_id usage
 ```json
 {
-  "noteName": "project board",
-  "noteType": "book",
-  "templateHint": "board"
+  "noteName": "project board"
 }
 ```
 - Internal searchCriteria generated
 ```json
 {
   "searchCriteria": [
-    {"property": "template.title", "type": "relation", "op": "=", "value": "Board", "logic": "OR"},
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "book", "logic": "OR"},
     {"property": "title", "type": "noteProperty", "op": "contains", "value": "project board"}
   ]
 }
 ```
-- Use case: Find project board template notes with comprehensive matching
-- **Priority**: Template matches → Type matches → Title matches
+- Use case: Find notes with "project board" in title using simple title-based search
+- **Priority**: Simple prioritization (exact matches → folders → most recent)
 
-### Backward Compatibility Examples
+### Advanced Parameter Examples
 
-#### 85) Simple Resolution (Unchanged)
-- Enhanced resolve_note_id usage
+#### 85) Simple Resolution (Default Behavior)
+- Simple resolve_note_id usage
 ```json
 {
   "noteName": "project"
@@ -1889,11 +1863,11 @@ The `resolve_note_id` function has been enhanced with template and type awarenes
   ]
 }
 ```
-- Use case: Simple note resolution by title (existing behavior preserved)
-- **Priority**: Standard prioritization (exact matches → folders → recent)
+- Use case: Simple note resolution by title with fuzzy search
+- **Priority**: Simple prioritization (exact matches → folders → most recent)
 
 #### 86) Exact Match with User Choice
-- Enhanced resolve_note_id usage
+- Simple resolve_note_id usage with exact matching
 ```json
 {
   "noteName": "meeting",
@@ -1913,47 +1887,33 @@ The `resolve_note_id` function has been enhanced with template and type awarenes
 - Use case: Precise title matching with user choice for multiple results
 - **Behavior**: Returns top 5 matches for user selection when multiple found
 
-### Template Mapping Reference
+### Simple Title-Based Search
 
-- **"calendar"** → `~template.title = 'Calendar'`
-- **"board"** → `~template.title = 'Board'`
-- **"text snippet"** → `~template.title = 'Text Snippet'`
-
-### Supported Note Types
-
-- **"text"**: Regular text notes
-- **"code"**: Code notes with syntax highlighting
-- **"book"**: Book/folder notes
-- **"canvas"**: Canvas notes (application/json)
-- **"mermaid"**: Mermaid diagram notes
-- **"mindMap"**: Mind map notes
-- **"file"**: File attachments
-- **"image"**: Image notes
-- **"search"**: Search notes
-- **"relationMap"**: Relation map notes
-- **"render"**: Render notes
+The `resolve_note_id` function now uses simple title-based search only:
+- Searches using `note.title contains 'searchTerm'`
+- No template or type filtering
+- Simple prioritization: exact matches → folders → most recent
+- For complex searches, use `search_notes` with full searchCriteria support
 
 ### Key Benefits
 
-1. **Template-aware**: Finds template-based notes using relation searches
-2. **Type-aware**: Filters by specific note types for precise matching
-3. **Enhanced prioritization**: Template and type matches ranked higher than title matches
-4. **Backward compatible**: All existing usage patterns continue to work
-5. **User-friendly**: Supports both auto-selection and user choice workflows
-6. **Comprehensive**: Combines multiple search criteria with intelligent OR logic
+1. **Simplified**: Focus on title-based search for note ID resolution
+2. **Fast**: Simple search pattern for quick note identification
+3. **User-friendly**: Supports both auto-selection and user choice workflows
+4. **Clear separation**: Complex searches handled by `search_notes`, simple resolution by `resolve_note_id`
+5. **Reliable**: Consistent behavior with simple prioritization logic
 
-**Status**: ✅ **COMPLETED** - Full implementation with enhanced prioritization and comprehensive template/type support
+**Status**: ✅ **COMPLETED** - Simplified implementation with title-based search and user choice workflow
 
-### 87) Fallback Suggestions for Failed Template/Type Searches
+### 87) Fallback Suggestions for Failed Searches
 
-When template or type-specific searches return no results, `resolve_note_id` provides a simple fallback suggestion:
+When title-based searches return no results, `resolve_note_id` provides fallback suggestions:
 
-#### Example: Failed Template Search
-- Enhanced resolve_note_id usage
+#### Example: Failed Title Search
+- Simple resolve_note_id usage
 ```json
 {
-  "noteName": "calendar",
-  "templateHint": "board"
+  "noteName": "nonexistent"
 }
 ```
 - Response when no results found
@@ -1963,37 +1923,16 @@ When template or type-specific searches return no results, `resolve_note_id` pro
   "title": null,
   "found": false,
   "matches": 0,
-  "nextSteps": "No notes found matching the search criteria. Try basic title search: resolve_note_id(noteName: \"calendar\")"
+  "nextSteps": "No notes found matching the search criteria. Consider using search_notes for broader results: search_notes(text: 'nonexistent') to find notes containing 'nonexistent' in title or content."
 }
 ```
-- Use case: When template-specific search fails, provides direct guidance to try basic search
-
-#### Example: Failed Combined Template and Type Search
-- Enhanced resolve_note_id usage
-```json
-{
-  "noteName": "project",
-  "templateHint": "calendar",
-  "noteType": "canvas"
-}
-```
-- Response when no results found
-```json
-{
-  "noteId": null,
-  "title": null,
-  "found": false,
-  "matches": 0,
-  "nextSteps": "No notes found matching the search criteria. Try basic title search: resolve_note_id(noteName: \"project\")"
-}
-```
-- Use case: When overly restrictive combined criteria fail, provides simple fallback to basic search
+- Use case: When title search fails, suggests using search_notes for broader content-based search
 
 ### Key Benefits of Fallback Guidance
 1. **User-friendly**: Prevents dead-end searches with actionable suggestion
-2. **Simple approach**: Direct fallback to least restrictive search
-3. **Clear instruction**: Provides exact function call to try next
-4. **Prevents frustration**: Eliminates confusion when restrictive searches fail
+2. **Clear workflow**: Directs users to appropriate tool for broader searches
+3. **Separation of concerns**: `resolve_note_id` for simple resolution, `search_notes` for complex searches
+4. **Reduces confusion**: Clear guidance on next steps when simple search fails
 
 ### Missing TriliumNext Features
 1. **Regex search** (`%=` operator) - not implemented

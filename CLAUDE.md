@@ -13,7 +13,7 @@ This is a Model Context Protocol (MCP) server for TriliumNext Notes that provide
 - **Business Logic Modules**: `src/modules/` - Core functionality separated by domain:
   - `noteManager.ts` - Note creation, update, append, delete, and retrieval
   - `searchManager.ts` - Core search operations with hierarchy navigation support
-  - `resolveManager.ts` - Note ID resolution with template and type awareness
+  - `resolveManager.ts` - Note ID resolution with simple title-based search
 - **Request Handlers**: `src/modules/` - MCP request/response processing:
   - `noteHandler.ts` - Note tool request handling with permission validation
   - `searchHandler.ts` - Search tool request handling with permission validation
@@ -74,13 +74,11 @@ node build/index.js   # Run the server directly
 
 ### READ Permission Tools
 - `search_notes`: Unified search with comprehensive filtering capabilities including full-text search, date ranges, field-specific searches, attribute searches, note properties, and hierarchy navigation through unified `searchCriteria` structure. Supports unlimited nesting depth for hierarchy properties (e.g., `parents.noteId`, `children.children.title`, `ancestors.noteId`).
-- `resolve_note_id`: Find note ID by name/title - use when users provide note names (like "wqd7006") instead of IDs. Essential for LLM workflows where users reference notes by name. **Enhanced with template and type awareness**. Features:
+- `resolve_note_id`: Find note ID by name/title - use when users provide note names (like "wqd7006") instead of IDs. Essential for LLM workflows where users reference notes by name. Features:
   - **Smart fuzzy search**: `exactMatch` parameter (default: false) controls search precision - fuzzy search handles typos and partial matches while prioritizing exact matches
   - **Configurable results**: `maxResults` parameter (default: 3, range: 1-10) controls number of alternatives returned
   - **User choice control**: `autoSelect` parameter (default: false) - when false, stops and asks user to choose from alternatives when multiple matches found; when true, uses intelligent auto-selection
-  - **Template-aware search**: `templateHint` parameter supports "calendar", "board", "text snippet" for template-based notes
-  - **Type-aware search**: `noteType` parameter supports "text", "code", "book", "canvas", "mermaid", "mindMap", etc.
-  - **Enhanced prioritization**: Template matches → Type matches → Exact title matches → Folder-type notes → Most recent
+  - **Simple prioritization**: Exact title matches → Folder-type notes → Most recent
   - **JSON response format**: Returns structured data with selectedNote, totalMatches, topMatches array, and nextSteps guidance
   - **Multiple match handling**: When `totalMatches > 1` and `autoSelect=false`, presents numbered list of options and asks user to choose
 - `get_note`: Retrieve note content by ID
@@ -173,25 +171,13 @@ This ensures backward compatibility and prevents breaking changes to the core se
 
 ### Template-Based Note Types
 
-**Enhanced `resolve_note_id` Support**: The function now supports template-aware resolution for specialized note types:
+TriliumNext supports specialized note types through templates:
 
-- **Calendar Notes**: `type: book` + `~template=Calendar` → Use `templateHint: "calendar"`
-- **Task Board Notes**: `type: book` + `~template=Board` → Use `templateHint: "board"`
-- **Text Snippet Notes**: `type: text` + `~template=Text Snippet` → Use `templateHint: "text snippet"`
+- **Calendar Notes**: `type: book` + `~template=Calendar`
+- **Task Board Notes**: `type: book` + `~template=Board`
+- **Text Snippet Notes**: `type: text` + `~template=Text Snippet`
 
-**Usage Examples**:
-```typescript
-// Template-aware resolution
-resolve_note_id({noteName: "calendar", templateHint: "calendar"})
-resolve_note_id({noteName: "board", templateHint: "board"})
-
-// Type-aware resolution
-resolve_note_id({noteName: "diagram", noteType: "mermaid"})
-resolve_note_id({noteName: "canvas", noteType: "canvas"})
-
-// Combined approach
-resolve_note_id({noteName: "my board", noteType: "book", templateHint: "board"})
-```
+**Note**: For template-based searches, use the `search_notes` function with template criteria rather than `resolve_note_id`.
 
 ## Content Processing
 
@@ -231,11 +217,11 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - **Follow-up operations**: need note ID for get_note, update_note, etc.
 - **Reference resolution**: converting human-readable name to system ID
 
-**Enhanced Fallback Strategy**: `resolve_note_id` now provides intelligent fallback suggestions when no matches found, recommending `search_notes` for broader content-based searches.
+**Fallback Strategy**: `resolve_note_id` provides fallback suggestions when no matches found, recommending `search_notes` for broader content-based searches.
 
 ### Tool Descriptions Optimized for LLM Selection
 - `search_notes`: Unified search with comprehensive filtering capabilities through searchCriteria structure - handles both complex search operations and simple hierarchy navigation
-- `resolve_note_id` provides clear workflow: resolve name → get ID → use with other tools (eliminates confusion when users provide note names instead of IDs)
+- `resolve_note_id` provides simple title-based resolution: resolve name → get ID → use with other tools (eliminates confusion when users provide note names instead of IDs)
 
 ## Content Modification Tools Strategy
 
@@ -371,43 +357,40 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - **Status**: ✅ **COMPLETED** - Full implementation with enhanced fallback strategy and comprehensive documentation
 
 ### Resolve Note ID Separation - Clean Architecture Implementation
-- **Major architectural enhancement**: Separated `resolve_note_id` functionality from core `search_notes` to prevent parameter pollution
-- **Problem solved**: Eliminated confusion where `templateHint` and `noteType` parameters were incorrectly appearing in search criteria, causing invalid TriliumNext search queries
-- **Root cause identified**: LLM-friendly parameters (`templateHint`, `noteType`) were not valid TriliumNext search properties but were being mixed into core search functionality
+- **Major architectural enhancement**: Separated `resolve_note_id` functionality from core `search_notes` with clean modular design
+- **Problem solved**: Eliminated parameter confusion and created clear separation between complex search and simple resolution
 - **Enhanced architecture achieved**:
   - **Separate resolve module**: Created `src/modules/resolveManager.ts` with specialized note resolution logic
   - **Dedicated resolve handler**: Created `src/modules/resolveHandler.ts` for resolve-specific request processing
-  - **Clean search separation**: Core `search_notes` function now only accepts valid TriliumNext search properties
-  - **Internal parameter translation**: Resolve function internally converts template/type hints to valid search criteria before calling core search
+  - **Clean search separation**: Core `search_notes` function handles complex searches, `resolve_note_id` handles simple resolution
+  - **Simple title-based search**: Resolve function uses straightforward title matching with intelligent prioritization
 - **Implementation details**:
   - Moved `handleResolveNoteId` function and interfaces from `searchManager.ts` to new `resolveManager.ts`
   - Created dedicated `resolveHandler.ts` for resolve request processing
   - Updated `index.ts` to use separate handlers for search vs resolve operations
-  - Maintained all existing functionality while ensuring proper separation of concerns
+  - Simplified resolve logic to focus on title-based search only
 - **Benefits achieved**:
-  - **Parameter validity**: `search_notes` tool now only exposes valid TriliumNext search syntax
-  - **LLM-friendly resolve**: `resolve_note_id` retains specialized parameters for better LLM workflows
-  - **Clean architecture**: Proper separation between core search functionality and user-friendly resolution
-  - **No breaking changes**: All existing usage patterns continue to work unchanged
-- **Status**: ✅ **COMPLETED** - Full separation with successful build validation and clean modular architecture
+  - **Clear separation of concerns**: `search_notes` for complex searches, `resolve_note_id` for simple resolution
+  - **Simplified API**: `resolve_note_id` focuses on core resolution functionality
+  - **Clean architecture**: Proper separation between search and resolution operations
+  - **Improved maintainability**: Each module has single, well-defined responsibility
+- **Status**: ✅ **COMPLETED** - Full separation with successful build validation and simplified, clean architecture
 
-### Enhanced `resolve_note_id` with Template and Type Awareness - Complete Implementation
-- **Major capability enhancement**: Extended `resolve_note_id` function with `noteType` and `templateHint` parameters for specialized note resolution
-- **Problem solved**: Eliminates confusion when users reference template-based notes (calendars, boards) or specific note types (canvas, mermaid) by name
+### Simplified `resolve_note_id` Implementation - Title-Based Search Only
+- **Major simplification**: Streamlined `resolve_note_id` function to focus on simple title-based note resolution
+- **Problem solved**: Eliminates complexity while maintaining core functionality for note ID resolution by name/title
 - **Enhanced capabilities achieved**:
-  - **Template-aware resolution**: Supports "calendar", "board", "text snippet" template hints that map to TriliumNext templates
-  - **Type-aware resolution**: Supports all TriliumNext note types including "canvas", "mermaid", "mindMap", "code", etc.
-  - **Multi-criteria search**: Combines template relations, note types, and title matching with intelligent prioritization
-  - **Enhanced prioritization**: Template matches → Type matches → Exact title matches → Folder-type notes → Most recent
-  - **Backward compatibility**: All existing `resolve_note_id` usage continues to work unchanged
-- **Implementation approach**: Option A - Extended existing function with optional parameters and internal searchCriteria building
+  - **Simple title-based search**: Uses `note.title contains 'searchTerm'` for fuzzy matching
+  - **Smart prioritization**: Exact title matches → Folder-type notes → Most recent
+  - **User choice workflow**: Configurable auto-selection vs user choice for multiple matches
+  - **Fast resolution**: Optimized for quick note identification without complex filtering
+- **Implementation approach**: Simple title-based search with intelligent prioritization
 - **Usage patterns**:
-  - Simple: `resolve_note_id({noteName: "project"})` (unchanged)
-  - Template-aware: `resolve_note_id({noteName: "calendar", templateHint: "calendar"})`
-  - Type-aware: `resolve_note_id({noteName: "diagram", noteType: "mermaid"})`
-  - Combined: `resolve_note_id({noteName: "board", noteType: "book", templateHint: "board"})`
-- **Internal architecture**: Uses unified `searchCriteria` structure with OR logic between template, type, and title criteria
-- **Status**: ✅ **COMPLETED** - Full implementation with TypeScript compilation validation and enhanced prioritization logic
+  - Simple: `resolve_note_id({noteName: "project"})`
+  - Exact matching: `resolve_note_id({noteName: "project", exactMatch: true})`
+  - User choice: `resolve_note_id({noteName: "project", autoSelect: false})`
+- **Internal architecture**: Uses simple title-based search criteria with straightforward prioritization logic
+- **Status**: ✅ **COMPLETED** - Simplified implementation with TypeScript compilation validation and clear separation of concerns
 
 ### Unified Hierarchy Navigation Implementation - Complete searchCriteria Integration
 - **Major architectural enhancement**: Removed separate `hierarchyType` and `parentNoteId` parameters from `search_notes` function and integrated hierarchy navigation into unified `searchCriteria` structure
@@ -639,14 +622,14 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - **Key features**:
   - **JSON response format**: with top N alternatives (configurable via `maxResults`)
   - **Smart fuzzy search**: with intelligent prioritization (exact matches → folders → recent)
-  - **Template and type awareness**: Enhanced with `templateHint` and `noteType` parameters for specialized note types
-  - **Fallback guidance**: Provides `nextSteps` suggestions when template/type-specific searches fail
+  - **Simple title-based resolution**: Focused on core note ID resolution functionality
+  - **Fallback guidance**: Provides `nextSteps` suggestions when searches fail
   - **Clear workflow guidance**: in responses
 - **Usage patterns**:
   - General: `resolve_note_id(name) → use returned noteId with other tools`
-  - Template-aware: `resolve_note_id(name, templateHint="calendar") → find calendar notes specifically`
-  - Type-aware: `resolve_note_id(name, noteType="canvas") → find canvas diagrams specifically`
-- **Fallback behavior**: When template/type searches return no results, provides suggestions to try broader searches
+  - Exact matching: `resolve_note_id(name, exactMatch=true) → require exact title match`
+  - User choice: `resolve_note_id(name, autoSelect=false) → present choices for multiple matches`
+- **Fallback behavior**: When searches return no results, provides suggestions to try broader searches
 
 ### Permission Case Mismatch Fix
 - **Issue**: Search functions were checking for lowercase `"read"` while environment uses uppercase `"READ"`
