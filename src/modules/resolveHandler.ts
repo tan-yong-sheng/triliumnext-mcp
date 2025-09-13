@@ -15,9 +15,7 @@ export async function handleResolveNoteRequest(args: any, permissionChecker: any
     noteName: args.noteName,
     exactMatch: args.exactMatch,
     maxResults: args.maxResults,
-    autoSelect: args.autoSelect,
-    noteType: args.noteType,
-    templateHint: args.templateHint
+    autoSelect: args.autoSelect
   };
 
   const response = await handleResolveNoteId(resolveOperation, axiosInstance);

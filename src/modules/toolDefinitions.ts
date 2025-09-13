@@ -135,7 +135,7 @@ export function createReadTools(): any[] {
     },
     {
       name: "resolve_note_id",
-      description: "Resolves a note/folder name to its actual note ID for use with other tools. You MUST call this function when users provide note names instead of note IDs (e.g., 'wqd7006', 'My Project') UNLESS the user explicitly provides a note ID. Enhanced with template and type awareness for specific note types. Provides fallback suggestions when template/type-specific searches return no results.",
+      description: "Resolves a note/folder name to its actual note ID for use with other tools. You MUST call this function when users provide note names instead of note IDs (e.g., 'wqd7006', 'My Project') UNLESS the user explicitly provides a note ID. Simple title-based search with user choice when multiple matches found.",
       inputSchema: {
         type: "object",
         properties: {
@@ -159,16 +159,6 @@ export function createReadTools(): any[] {
             type: "boolean",
             description: "When multiple matches found: true = auto-select best match (current behavior), false = stop and ask user to choose from alternatives (default: false for better user experience)",
             default: false
-          },
-          noteType: {
-            type: "string",
-            enum: ["text", "code", "book", "canvas", "mermaid", "mindMap", "file", "image", "search", "relationMap", "render"],
-            description: "Optional note type filter to narrow search results. Use when user specifies note type (e.g., 'find my canvas note', 'locate mermaid diagram')"
-          },
-          templateHint: {
-            type: "string",
-            enum: ["calendar", "board", "text snippet"],
-            description: "Optional template hint for template-based notes. Maps to TriliumNext templates: 'calendar' → _template_calendar, 'board' → _template_board, 'text snippet' → _template_text_snippet"
           }
         },
         required: ["noteName"],
