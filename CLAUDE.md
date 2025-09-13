@@ -16,7 +16,6 @@ This is a Model Context Protocol (MCP) server for TriliumNext Notes that provide
 - **Request Handlers**: `src/modules/` - MCP request/response processing:
   - `noteHandler.ts` - Note tool request handling with permission validation
   - `searchHandler.ts` - Search tool request handling with permission validation
-  - `listHandler.ts` - List notes hierarchy navigation wrapper handler
 - **Schema Definitions**: `src/modules/` - Tool schema generation:
   - `toolDefinitions.ts` - Permission-based tool schema generation and definitions
 - **Utility Modules**: `src/modules/` - Specialized helper functions:
@@ -72,11 +71,7 @@ node build/index.js   # Run the server directly
 ## MCP Tools Available
 
 ### READ Permission Tools
-- `search_notes`: Unified search with comprehensive filtering capabilities including full-text search, date ranges, field-specific searches, attribute searches, and note properties through unified `searchCriteria` structure. For simple hierarchy navigation, use `list_notes` instead.
-- `list_notes`: Simple hierarchy navigation - direct children or all descendants. Ideal for browsing folder structures and navigation tasks. Uses `parentNoteId` and `hierarchyType` parameters:
-  - Use `hierarchyType: "children"` for direct children (like Unix `ls`)
-  - Use `hierarchyType: "descendants"` for all descendants recursively (like Unix `find`)
-  - Use `parentNoteId: "root"` for top-level notes
+- `search_notes`: Unified search with comprehensive filtering capabilities including full-text search, date ranges, field-specific searches, attribute searches, note properties, and hierarchy navigation through unified `searchCriteria` structure. Supports unlimited nesting depth for hierarchy properties (e.g., `parents.noteId`, `children.children.title`, `ancestors.noteId`).
 - `resolve_note_id`: Find note ID by name/title - use when users provide note names (like "wqd7006") instead of IDs. Essential for LLM workflows where users reference notes by name. Features:
   - **Smart fuzzy search**: `exactMatch` parameter (default: false) controls search precision - fuzzy search handles typos and partial matches while prioritizing exact matches
   - **Configurable results**: `maxResults` parameter (default: 3, range: 1-10) controls number of alternatives returned
@@ -93,12 +88,10 @@ node build/index.js   # Run the server directly
 ## Search Query Architecture
 
 ### Unified Search System
-- **Dual search architecture**:
-  - `search_notes`: Complex search with comprehensive filtering through unified `searchCriteria` structure
-  - `list_notes`: Simple hierarchy navigation wrapper around `search_notes` with dedicated `parentNoteId` and `hierarchyType` parameters
+- **Unified search architecture**:
+  - `search_notes`: Comprehensive search with unified `searchCriteria` structure including hierarchy navigation support
 - **Smart fastSearch logic**: Automatically uses `fastSearch=true` ONLY when ONLY text parameter is provided (no searchCriteria or limit), `fastSearch=false` for all other scenarios
 - **FastSearch compatibility**: TriliumNext's fastSearch mode does not support `limit` clauses - these automatically disable fastSearch
-- **Wrapper pattern**: `list_notes` is implemented as a clean wrapper around `search_notes`, converting hierarchy parameters to searchCriteria format internally
 
 ### Query Builder System
 - **Structured → DSL**: `searchQueryBuilder.ts` converts JSON parameters to Trilium search strings
@@ -121,13 +114,13 @@ node build/index.js   # Run the server directly
 - ✅ **Bug fixes**: Correcting existing parameter behavior
 - ✅ **Performance improvements**: Optimizing existing functionality
 
-**When building new functions (like `resolve_note_id` and `list_notes`):**
+**When building new functions (like `resolve_note_id`):**
 - ✅ **Create wrapper functions** with their own parameters
 - ✅ **Use internal logic** to transform parameters before calling `search_notes`
 - ✅ **Add filters via existing parameters** (`noteProperties`, `filters`, etc.)
 - ✅ **Implement custom sorting/filtering** in the wrapper function
 
-**Example of CORRECT approach** (`resolve_note_id` and `list_notes`):
+**Example of CORRECT approach** (`resolve_note_id`):
 ```typescript
 // ✅ CORRECT: New function with own parameters
 function handleResolveNoteId(args: ResolveNoteOperation) {
@@ -139,17 +132,6 @@ function handleResolveNoteId(args: ResolveNoteOperation) {
   return handleSearchNotes(searchParams, axiosInstance);
 }
 
-// ✅ CORRECT: Wrapper function for hierarchy navigation
-function handleListNotesRequest(args: any) {
-  // Convert list_notes parameters to search_notes format
-  const searchOperation: SearchOperation = {
-    hierarchyType: args.hierarchyType,
-    parentNoteId: args.parentNoteId,
-    limit: args.limit
-  };
-  // Use existing search functionality
-  return handleSearchNotes(searchOperation, axiosInstance);
-}
 ```
 
 **Example of INCORRECT approach**:
@@ -201,11 +183,10 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - **OR parentheses**: Trilium requires `~` prefix for expressions starting with parentheses
 - **Root handling**: Special handling for `parentNoteId="root"` in ancestor/parent queries
 - **Universal search**: Uses `note.noteId != ''` as universal match condition for ETAPI
+- **Hierarchy navigation**: Full support for hierarchy properties (`parents.noteId`, `children.title`, `ancestors.noteId`) with unlimited nesting depth
 
 ### Tool Descriptions Optimized for LLM Selection
-- `search_notes`: Unified search with comprehensive filtering capabilities through searchCriteria structure - for complex search operations
-- `list_notes`: Dedicated hierarchy navigation function with simple `parentNoteId` and `hierarchyType` parameters - PREFERRED for navigation and listing requests
-- Clear separation of concerns: use `list_notes` for simple browsing, `search_notes` for complex filtering
+- `search_notes`: Unified search with comprehensive filtering capabilities through searchCriteria structure - handles both complex search operations and simple hierarchy navigation
 - `resolve_note_id` provides clear workflow: resolve name → get ID → use with other tools (eliminates confusion when users provide note names instead of IDs)
 
 ## Content Modification Tools Strategy
@@ -285,12 +266,12 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
   - Added 7 comprehensive hierarchy navigation examples (31-37)
   - Updated function contract to remove separate hierarchy parameters
   - Enhanced field mapping reference with hierarchy properties
-- **Implementation status**: ⚠️ **DOCUMENTATION ONLY** - Code implementation pending to remove hierarchyType/parentNoteId parameters and add hierarchy properties to noteProperty validation
+- **Implementation status**: ✅ **COMPLETED** - Full implementation with hierarchy properties support, unlimited nesting depth, and comprehensive testing
 - **Key examples enabled**:
   - `{"property": "parents.title", "type": "noteProperty", "op": "=", "value": "Active Projects", "logic": "OR"}` combined with other criteria
   - Complex hierarchy queries like `note.ancestors.title = 'Workspace' AND note.dateModified >= '2024-12-01'`
-- **Migration impact**: Breaking change - existing `hierarchyType`/`parentNoteId` usage must migrate to `searchCriteria` with hierarchy properties
-- **Next steps**: Update toolDefinitions.ts to remove hierarchy parameters, add hierarchy properties to buildNotePropertyQuery(), update handlers
+  - Unlimited nesting: `parents.parents.title`, `children.children.children.noteId`
+- **Migration impact**: ✅ **COMPLETED** - All legacy hierarchy parameters removed, unified searchCriteria approach implemented
 
 ### One-Array Structure Implementation - Unified Boolean Logic Architecture
 - **Major architectural redesign**: Replaced two-array structure (separate `attributes` + `noteProperties`) with unified single-array `searchCriteria` structure
