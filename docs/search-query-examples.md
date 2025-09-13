@@ -13,22 +13,15 @@ Input parameters:
 - searchCriteria: array (unified search criteria for all types: labels, relations, note properties, content, hierarchy navigation)
 - limit: number (max results to return, e.g., 10)
 
-## Function Contract: list_notes (Hierarchy Navigation)
-
-Input parameters:
-- parentNoteId: string (ID of parent note, use 'root' for top-level)
-- hierarchyType: string ('children' for direct children, 'descendants' for all descendants)
-- limit: number (optional, max results to return)
-
 Query composition:
 - text: `<token>` (bare token for full-text search)
 - searchCriteria: Individual conditions joined with AND/OR based on logic parameter (default: AND)
 - limit: `limit <number>` (appended to query)
 - Final query: join all groups with space separation, then append limit
 
-**Key Benefits of One-Array Structure:**
+**Key Benefits of Unified Structure:**
 - **Complete boolean expressiveness**: Can represent any TriliumNext query including cross-type OR logic
-- **No artificial barriers**: Between search criteria types (attributes vs noteProperties)
+- **No artificial barriers**: Between search criteria types (attributes vs noteProperties vs hierarchy)
 - **Unified logic**: Single consistent logic system across all criteria
 - **LLM-friendly**: Single array structure, consistent field names
 
@@ -219,13 +212,14 @@ Instead of separate `text` parameter, can use searchCriteria:
 
 ---
 
-### 9) Hierarchy Navigation with list_notes
+### 9) Hierarchy Navigation with search_notes
 
-**list_notes Structure:**
+**search_notes Structure:**
 ```json
 {
-  "parentNoteId": "root",
-  "hierarchyType": "descendants",
+  "searchCriteria": [
+    {"property": "ancestors.noteId", "type": "noteProperty", "op": "=", "value": "root"}
+  ],
   "limit": 50
 }
 ```

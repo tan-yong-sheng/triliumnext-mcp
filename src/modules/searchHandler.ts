@@ -32,9 +32,7 @@ export async function handleSearchNotesRequest(
     const searchOperation: SearchOperation = {
       text: args.text,
       searchCriteria: args.searchCriteria,
-      limit: args.limit,
-      hierarchyType: args.hierarchyType,
-      parentNoteId: args.parentNoteId
+      limit: args.limit
     };
 
     const result = await handleSearchNotes(searchOperation, axiosInstance);
@@ -141,7 +139,7 @@ Suggested search strategies:
    - Try resolve_note_id with exactMatch=false for fuzzy matching
 
 3. Alternative approaches if searches continue to fail:
-   - Browse parent folders using search_notes with hierarchyType='children' or 'descendants'
+   - Browse parent folders using search_notes with searchCriteria hierarchy properties like 'parents.noteId' or 'ancestors.noteId'
    - Check if the note exists under a different name or structure
    - Verify note isn't in a restricted or archived state
    - Consider if the note might be in a different TriliumNext instance

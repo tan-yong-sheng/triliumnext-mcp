@@ -27,10 +27,8 @@ This is a Model Context Protocol (MCP) server for TriliumNext Notes that provide
 
 ### MCP Tool Architecture
 - **Permission-based tools**: READ vs WRITE permissions control available tools
-- **Dual search architecture**:
-  - `search_notes` function with comprehensive filtering through unified `searchCriteria` structure
-  - `list_notes` function with dedicated hierarchy navigation parameters (`parentNoteId`, `hierarchyType`)
-- **Wrapper pattern**: `list_notes` implemented as clean wrapper around `search_notes` for better LLM usability
+- **Unified search architecture**:
+  - `search_notes` function with comprehensive filtering through unified `searchCriteria` structure including hierarchy navigation
 - **Critical Trilium syntax handling**: OR queries with parentheses require `~` prefix per Trilium parser requirements
 - **Modular design patterns**: Separation of concerns with Manager (business logic) → Handler (request processing) → Tool Definition (schemas)
 

@@ -160,33 +160,8 @@ export function createReadTools(): any[] {
       },
     },
     {
-      name: "list_notes",
-      description: "List notes by hierarchy navigation - direct children or all descendants. Ideal for browsing folder structures and navigation tasks. Use 'children' to list direct children (like Unix 'ls'), or 'descendants' to list all descendants recursively (like Unix 'find'). For complex searches with multiple criteria, use search_notes instead.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          parentNoteId: {
-            type: "string",
-            description: "ID of the parent note to list children/descendants from. Use 'root' for top-level notes.",
-            default: "root"
-          },
-          hierarchyType: {
-            type: "string",
-            enum: ["children", "descendants"],
-            description: "Type of hierarchy listing: 'children' for direct children only, 'descendants' for all descendants recursively",
-            default: "children"
-          },
-          limit: {
-            type: "number",
-            description: "Maximum number of results to return",
-          }
-        },
-        required: ["parentNoteId", "hierarchyType"]
-      }
-    },
-    {
       name: "search_notes",
-      description: "Unified search with comprehensive filtering capabilities including full-text search, date ranges, field-specific searches, attribute searches, and note properties through unified searchCriteria structure. For simple hierarchy navigation, use list_notes instead.",
+      description: "Unified search with comprehensive filtering capabilities including full-text search, date ranges, field-specific searches, attribute searches, note properties, and hierarchy navigation through unified searchCriteria structure. Use hierarchy properties like 'parents.noteId', 'children.noteId', or 'ancestors.noteId' for navigation.",
       inputSchema: {
         type: "object",
         properties: searchProperties,

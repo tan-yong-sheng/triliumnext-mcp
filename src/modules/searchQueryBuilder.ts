@@ -12,8 +12,6 @@ interface SearchStructuredParams {
   text?: string;
   limit?: number;
   searchCriteria?: SearchCriteria[];
-  hierarchyType?: 'children' | 'descendants';
-  parentNoteId?: string;
 }
 
 export function buildSearchQuery(params: SearchStructuredParams): string {
@@ -31,23 +29,9 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
     searchExpressions.push(...buildUnifiedSearchExpressions(params.searchCriteria));
   }
 
-  // Build hierarchy filters
-  const hierarchyFilters: string[] = [];
-  if (params.hierarchyType && params.parentNoteId) {
-    const hierarchyQuery = buildHierarchyQuery(params.hierarchyType, params.parentNoteId);
-    if (hierarchyQuery) {
-      hierarchyFilters.push(hierarchyQuery);
-    }
-  }
-
   // Add search expressions from unified searchCriteria
   if (searchExpressions.length > 0) {
     queryParts.push(...searchExpressions);
-  }
-
-  // Add hierarchy filters
-  if (hierarchyFilters.length > 0) {
-    queryParts.push(...hierarchyFilters);
   }
 
   // Add full-text search token
@@ -58,11 +42,10 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
   // Build main query
   let query = queryParts.join(' ');
 
-  // If only searchCriteria/hierarchy were provided and no other search criteria, add universal match condition
-  if (query.trim() === '' && (searchExpressions.length > 0 || hierarchyFilters.length > 0)) {
-    // For ETAPI compatibility, we need a base search condition when only using searchCriteria/hierarchy
-    const allFilters = [...searchExpressions, ...hierarchyFilters];
-    query = `note.noteId != '' ${allFilters.join(' ')}`;
+  // If only searchCriteria were provided and no other search criteria, add universal match condition
+  if (query.trim() === '' && searchExpressions.length > 0) {
+    // For ETAPI compatibility, we need a base search condition when only using searchCriteria
+    query = `note.noteId != '' ${searchExpressions.join(' ')}`;
   } else if (query.trim() === '') {
     // No search criteria provided at all - this will trigger the validation error in index.ts
     query = '';
@@ -404,25 +387,3 @@ function buildNotePropertyQuery(criteria: SearchCriteria): string {
   return `${triliumProperty} ${triliumOperator} ${processedValue}`;
 }
 
-/**
- * Builds a hierarchy query based on the hierarchy type and parent note ID
- * Maps hierarchy parameters to Trilium hierarchy search syntax
- */
-function buildHierarchyQuery(hierarchyType: 'children' | 'descendants', parentNoteId: string): string {
-  // Escape the parent note ID
-  const escapedParentId = parentNoteId.replace(/'/g, "\\'");
-  
-  switch (hierarchyType) {
-    case 'children':
-      // Direct children only: note.parents.noteId = 'parentId'
-      return `note.parents.noteId = '${escapedParentId}'`;
-      
-    case 'descendants':
-      // All descendants recursively: note.ancestors.noteId = 'parentId'
-      return `note.ancestors.noteId = '${escapedParentId}'`;
-      
-    default:
-      // Invalid hierarchy type, skip this filter
-      return '';
-  }
-}

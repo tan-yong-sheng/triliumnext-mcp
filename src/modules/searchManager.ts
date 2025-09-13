@@ -12,8 +12,6 @@ export interface SearchOperation {
   text?: string;
   searchCriteria?: any[];
   limit?: number;
-  hierarchyType?: "children" | "descendants";
-  parentNoteId?: string;
 }
 
 export interface SearchResponse {
@@ -61,7 +59,6 @@ export async function handleSearchNotes(
   // Smart fastSearch logic: use fastSearch=true ONLY when ONLY text parameter is provided (no other parameters)
   const hasOnlyText = args.text &&
     (!args.searchCriteria || !Array.isArray(args.searchCriteria) || args.searchCriteria.length === 0) &&
-    !args.hierarchyType &&
     !args.limit; // fastSearch doesn't support limit clauses
   
   params.append("fastSearch", hasOnlyText ? "true" : "false");
@@ -73,15 +70,7 @@ export async function handleSearchNotes(
   const verboseInfo = createSearchDebugInfo(query, args);
   
   let searchResults = response.data.results || [];
-  
-  // Filter out the parent note itself if hierarchy search is used
-  if (args.hierarchyType && args.parentNoteId) {
-    const parentNoteId = args.parentNoteId;
-    if (parentNoteId !== "root") {
-      searchResults = searchResults.filter((note: any) => note.noteId !== parentNoteId);
-    }
-  }
-  
+
   const trimmedResults = trimNoteResults(searchResults);
   
   return {

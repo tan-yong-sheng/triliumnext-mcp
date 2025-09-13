@@ -11,8 +11,7 @@ This document provides examples of natural language queries that demonstrate how
 - **Per-item logic**: Each criterion can specify `logic: "OR"` to combine with the next item
 
 ### Tool Selection Guide
-- **`list_notes`**: Simple hierarchy navigation and browsing (preferred for navigation)
-- **`search_notes`**: Complex filtering with unified boolean logic (preferred for advanced queries)
+- **`search_notes`**: Unified search with comprehensive filtering including hierarchy navigation (preferred for all search operations)
 - **`resolve_note_id`**: Convert note names to IDs for LLM workflows
 
 ## Search and Discovery
@@ -34,11 +33,11 @@ This document provides examples of natural language queries that demonstrate how
 
 ## Note Navigation and Browsing
 
-### Hierarchical Navigation (Using list_notes)
-- "Show me what's in my 'n8n' note folder" → Uses `list_notes` with `hierarchyType='children'` and specific `parentNoteId`
-- "What are the direct children of this note?" → `list_notes` with `hierarchyType='children'` for immediate children only
-- "Show me everything I have" → Uses `list_notes` with `hierarchyType='descendants'` to recursively list all notes
-- "Find all notes under workspace folder" → Uses `list_notes` with `hierarchyType='descendants'` and specific `parentNoteId`
+### Hierarchical Navigation (Using search_notes)
+- "Show me what's in my 'n8n' note folder" → Uses `search_notes` with `searchCriteria` hierarchy properties like `{"property": "parents.noteId", "type": "noteProperty", "op": "=", "value": "noteId"}`
+- "What are the direct children of this note?" → `search_notes` with `parents.noteId` property for immediate children only
+- "Show me everything I have" → Uses `search_notes` with `searchCriteria` for recursive navigation through `ancestors.noteId`
+- "Find all notes under workspace folder" → Uses `search_notes` with hierarchy properties and specific parent/ancestor note IDs
 
 ### Complex Navigation with Search (Using search_notes)
 - "Find notes under 'Projects' folder that contain 'API'" → Uses `search_notes` with hierarchy navigation in `searchCriteria`
@@ -65,17 +64,13 @@ This document provides examples of natural language queries that demonstrate how
 
 ## Function Selection Guide (for Developer)
 
-### When AI Should Use list_notes
-- User asks for "direct children", "immediate children", "what's in this folder"
-- Simple browsing/navigation scenarios without complex filtering
-- Folder structure exploration (like `ls` command in Unix)
-- Complete note inventory (with `parentNoteId='root'` and `hierarchyType='descendants'`)
-
 ### When AI Should Use search_notes
+- All search operations including hierarchy navigation
 - Complex queries requiring boolean logic between multiple criteria types
 - Cross-type OR operations (e.g., "books by Tolkien OR notes created this week")
 - Advanced filtering with labels, relations, and note properties
-- When sophisticated search criteria are needed beyond simple hierarchy navigation
+- Simple hierarchy navigation using hierarchy properties (parents.*, children.*, ancestors.*)
+- When sophisticated search criteria are needed for any search task
 
 ### When AI Should Use resolve_note_id
 - User provides note names instead of IDs (e.g., "update the 'project planning' note")
@@ -93,8 +88,7 @@ This document provides examples of natural language queries that demonstrate how
 - Major document revisions
 
 ### Search Tool Selection
-- Use `list_notes` for simple hierarchy navigation and browsing
-- Use `search_notes` for complex queries with unified `searchCriteria` structure
+- Use `search_notes` for all search operations including simple hierarchy navigation and complex queries with unified `searchCriteria` structure
 - Use `resolve_note_id` when users provide note names instead of IDs
 - `search_notes` automatically optimizes performance based on query complexity
 
@@ -131,16 +125,17 @@ The `search_notes` function uses a unified `searchCriteria` array with these key
 }
 ```
 
-## Practical Examples: Before vs After Architecture
+## Practical Examples: Unified Architecture
 
-### Simple Navigation (Use list_notes)
-**Dedicated tool**: `list_notes` with navigation-specific parameters
+### Simple Navigation (Use search_notes)
+**Unified approach**: `search_notes` with hierarchy properties
 
 ```json
 // List direct children of a folder
 {
-  "parentNoteId": "abc123",
-  "hierarchyType": "children",
+  "searchCriteria": [
+    {"property": "parents.noteId", "type": "noteProperty", "op": "=", "value": "abc123"}
+  ],
   "limit": 20
 }
 ```
