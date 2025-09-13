@@ -4,7 +4,11 @@
       "WebSearch",
       "WebFetch",
       "Bash(mkdir:*)",
-      "Bash(npm run build)"
+      "Bash(npm run build)",
+      "mcp__context7-mcp__resolve-library-id",
+      "mcp__playwright-mcp__browser_navigate",
+      "mcp__playwright-mcp__browser_snapshot",
+      "mcp__playwright-mcp__browser_close"
     ],
     "deny": [],
     "ask": [],

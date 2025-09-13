@@ -31,8 +31,7 @@ export async function handleSearchNotesRequest(
   try {
     const searchOperation: SearchOperation = {
       text: args.text,
-      attributes: args.attributes,
-      noteProperties: args.noteProperties,
+      searchCriteria: args.searchCriteria,
       limit: args.limit,
       hierarchyType: args.hierarchyType,
       parentNoteId: args.parentNoteId
@@ -99,12 +98,12 @@ Suggested search strategies:
 
       if (hasMultipleTerms) {
         // Create OR-based filter suggestions using meaningful terms only
-        const titleNoteProps = meaningfulTerms.map((term: string) => `{"property": "title", "op": "contains", "value": "${term}"}`).join(', ');
-        const contentNoteProps = meaningfulTerms.map((term: string) => `{"property": "content", "op": "contains", "value": "${term}"}`).join(', ');
-        
+        const titleSearchCriteria = meaningfulTerms.map((term: string) => `{"property": "title", "type": "noteProperty", "op": "contains", "value": "${term}", "logic": "OR"}`).join(', ');
+        const contentSearchCriteria = meaningfulTerms.map((term: string) => `{"property": "content", "type": "noteProperty", "op": "contains", "value": "${term}", "logic": "OR"}`).join(', ');
+
         suggestionText += `
-   - For title search (meaningful words only): {"noteProperties": [${titleNoteProps}]}
-   - For content search (meaningful words only): {"noteProperties": [${contentNoteProps}]}`;
+   - For title search (meaningful words only): {"searchCriteria": [${titleSearchCriteria}]}
+   - For content search (meaningful words only): {"searchCriteria": [${contentSearchCriteria}]}`;
 
         if (hasStopwords) {
           suggestionText += `
@@ -120,9 +119,9 @@ Suggested search strategies:
       } else if (meaningfulTerms.length === 1) {
         // Single meaningful term
         suggestionText += `
-   - For title search: {"noteProperties": [{"property": "title", "op": "contains", "value": "${meaningfulTerms[0]}"}]}
-   - For content search: {"noteProperties": [{"property": "content", "op": "contains", "value": "${meaningfulTerms[0]}"}]}`;
-        
+   - For title search: {"searchCriteria": [{"property": "title", "type": "noteProperty", "op": "contains", "value": "${meaningfulTerms[0]}"}]}
+   - For content search: {"searchCriteria": [{"property": "content", "type": "noteProperty", "op": "contains", "value": "${meaningfulTerms[0]}"}]}`;
+
         if (hasStopwords) {
           suggestionText += `
    - Note: Filtered out stopwords to focus on: "${meaningfulTerms[0]}"`;
@@ -131,14 +130,14 @@ Suggested search strategies:
         // No meaningful terms found (all stopwords)
         suggestionText += `
    - Warning: Search term contains mostly stopwords. Consider using more specific terms.
-   - For title search: {"noteProperties": [{"property": "title", "op": "contains", "value": "${args.noteName}"}]}`;
+   - For title search: {"searchCriteria": [{"property": "title", "type": "noteProperty", "op": "contains", "value": "${args.noteName}"}]}`;
       }
 
       suggestionText += `
 
 2. Use partial matching strategies:
    - Try the primary term: "${meaningfulTerms[0] || allTerms[0] || args.noteName}"
-   - Use "starts_with" operator: {"noteProperties": [{"property": "title", "op": "starts_with", "value": "${meaningfulTerms[0] || allTerms[0] || args.noteName}"}]}
+   - Use "starts_with" operator: {"searchCriteria": [{"property": "title", "type": "noteProperty", "op": "starts_with", "value": "${meaningfulTerms[0] || allTerms[0] || args.noteName}"}]}
    - Try resolve_note_id with exactMatch=false for fuzzy matching
 
 3. Alternative approaches if searches continue to fail:

@@ -7,11 +7,10 @@ import { buildSearchQuery } from "./searchQueryBuilder.js";
 import { trimNoteResults, formatNotesForListing } from "./noteFormatter.js";
 import { createSearchDebugInfo, createListSummary } from "./responseUtils.js";
 
-// Interface for SearchOperation - removed OrderByCondition import and orderBy field
+// Interface for SearchOperation - unified searchCriteria structure
 export interface SearchOperation {
   text?: string;
-  attributes?: any[];
-  noteProperties?: any[];
+  searchCriteria?: any[];
   limit?: number;
   hierarchyType?: "children" | "descendants";
   parentNoteId?: string;
@@ -60,9 +59,8 @@ export async function handleSearchNotes(
   params.append("search", query);
   
   // Smart fastSearch logic: use fastSearch=true ONLY when ONLY text parameter is provided (no other parameters)
-  const hasOnlyText = args.text && 
-    (!args.attributes || !Array.isArray(args.attributes) || args.attributes.length === 0) &&
-    (!args.noteProperties || !Array.isArray(args.noteProperties) || args.noteProperties.length === 0) &&
+  const hasOnlyText = args.text &&
+    (!args.searchCriteria || !Array.isArray(args.searchCriteria) || args.searchCriteria.length === 0) &&
     !args.hierarchyType &&
     !args.limit; // fastSearch doesn't support limit clauses
   
@@ -107,8 +105,9 @@ export async function handleResolveNoteId(
 
   // Build search query for title matching
   const searchParams: SearchOperation = {
-    noteProperties: [{
+    searchCriteria: [{
       property: "title",
+      type: "noteProperty",
       op: exactMatch ? "=" : "contains",
       value: noteName.trim()
       // No logic needed for single property

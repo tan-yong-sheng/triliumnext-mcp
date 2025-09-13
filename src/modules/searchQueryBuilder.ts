@@ -1,51 +1,36 @@
-interface AttributeCondition {
-  type: string;     // 'label', 'relation' (future)
-  name: string;     // Name of the label or relation
-  op?: string;      // Operator (exists, not_exists, =, !=, >=, <=, >, <, contains, starts_with, ends_with, regex)
-  value?: string;   // Value to search for (optional for exists/not_exists)
+// Unified SearchCriteria interface for all search types
+interface SearchCriteria {
+  property: string;  // Property name (varies by type)
+  type: 'label' | 'relation' | 'noteProperty' | 'fulltext'; // Type of search criteria
+  op?: string;       // Operator (exists, =, !=, >=, <=, >, <, contains, starts_with, ends_with, regex)
+  value?: string;    // Value to search for (optional for exists, required for fulltext)
   logic?: 'AND' | 'OR'; // Logic operator to combine with NEXT item
 }
 
-// NotePropertyCondition interface for note.* properties (including title and content)
-interface NotePropertyCondition {
-  property: string; // Note property name (isArchived, isProtected, title, content, etc.)
-  op?: string;      // Operator (=, !=, >, <, >=, <=, contains, starts_with, ends_with, regex)
-  value: string;    // Value to compare
-  logic?: 'AND' | 'OR'; // Logic operator to combine with NEXT item
-}
 
 interface SearchStructuredParams {
   text?: string;
   limit?: number;
-  attributes?: AttributeCondition[];
-  noteProperties?: NotePropertyCondition[];
+  searchCriteria?: SearchCriteria[];
   hierarchyType?: 'children' | 'descendants';
   parentNoteId?: string;
 }
 
 export function buildSearchQuery(params: SearchStructuredParams): string {
   const queryParts: string[] = [];
-  
+
   // Verbose logging
   const isVerbose = process.env.VERBOSE === "true";
   if (isVerbose) {
     console.error(`[VERBOSE] buildSearchQuery input:`, JSON.stringify(params, null, 2));
   }
-  
-  // Field-specific filters are now handled in noteProperties parameter
-  
-  // Build attribute-specific filters (labels and relations with #, ~ syntax)
-  const attributeExpressions: string[] = [];
-  if (params.attributes && params.attributes.length > 0) {
-    attributeExpressions.push(...buildAttributeExpressions(params.attributes));
+
+  // Build unified search criteria expressions
+  const searchExpressions: string[] = [];
+  if (params.searchCriteria && params.searchCriteria.length > 0) {
+    searchExpressions.push(...buildUnifiedSearchExpressions(params.searchCriteria));
   }
-  
-  // Build note property filters (note.* properties - including dates)
-  const notePropertyExpressions: string[] = [];
-  if (params.noteProperties && params.noteProperties.length > 0) {
-    notePropertyExpressions.push(...buildNotePropertyExpressions(params.noteProperties));
-  }
-  
+
   // Build hierarchy filters
   const hierarchyFilters: string[] = [];
   if (params.hierarchyType && params.parentNoteId) {
@@ -54,73 +39,67 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
       hierarchyFilters.push(hierarchyQuery);
     }
   }
-  
-  // Field filters now handled through noteProperties parameter
-  
-  // Add attribute expressions (labels and relations)
-  if (attributeExpressions.length > 0) {
-    queryParts.push(...attributeExpressions);
+
+  // Add search expressions from unified searchCriteria
+  if (searchExpressions.length > 0) {
+    queryParts.push(...searchExpressions);
   }
-  
-  // Add note property expressions (note.* properties)
-  if (notePropertyExpressions.length > 0) {
-    queryParts.push(...notePropertyExpressions);
-  }
-  
+
   // Add hierarchy filters
   if (hierarchyFilters.length > 0) {
     queryParts.push(...hierarchyFilters);
   }
-  
+
   // Add full-text search token
   if (params.text) {
     queryParts.unshift(params.text); // Add at beginning for better query structure
   }
-  
+
   // Build main query
   let query = queryParts.join(' ');
-  
-  // If only attributes/noteProperties/hierarchy were provided and no other search criteria, add universal match condition
-  if (query.trim() === '' && (attributeExpressions.length > 0 || notePropertyExpressions.length > 0 || hierarchyFilters.length > 0)) {
-    // For ETAPI compatibility, we need a base search condition when only using attributes/noteProperties/hierarchy
-    const allFilters = [...attributeExpressions, ...notePropertyExpressions, ...hierarchyFilters];
+
+  // If only searchCriteria/hierarchy were provided and no other search criteria, add universal match condition
+  if (query.trim() === '' && (searchExpressions.length > 0 || hierarchyFilters.length > 0)) {
+    // For ETAPI compatibility, we need a base search condition when only using searchCriteria/hierarchy
+    const allFilters = [...searchExpressions, ...hierarchyFilters];
     query = `note.noteId != '' ${allFilters.join(' ')}`;
   } else if (query.trim() === '') {
     // No search criteria provided at all - this will trigger the validation error in index.ts
     query = '';
   }
-  
+
   // Add limit
   if (params.limit) {
     query += ` limit ${params.limit}`;
   }
-  
+
   // Verbose logging
   if (isVerbose) {
     console.error(`[VERBOSE] buildSearchQuery output: "${query}"`);
   }
-  
+
   return query;
 }
 
 /**
- * Builds attribute expressions with per-item logic support
- * Handles labels and relations (# and ~ syntax)
+ * Builds unified search expressions with cross-type boolean logic support
+ * Handles all search criteria types: labels, relations, note properties, and fulltext
+ * Enables previously impossible cross-type OR operations
  */
-function buildAttributeExpressions(attributes: AttributeCondition[]): string[] {
+function buildUnifiedSearchExpressions(searchCriteria: SearchCriteria[]): string[] {
   const expressions: string[] = [];
   let currentGroup: string[] = [];
   let groupLogic: 'AND' | 'OR' = 'AND'; // Default to AND as per TriliumNext behavior
-  
-  for (let i = 0; i < attributes.length; i++) {
-    const attribute = attributes[i];
-    const query = buildAttributeQuery(attribute);
-    
-    if (!query) continue; // Skip invalid attributes
-    
+
+  for (let i = 0; i < searchCriteria.length; i++) {
+    const criteria = searchCriteria[i];
+    const query = buildSearchCriteriaQuery(criteria);
+
+    if (!query) continue; // Skip invalid criteria
+
     // Auto-clean: Ignore logic on last item (no next item to combine with)
-    const effectiveLogic = (i === attributes.length - 1) ? undefined : attribute.logic;
-    
+    const effectiveLogic = (i === searchCriteria.length - 1) ? undefined : criteria.logic;
+
     // If this is the first item in a group, or continuing the same logic
     if (currentGroup.length === 0 || !effectiveLogic || effectiveLogic === groupLogic) {
       currentGroup.push(query);
@@ -130,20 +109,42 @@ function buildAttributeExpressions(attributes: AttributeCondition[]): string[] {
     } else {
       // Logic changed, finalize current group
       expressions.push(finalizeGroup(currentGroup, groupLogic));
-      
+
       // Start new group
       currentGroup = [query];
       groupLogic = effectiveLogic;
     }
   }
-  
+
   // Finalize the last group
   if (currentGroup.length > 0) {
     expressions.push(finalizeGroup(currentGroup, groupLogic));
   }
-  
+
   return expressions;
 }
+
+/**
+ * Builds a query for individual search criteria based on type
+ * Dispatches to appropriate handler based on criteria type
+ */
+function buildSearchCriteriaQuery(criteria: SearchCriteria): string {
+  const { type } = criteria;
+
+  switch (type) {
+    case 'label':
+    case 'relation':
+      return buildAttributeQuery(criteria);
+    case 'noteProperty':
+      return buildNotePropertyQuery(criteria);
+    case 'fulltext':
+      // For fulltext, simply return the value as a search token
+      return criteria.value || '';
+    default:
+      return '';
+  }
+}
+
 
 /**
  * Finalizes a group of attribute queries with the specified logic
@@ -166,17 +167,33 @@ function finalizeGroup(queries: string[], logic: 'AND' | 'OR'): string {
  * Builds an attribute query for labels and relations
  * Maps JSON operators to Trilium attribute search syntax
  */
-function buildAttributeQuery(attribute: AttributeCondition): string {
-  const { type, name, op = 'exists', value } = attribute;
-  
+function buildAttributeQuery(criteria: SearchCriteria): string {
+  const { type, property: name, op = 'exists', value } = criteria;
+
   // Support both labels and relations
   if (type !== 'label' && type !== 'relation') {
     return '';
   }
-  
+
+  // Auto-enhance relation properties to ensure proper TriliumNext syntax
+  let enhancedName = name;
+  if (type === 'relation') {
+    // For relations, ensure property access syntax is used
+    // TriliumNext requires ~relation.property, not ~relation = value
+    if (!name.includes('.') && op !== 'exists' && op !== 'not_exists') {
+      enhancedName = `${name}.title`;
+
+      // Verbose logging for auto-enhancement
+      const isVerbose = process.env.VERBOSE === "true";
+      if (isVerbose) {
+        console.error(`[VERBOSE] Auto-enhanced relation property: "${name}" → "${enhancedName}" (TriliumNext requires property access for relations)`);
+      }
+    }
+  }
+
   // Escape the attribute name
-  const escapedName = name.replace(/'/g, "\\'");
-  
+  const escapedName = enhancedName.replace(/'/g, "\\'");
+
   // Determine the prefix based on attribute type
   const prefix = type === 'label' ? '#' : '~';
   
@@ -241,53 +258,18 @@ function validateISODate(value: string, property: string): string {
   return value;
 }
 
-/**
- * Builds note property expressions with per-item logic support
- */
-function buildNotePropertyExpressions(noteProperties: NotePropertyCondition[]): string[] {
-  const expressions: string[] = [];
-  let currentGroup: string[] = [];
-  let groupLogic: 'AND' | 'OR' = 'AND'; // Default to AND as per TriliumNext behavior
-  
-  for (let i = 0; i < noteProperties.length; i++) {
-    const noteProperty = noteProperties[i];
-    const query = buildNotePropertyQuery(noteProperty);
-    
-    if (!query) continue; // Skip invalid properties
-    
-    // Auto-clean: Ignore logic on last item (no next item to combine with)
-    const effectiveLogic = (i === noteProperties.length - 1) ? undefined : noteProperty.logic;
-    
-    // If this is the first item in a group, or continuing the same logic
-    if (currentGroup.length === 0 || !effectiveLogic || effectiveLogic === groupLogic) {
-      currentGroup.push(query);
-      if (effectiveLogic) {
-        groupLogic = effectiveLogic;
-      }
-    } else {
-      // Logic changed, finalize current group
-      expressions.push(finalizeGroup(currentGroup, groupLogic));
-      
-      // Start new group
-      currentGroup = [query];
-      groupLogic = effectiveLogic;
-    }
-  }
-  
-  // Finalize the last group
-  if (currentGroup.length > 0) {
-    expressions.push(finalizeGroup(currentGroup, groupLogic));
-  }
-  
-  return expressions;
-}
 
 /**
  * Builds a note property query based on the note property condition
  * Maps JSON note properties to Trilium note property search syntax
  */
-function buildNotePropertyQuery(noteProperty: NotePropertyCondition): string {
-  const { property, op = '=', value } = noteProperty;
+function buildNotePropertyQuery(criteria: SearchCriteria): string {
+  const { property, op = '=', value } = criteria;
+
+  // Ensure value is provided when needed
+  if (!value && op !== 'exists' && op !== 'not_exists') {
+    return ''; // Skip if no value provided for operators that need one
+  }
   
   // Map property names to Trilium note properties
   let triliumProperty: string;
@@ -387,29 +369,29 @@ function buildNotePropertyQuery(noteProperty: NotePropertyCondition): string {
   let processedValue: string;
   if (property === 'isArchived' || property === 'isProtected') {
     // Convert string boolean to actual boolean for Trilium
-    if (value.toLowerCase() === 'true') {
+    if (value!.toLowerCase() === 'true') {
       processedValue = 'true';
-    } else if (value.toLowerCase() === 'false') {
+    } else if (value!.toLowerCase() === 'false') {
       processedValue = 'false';
     } else {
       // Invalid boolean value, skip this filter
       return '';
     }
-  } else if (property === 'labelCount' || property === 'ownedLabelCount' || property === 'attributeCount' || 
-             property === 'relationCount' || property === 'parentCount' || property === 'childrenCount' || 
+  } else if (property === 'labelCount' || property === 'ownedLabelCount' || property === 'attributeCount' ||
+             property === 'relationCount' || property === 'parentCount' || property === 'childrenCount' ||
              property === 'contentSize' || property === 'revisionCount') {
     // Numeric properties - no quotes needed
-    processedValue = value;
+    processedValue = value!;
   } else if (property === 'title' || property === 'content') {
     // Title and content properties need quotes for string operators
-    processedValue = `'${value.replace(/'/g, "\\'")}'`;
+    processedValue = `'${value!.replace(/'/g, "\\'")}'`;
   } else if (property === 'dateCreated' || property === 'dateModified') {
     // Date properties - validate ISO format and wrap in quotes
-    const validatedValue = validateISODate(value, property);
+    const validatedValue = validateISODate(value!, property);
     processedValue = `'${validatedValue.replace(/'/g, "\\'")}'`;
   } else {
     // For other properties, escape quotes and wrap in single quotes
-    processedValue = `'${value.replace(/'/g, "\\'")}'`;
+    processedValue = `'${value!.replace(/'/g, "\\'")}'`;
   }
   
   return `${triliumProperty} ${triliumOperator} ${processedValue}`;

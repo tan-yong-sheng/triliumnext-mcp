@@ -166,7 +166,7 @@ export function createReadTools(): any[] {
         type: "object",
         properties: searchProperties,
       },
-    },
+    }
   ];
 }
 
@@ -179,70 +179,39 @@ function createSearchProperties() {
       type: "string",
       description: "Simple text search token for full-text search (NOT a query string - just plain text like 'kubernetes')",
     },
-    attributes: {
+    searchCriteria: {
       type: "array",
-      description: "Array of attribute-based search conditions for Trilium labels and relations (e.g., #book, #author, ~authorNote). User-defined metadata attached to notes. Use OR logic between items for 'either/or' searches (e.g., '#book OR #article' → set logic:'OR' on first item). Use single search_notes call instead of multiple separate searches.",
-      items: {
-        type: "object",
-        properties: {
-          type: {
-            type: "string",
-            enum: ["label", "relation"],
-            description: "Type of attribute: 'label' for #tags, 'relation' for ~relations"
-          },
-          name: {
-            type: "string",
-            description: "Name of the label or relation (e.g., 'book', 'author', 'archived')"
-          },
-          op: {
-            type: "string",
-            enum: ["exists", "not_exists", "=", "!=", ">=", "<=", ">", "<", "contains", "starts_with", "ends_with", "regex"],
-            description: "Attribute operator - 'exists'/'not_exists' for presence checks, others for value comparisons",
-            default: "exists"
-          },
-          value: {
-            type: "string",
-            description: "Value to compare against (optional for exists/not_exists)"
-          },
-          logic: {
-            type: "string",
-            enum: ["AND", "OR"],
-            description: "Logic operator to combine with next attribute. REQUIRED: Always specify 'AND' or 'OR' for every item. The system will automatically ignore logic on the last item (no next item to combine with).",
-            default: "AND"
-          }
-        },
-        required: ["type", "name", "logic"]
-      }
-    },
-    noteProperties: {
-      type: "array",
-      description: "Array of note property conditions for built-in note metadata and content searches (e.g., note.isArchived, note.type, note.title, note.content). System-level properties with note.* prefix. For title/content: use 'contains', 'starts_with', 'ends_with', 'not_equal' operators. For other properties: use comparison operators. Use OR logic between items for 'either/or' searches (e.g., 'created OR modified in last 7 days' → set logic:'OR' on first item). Use single search_notes call instead of multiple separate searches. IMPORTANT: For date properties (dateCreated, dateModified), you MUST use exact ISO date format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss.sssZ). DO NOT use smart expressions like 'TODAY-7' or 'MONTH-1'.",
+      description: "Unified search criteria array that supports all search types with complete boolean logic. This single parameter replaces the previous attributes+noteProperties separation and enables cross-type OR operations (e.g., 'relation OR dateCreated' searches). Supports labels, relations, note properties, and fulltext searches with per-item logic control. Use OR logic between items for 'either/or' searches across ANY criteria types.",
       items: {
         type: "object",
         properties: {
           property: {
             type: "string",
-            enum: ["isArchived", "isProtected", "type", "title", "content", "dateCreated", "dateModified", "labelCount", "ownedLabelCount", "attributeCount", "relationCount", "parentCount", "childrenCount", "contentSize", "revisionCount"],
-            description: "Note property name"
+            description: "Property name. For labels: tag name (e.g., 'book', 'author'). For relations: relation name with optional property path (e.g., 'author', 'author.title'). For note properties: system property name (e.g., 'isArchived', 'type', 'title', 'content', 'dateCreated'). For fulltext: use 'fulltext'."
+          },
+          type: {
+            type: "string",
+            enum: ["label", "relation", "noteProperty", "fulltext"],
+            description: "Type of search criteria: 'label' for #tags, 'relation' for ~relations, 'noteProperty' for note.* system properties, 'fulltext' for full-text search tokens"
           },
           op: {
             type: "string",
-            enum: ["=", "!=", ">", "<", ">=", "<=", "contains", "starts_with", "ends_with", "not_equal", "regex"],
-            description: "Comparison operator. For title/content: use 'contains', 'starts_with', 'ends_with', 'not_equal'. For date properties: use '>=', '<=', '>', '<', '=', '!='. For other properties: use comparison operators.",
-            default: "="
+            enum: ["exists", "=", "!=", ">=", "<=", ">", "<", "contains", "starts_with", "ends_with", "regex"],
+            description: "Operator: 'exists' for presence checks, comparison operators for values, string operators for text fields. For fulltext type: operator is ignored.",
+            default: "exists"
           },
           value: {
             type: "string",
-            description: "Value to compare against. For date properties (dateCreated, dateModified): MUST use ISO date format only - either 'YYYY-MM-DD' (e.g., '2024-01-01') or full ISO datetime 'YYYY-MM-DDTHH:mm:ss.sssZ' (e.g., '2024-01-01T00:00:00.000Z'). For title/content: any string value. For boolean properties: 'true' or 'false'. For numeric properties: numeric string (e.g., '5', '10')."
+            description: "Value to compare against (optional for exists operator). For noteProperty dates (dateCreated, dateModified): MUST use ISO date format - 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:mm:ss.sssZ'. For fulltext type: the search token."
           },
           logic: {
             type: "string",
             enum: ["AND", "OR"],
-            description: "Logic operator to combine with next property. REQUIRED: Always specify 'AND' or 'OR' for every item. The system will automatically ignore logic on the last item (no next item to combine with).",
+            description: "Logic operator to combine with NEXT search criteria item. Enables cross-type boolean expressions like 'relation OR noteProperty'. Default AND matches TriliumNext behavior. System automatically ignores logic on last item.",
             default: "AND"
           }
         },
-        required: ["property", "value", "logic"]
+        required: ["property", "type"]
       }
     },
     limit: {
