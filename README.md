@@ -103,8 +103,9 @@ The server provides the following tools for note management:
   - **Navigation support**: Use hierarchy properties like `parents.noteId` for direct children, `ancestors.noteId` for all descendants
 
 - `resolve_note_id` - Find note ID by name/title for LLM-friendly workflows
+  - **Enhanced with template and type awareness**: Supports template hints ("calendar", "board", "text snippet") and note types ("canvas", "mermaid", "mindMap", etc.)
   - **Smart fuzzy search**: Handles typos and partial matches while prioritizing exact matches
-  - **Intelligent prioritization**: Exact matches → folder-type notes → most recent
+  - **Intelligent prioritization**: Template matches → Type matches → Exact matches → folder-type notes → most recent
   - **Configurable results**: `maxResults` parameter (default: 3, range: 1-10)
   - **JSON response format**: Returns structured data with selectedNote, totalMatches, and nextSteps guidance
   - **Essential workflow**: resolve name → get ID → use with other tools
@@ -135,6 +136,13 @@ The server provides the following tools for note management:
 - "Show me notes I've edited in the last 7 days" → Uses `search_notes` with date properties
 - "Find notes with 'machine learning' in the title created this year" → Uses `search_notes` with cross-type criteria
 - "Search for 'kubernetes' in notes created between January and June" → Uses `search_notes` with boolean logic
+
+### Template & Type-Aware Resolution
+- "Find my calendar note" → Uses enhanced `resolve_note_id` with `templateHint: "calendar"`
+- "Locate my task board" → Uses enhanced `resolve_note_id` with `templateHint: "board"`
+- "Show me that canvas diagram" → Uses enhanced `resolve_note_id` with `noteType: "canvas"`
+- "Find my mermaid flowchart" → Uses enhanced `resolve_note_id` with `noteType: "mermaid"`
+- "Get my mind map about project planning" → Uses enhanced `resolve_note_id` with `noteType: "mindMap"`
 
 ### Navigation & Browsing
 - "List all notes including subfolders" → Uses `search_notes` with `ancestors.noteId` hierarchy property

@@ -25,6 +25,8 @@ export interface ResolveNoteOperation {
   exactMatch?: boolean;
   maxResults?: number;
   autoSelect?: boolean;
+  noteType?: string;
+  templateHint?: string;
 }
 
 export interface ResolveNoteResponse {
@@ -83,38 +85,76 @@ export async function handleSearchNotes(
 
 /**
  * Handle resolve note ID operation - find note ID by name/title
+ * Enhanced with template and type awareness
  */
 export async function handleResolveNoteId(
   args: ResolveNoteOperation,
   axiosInstance: any
 ): Promise<ResolveNoteResponse> {
-  const { noteName, exactMatch = false, maxResults = 3, autoSelect = false } = args;
-  
+  const { noteName, exactMatch = false, maxResults = 3, autoSelect = false, noteType, templateHint } = args;
+
   if (!noteName?.trim()) {
     throw new Error("Note name must be provided");
   }
 
-  // Build search query for title matching
-  const searchParams: SearchOperation = {
-    searchCriteria: [{
-      property: "title",
+  // Build enhanced searchCriteria based on hints
+  const searchCriteria: any[] = [];
+
+  // Add template-based criteria if templateHint is provided
+  if (templateHint) {
+    const templateMapping: { [key: string]: string } = {
+      "calendar": "_template_calendar",
+      "board": "_template_board",
+      "text snippet": "_template_text_snippet"
+    };
+
+    const templateValue = templateMapping[templateHint.toLowerCase()];
+    if (templateValue) {
+      searchCriteria.push({
+        property: "template.title",
+        type: "relation",
+        op: "=",
+        value: templateValue,
+        logic: "OR"
+      });
+    }
+  }
+
+  // Add note type criteria if noteType is provided
+  if (noteType) {
+    searchCriteria.push({
+      property: "type",
       type: "noteProperty",
-      op: exactMatch ? "=" : "contains",
-      value: noteName.trim()
-      // No logic needed for single property
-    }]
+      op: "=",
+      value: noteType,
+      logic: "OR"
+    });
+  }
+
+  // Always add title search as fallback (or primary if no hints)
+  searchCriteria.push({
+    property: "title",
+    type: "noteProperty",
+    op: exactMatch ? "=" : "contains",
+    value: noteName.trim()
+    // No logic needed for last item
+  });
+
+  // Build search query from enhanced criteria
+  const searchParams: SearchOperation = {
+    searchCriteria
   };
 
-  // Search for notes matching the title
+  // Search for notes matching the criteria
   const query = buildSearchQuery(searchParams);
   const params = new URLSearchParams();
   params.append("search", query);
   params.append("fastSearch", "false");
   params.append("includeArchivedNotes", "true");
-  
+
   const response = await axiosInstance.get(`/notes?${params.toString()}`);
   let searchResults = response.data.results || [];
-  
+
   const totalMatches = searchResults.length;
 
   if (searchResults.length === 0) {
@@ -131,16 +171,36 @@ export async function handleResolveNoteId(
 
   // Check if user choice is required (multiple matches and autoSelect is false)
   if (totalMatches > 1 && !autoSelect) {
-    // Prepare top N matches for user choice (prioritized but not auto-selected)
+    // Enhanced prioritization for template/type aware searches
     const topMatches = originalResults
       .sort((a: any, b: any) => {
-        // First priority: exact matches
+        // First priority: template matches (if templateHint provided)
+        if (templateHint) {
+          const aHasTemplate = a.attributes?.some((attr: any) =>
+            attr.name === 'template' &&
+            attr.value.includes(templateHint.toLowerCase().replace(' ', '_'))
+          );
+          const bHasTemplate = b.attributes?.some((attr: any) =>
+            attr.name === 'template' &&
+            attr.value.includes(templateHint.toLowerCase().replace(' ', '_'))
+          );
+          if (aHasTemplate && !bHasTemplate) return -1;
+          if (!aHasTemplate && bHasTemplate) return 1;
+        }
+
+        // Second priority: note type matches (if noteType provided)
+        if (noteType) {
+          if (a.type === noteType && b.type !== noteType) return -1;
+          if (a.type !== noteType && b.type === noteType) return 1;
+        }
+
+        // Third priority: exact title matches
         const aExact = a.title && a.title.toLowerCase() === noteName.toLowerCase();
         const bExact = b.title && b.title.toLowerCase() === noteName.toLowerCase();
         if (aExact && !bExact) return -1;
         if (!aExact && bExact) return 1;
 
-        // Second priority: book type (folders)
+        // Fourth priority: book type (folders)
         if (a.type === 'book' && b.type !== 'book') return -1;
         if (a.type !== 'book' && b.type === 'book') return 1;
 
@@ -165,49 +225,79 @@ export async function handleResolveNoteId(
     };
   }
 
-  // Apply prioritization for selecting the best match
-  // If exact match requested and we have results, prefer exact title matches
-  if (!exactMatch && searchResults.length > 1) {
-    const exactMatches = searchResults.filter((note: any) => 
-      note.title && note.title.toLowerCase() === noteName.toLowerCase()
-    );
-    if (exactMatches.length > 0) {
-      searchResults = exactMatches;
-    }
-  }
-
-  // If still multiple results, prefer folder-like notes (book type) for listing operations
+  // Apply enhanced prioritization for selecting the best match
   if (searchResults.length > 1) {
-    const folderNotes = searchResults.filter((note: any) => note.type === 'book');
-    if (folderNotes.length > 0) {
-      searchResults = folderNotes;
-    }
-  }
+    searchResults.sort((a: any, b: any) => {
+      // First priority: template matches (if templateHint provided)
+      if (templateHint) {
+        const aHasTemplate = a.attributes?.some((attr: any) =>
+          attr.name === 'template' &&
+          attr.value.includes(templateHint.toLowerCase().replace(' ', '_'))
+        );
+        const bHasTemplate = b.attributes?.some((attr: any) =>
+          attr.name === 'template' &&
+          attr.value.includes(templateHint.toLowerCase().replace(' ', '_'))
+        );
+        if (aHasTemplate && !bHasTemplate) return -1;
+        if (!aHasTemplate && bHasTemplate) return 1;
+      }
 
-  // If still multiple results, prefer most recently modified
-  if (searchResults.length > 1) {
-    searchResults.sort((a: any, b: any) => 
-      new Date(b.dateModified).getTime() - new Date(a.dateModified).getTime()
-    );
+      // Second priority: note type matches (if noteType provided)
+      if (noteType) {
+        if (a.type === noteType && b.type !== noteType) return -1;
+        if (a.type !== noteType && b.type === noteType) return 1;
+      }
+
+      // Third priority: exact title matches (if not exactMatch mode, prefer exact matches)
+      if (!exactMatch) {
+        const aExact = a.title && a.title.toLowerCase() === noteName.toLowerCase();
+        const bExact = b.title && b.title.toLowerCase() === noteName.toLowerCase();
+        if (aExact && !bExact) return -1;
+        if (!aExact && bExact) return 1;
+      }
+
+      // Fourth priority: book type (folders)
+      if (a.type === 'book' && b.type !== 'book') return -1;
+      if (a.type !== 'book' && b.type === 'book') return 1;
+
+      // Final priority: most recent
+      return new Date(b.dateModified).getTime() - new Date(a.dateModified).getTime();
+    });
   }
 
   // Return the first match (or best match if multiple)
   const selectedNote = searchResults[0];
-  
-  // Prepare top N matches for display (from original results, prioritized)
+
+  // Prepare top N matches for display (from original results, with enhanced prioritization)
   const topMatches = originalResults
     .sort((a: any, b: any) => {
-      // First priority: exact matches
+      // Enhanced prioritization same as above
+      if (templateHint) {
+        const aHasTemplate = a.attributes?.some((attr: any) =>
+          attr.name === 'template' &&
+          attr.value.includes(templateHint.toLowerCase().replace(' ', '_'))
+        );
+        const bHasTemplate = b.attributes?.some((attr: any) =>
+          attr.name === 'template' &&
+          attr.value.includes(templateHint.toLowerCase().replace(' ', '_'))
+        );
+        if (aHasTemplate && !bHasTemplate) return -1;
+        if (!aHasTemplate && bHasTemplate) return 1;
+      }
+
+      if (noteType) {
+        if (a.type === noteType && b.type !== noteType) return -1;
+        if (a.type !== noteType && b.type === noteType) return 1;
+      }
+
       const aExact = a.title && a.title.toLowerCase() === noteName.toLowerCase();
       const bExact = b.title && b.title.toLowerCase() === noteName.toLowerCase();
       if (aExact && !bExact) return -1;
       if (!aExact && bExact) return 1;
-      
-      // Second priority: book type (folders)
+
       if (a.type === 'book' && b.type !== 'book') return -1;
       if (a.type !== 'book' && b.type === 'book') return 1;
-      
-      // Final priority: most recent
+
       return new Date(b.dateModified).getTime() - new Date(a.dateModified).getTime();
     })
     .slice(0, maxResults)
@@ -217,7 +307,7 @@ export async function handleResolveNoteId(
       type: note.type,
       dateModified: note.dateModified
     }));
-  
+
   return {
     noteId: selectedNote.noteId,
     title: selectedNote.title,

@@ -72,11 +72,13 @@ node build/index.js   # Run the server directly
 
 ### READ Permission Tools
 - `search_notes`: Unified search with comprehensive filtering capabilities including full-text search, date ranges, field-specific searches, attribute searches, note properties, and hierarchy navigation through unified `searchCriteria` structure. Supports unlimited nesting depth for hierarchy properties (e.g., `parents.noteId`, `children.children.title`, `ancestors.noteId`).
-- `resolve_note_id`: Find note ID by name/title - use when users provide note names (like "wqd7006") instead of IDs. Essential for LLM workflows where users reference notes by name. Features:
+- `resolve_note_id`: Find note ID by name/title - use when users provide note names (like "wqd7006") instead of IDs. Essential for LLM workflows where users reference notes by name. **Enhanced with template and type awareness**. Features:
   - **Smart fuzzy search**: `exactMatch` parameter (default: false) controls search precision - fuzzy search handles typos and partial matches while prioritizing exact matches
   - **Configurable results**: `maxResults` parameter (default: 3, range: 1-10) controls number of alternatives returned
   - **User choice control**: `autoSelect` parameter (default: false) - when false, stops and asks user to choose from alternatives when multiple matches found; when true, uses intelligent auto-selection
-  - **Intelligent prioritization**: Automatically prioritizes exact matches, then folder-type notes (book), then most recent
+  - **Template-aware search**: `templateHint` parameter supports "calendar", "board", "text snippet" for template-based notes
+  - **Type-aware search**: `noteType` parameter supports "text", "code", "book", "canvas", "mermaid", "mindMap", etc.
+  - **Enhanced prioritization**: Template matches → Type matches → Exact title matches → Folder-type notes → Most recent
   - **JSON response format**: Returns structured data with selectedNote, totalMatches, topMatches array, and nextSteps guidance
   - **Multiple match handling**: When `totalMatches > 1` and `autoSelect=false`, presents numbered list of options and asks user to choose
 - `get_note`: Retrieve note content by ID
@@ -163,6 +165,31 @@ This ensures backward compatibility and prevents breaking changes to the core se
 - `book`: Book/folder notes
 - `relationMap`: Relation map notes
 - `render`: Render notes
+- `canvas`: Canvas notes (application/json)
+- `mermaid`: Mermaid diagram notes (text/vnd.mermaid)
+- `mindMap`: Mind map notes (application/json)
+
+### Template-Based Note Types
+
+**Enhanced `resolve_note_id` Support**: The function now supports template-aware resolution for specialized note types:
+
+- **Calendar Notes**: `type: book` + `~template=Calendar` → Use `templateHint: "calendar"`
+- **Task Board Notes**: `type: book` + `~template=Board` → Use `templateHint: "board"`
+- **Text Snippet Notes**: `type: text` + `~template=Text Snippet` → Use `templateHint: "text snippet"`
+
+**Usage Examples**:
+```typescript
+// Template-aware resolution
+resolve_note_id({noteName: "calendar", templateHint: "calendar"})
+resolve_note_id({noteName: "board", templateHint: "board"})
+
+// Type-aware resolution
+resolve_note_id({noteName: "diagram", noteType: "mermaid"})
+resolve_note_id({noteName: "canvas", noteType: "canvas"})
+
+// Combined approach
+resolve_note_id({noteName: "my board", noteType: "book", templateHint: "board"})
+```
 
 ## Content Processing
 
@@ -249,6 +276,24 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - **Edge case handling**: Auto-cleanup of logic on last items, AND default logic, proper grouping
 
 ## Recent Enhancements (Latest)
+
+### Enhanced `resolve_note_id` with Template and Type Awareness - Complete Implementation
+- **Major capability enhancement**: Extended `resolve_note_id` function with `noteType` and `templateHint` parameters for specialized note resolution
+- **Problem solved**: Eliminates confusion when users reference template-based notes (calendars, boards) or specific note types (canvas, mermaid) by name
+- **Enhanced capabilities achieved**:
+  - **Template-aware resolution**: Supports "calendar", "board", "text snippet" template hints that map to TriliumNext templates
+  - **Type-aware resolution**: Supports all TriliumNext note types including "canvas", "mermaid", "mindMap", "code", etc.
+  - **Multi-criteria search**: Combines template relations, note types, and title matching with intelligent prioritization
+  - **Enhanced prioritization**: Template matches → Type matches → Exact title matches → Folder-type notes → Most recent
+  - **Backward compatibility**: All existing `resolve_note_id` usage continues to work unchanged
+- **Implementation approach**: Option A - Extended existing function with optional parameters and internal searchCriteria building
+- **Usage patterns**:
+  - Simple: `resolve_note_id({noteName: "project"})` (unchanged)
+  - Template-aware: `resolve_note_id({noteName: "calendar", templateHint: "calendar"})`
+  - Type-aware: `resolve_note_id({noteName: "diagram", noteType: "mermaid"})`
+  - Combined: `resolve_note_id({noteName: "board", noteType: "book", templateHint: "board"})`
+- **Internal architecture**: Uses unified `searchCriteria` structure with OR logic between template, type, and title criteria
+- **Status**: ✅ **COMPLETED** - Full implementation with TypeScript compilation validation and enhanced prioritization logic
 
 ### Unified Hierarchy Navigation Implementation - Complete searchCriteria Integration
 - **Major architectural enhancement**: Removed separate `hierarchyType` and `parentNoteId` parameters from `search_notes` function and integrated hierarchy navigation into unified `searchCriteria` structure

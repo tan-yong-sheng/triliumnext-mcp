@@ -1392,7 +1392,288 @@ note.dateCreated >= '2024-01-01' AND note.dateCreated < '2024-12-31' AND note.da
 
 **Important Change**: Smart date expressions (e.g., `TODAY-7`, `MONTH-1`) are NO LONGER supported in the MCP interface. Only exact ISO dates are accepted to ensure LLM consistency and prevent incorrect date calculations.
 
-**Status**: ✅ **COMPLETED** - Full implementation with unified searchCriteria structure, complete boolean logic, and comprehensive documentation
+---
+
+## Enhanced resolve_note_id Examples (Template and Type Awareness)
+
+The `resolve_note_id` function has been enhanced with template and type awareness to better handle specialized TriliumNext note types.
+
+### Enhanced Parameters
+- **noteName**: Note name/title to find (required)
+- **exactMatch**: Require exact title match (default: false)
+- **maxResults**: Maximum results in topMatches (default: 3)
+- **autoSelect**: Auto-select best match vs user choice (default: false)
+- **noteType**: Optional note type filter ("text", "code", "book", "canvas", "mermaid", "mindMap", etc.)
+- **templateHint**: Optional template hint ("calendar", "board", "text snippet")
+
+### Enhanced Prioritization
+1. **Template matches** (highest priority when templateHint provided)
+2. **Type matches** (when noteType provided)
+3. **Exact title matches**
+4. **Folder-type notes (book)**
+5. **Most recent** (fallback)
+
+### Template-Based Resolution Examples
+
+#### 76) Find Calendar Template Note
+- Enhanced resolve_note_id usage
+```json
+{
+  "noteName": "calendar",
+  "templateHint": "calendar"
+}
+```
+- Internal searchCriteria generated
+```json
+{
+  "searchCriteria": [
+    {"property": "template.title", "type": "relation", "op": "=", "value": "_template_calendar", "logic": "OR"},
+    {"property": "title", "type": "noteProperty", "op": "contains", "value": "calendar"}
+  ]
+}
+```
+- Use case: Find calendar notes using template relation with title fallback
+- **Priority**: Template matches ranked highest, then title matches
+
+#### 77) Find Task Board Template Note
+- Enhanced resolve_note_id usage
+```json
+{
+  "noteName": "board",
+  "templateHint": "board"
+}
+```
+- Internal searchCriteria generated
+```json
+{
+  "searchCriteria": [
+    {"property": "template.title", "type": "relation", "op": "=", "value": "_template_board", "logic": "OR"},
+    {"property": "title", "type": "noteProperty", "op": "contains", "value": "board"}
+  ]
+}
+```
+- Use case: Find task board notes using template relation with title fallback
+- **Priority**: Template matches ranked highest, then title matches
+
+#### 78) Find Text Snippet Template Note
+- Enhanced resolve_note_id usage
+```json
+{
+  "noteName": "snippet",
+  "templateHint": "text snippet"
+}
+```
+- Internal searchCriteria generated
+```json
+{
+  "searchCriteria": [
+    {"property": "template.title", "type": "relation", "op": "=", "value": "_template_text_snippet", "logic": "OR"},
+    {"property": "title", "type": "noteProperty", "op": "contains", "value": "snippet"}
+  ]
+}
+```
+- Use case: Find text snippet notes using template relation with title fallback
+- **Priority**: Template matches ranked highest, then title matches
+
+### Type-Based Resolution Examples
+
+#### 79) Find Canvas Note by Type
+- Enhanced resolve_note_id usage
+```json
+{
+  "noteName": "diagram",
+  "noteType": "canvas"
+}
+```
+- Internal searchCriteria generated
+```json
+{
+  "searchCriteria": [
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "canvas", "logic": "OR"},
+    {"property": "title", "type": "noteProperty", "op": "contains", "value": "diagram"}
+  ]
+}
+```
+- Use case: Find canvas diagrams with type filtering
+- **Priority**: Canvas type matches ranked highest, then title matches
+
+#### 80) Find Mermaid Diagram by Type
+- Enhanced resolve_note_id usage
+```json
+{
+  "noteName": "flowchart",
+  "noteType": "mermaid"
+}
+```
+- Internal searchCriteria generated
+```json
+{
+  "searchCriteria": [
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "mermaid", "logic": "OR"},
+    {"property": "title", "type": "noteProperty", "op": "contains", "value": "flowchart"}
+  ]
+}
+```
+- Use case: Find mermaid flowcharts with type filtering
+- **Priority**: Mermaid type matches ranked highest, then title matches
+
+#### 81) Find Mind Map by Type
+- Enhanced resolve_note_id usage
+```json
+{
+  "noteName": "brainstorm",
+  "noteType": "mindMap"
+}
+```
+- Internal searchCriteria generated
+```json
+{
+  "searchCriteria": [
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "mindMap", "logic": "OR"},
+    {"property": "title", "type": "noteProperty", "op": "contains", "value": "brainstorm"}
+  ]
+}
+```
+- Use case: Find mind map notes for brainstorming sessions
+- **Priority**: MindMap type matches ranked highest, then title matches
+
+#### 82) Find Code Note by Type
+- Enhanced resolve_note_id usage
+```json
+{
+  "noteName": "script",
+  "noteType": "code"
+}
+```
+- Internal searchCriteria generated
+```json
+{
+  "searchCriteria": [
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "code", "logic": "OR"},
+    {"property": "title", "type": "noteProperty", "op": "contains", "value": "script"}
+  ]
+}
+```
+- Use case: Find code scripts with type filtering
+- **Priority**: Code type matches ranked highest, then title matches
+
+### Combined Template and Type Examples
+
+#### 83) Find Calendar with Combined Criteria
+- Enhanced resolve_note_id usage
+```json
+{
+  "noteName": "calendar",
+  "noteType": "book",
+  "templateHint": "calendar"
+}
+```
+- Internal searchCriteria generated
+```json
+{
+  "searchCriteria": [
+    {"property": "template.title", "type": "relation", "op": "=", "value": "_template_calendar", "logic": "OR"},
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "book", "logic": "OR"},
+    {"property": "title", "type": "noteProperty", "op": "contains", "value": "calendar"}
+  ]
+}
+```
+- Use case: Find calendar template notes with book type and title fallback
+- **Priority**: Template matches → Type matches → Title matches
+
+#### 84) Find Task Board with Combined Criteria
+- Enhanced resolve_note_id usage
+```json
+{
+  "noteName": "project board",
+  "noteType": "book",
+  "templateHint": "board"
+}
+```
+- Internal searchCriteria generated
+```json
+{
+  "searchCriteria": [
+    {"property": "template.title", "type": "relation", "op": "=", "value": "_template_board", "logic": "OR"},
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "book", "logic": "OR"},
+    {"property": "title", "type": "noteProperty", "op": "contains", "value": "project board"}
+  ]
+}
+```
+- Use case: Find project board template notes with comprehensive matching
+- **Priority**: Template matches → Type matches → Title matches
+
+### Backward Compatibility Examples
+
+#### 85) Simple Resolution (Unchanged)
+- Enhanced resolve_note_id usage
+```json
+{
+  "noteName": "project"
+}
+```
+- Internal searchCriteria generated
+```json
+{
+  "searchCriteria": [
+    {"property": "title", "type": "noteProperty", "op": "contains", "value": "project"}
+  ]
+}
+```
+- Use case: Simple note resolution by title (existing behavior preserved)
+- **Priority**: Standard prioritization (exact matches → folders → recent)
+
+#### 86) Exact Match with User Choice
+- Enhanced resolve_note_id usage
+```json
+{
+  "noteName": "meeting",
+  "exactMatch": true,
+  "autoSelect": false,
+  "maxResults": 5
+}
+```
+- Internal searchCriteria generated
+```json
+{
+  "searchCriteria": [
+    {"property": "title", "type": "noteProperty", "op": "=", "value": "meeting"}
+  ]
+}
+```
+- Use case: Precise title matching with user choice for multiple results
+- **Behavior**: Returns top 5 matches for user selection when multiple found
+
+### Template Mapping Reference
+
+- **"calendar"** → `~template.title = '_template_calendar'`
+- **"board"** → `~template.title = '_template_board'`
+- **"text snippet"** → `~template.title = '_template_text_snippet'`
+
+### Supported Note Types
+
+- **"text"**: Regular text notes
+- **"code"**: Code notes with syntax highlighting
+- **"book"**: Book/folder notes
+- **"canvas"**: Canvas notes (application/json)
+- **"mermaid"**: Mermaid diagram notes
+- **"mindMap"**: Mind map notes
+- **"file"**: File attachments
+- **"image"**: Image notes
+- **"search"**: Search notes
+- **"relationMap"**: Relation map notes
+- **"render"**: Render notes
+
+### Key Benefits
+
+1. **Template-aware**: Finds template-based notes using relation searches
+2. **Type-aware**: Filters by specific note types for precise matching
+3. **Enhanced prioritization**: Template and type matches ranked higher than title matches
+4. **Backward compatible**: All existing usage patterns continue to work
+5. **User-friendly**: Supports both auto-selection and user choice workflows
+6. **Comprehensive**: Combines multiple search criteria with intelligent OR logic
+
+**Status**: ✅ **COMPLETED** - Full implementation with enhanced prioritization and comprehensive template/type support
 
 ### Missing TriliumNext Features
 1. **Regex search** (`%=` operator) - not implemented
