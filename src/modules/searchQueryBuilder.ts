@@ -320,6 +320,13 @@ function buildNotePropertyQuery(criteria: SearchCriteria): string {
       triliumProperty = 'note.revisionCount';
       break;
     default:
+      // Check for hierarchy navigation properties (parents.*, children.*, ancestors.*)
+      if (property.startsWith('parents.') || property.startsWith('children.') || property.startsWith('ancestors.')) {
+        // Dynamic hierarchy property handling - supports any depth
+        // Examples: parents.noteId, parents.title, parents.parents.title, children.children.children.noteId
+        triliumProperty = `note.${property}`;
+        break;
+      }
       // Invalid property, skip this filter
       return '';
   }
