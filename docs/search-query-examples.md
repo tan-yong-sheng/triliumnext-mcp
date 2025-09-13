@@ -1675,6 +1675,57 @@ The `resolve_note_id` function has been enhanced with template and type awarenes
 
 **Status**: ✅ **COMPLETED** - Full implementation with enhanced prioritization and comprehensive template/type support
 
+### 87) Fallback Suggestions for Failed Template/Type Searches
+
+When template or type-specific searches return no results, `resolve_note_id` provides a simple fallback suggestion:
+
+#### Example: Failed Template Search
+- Enhanced resolve_note_id usage
+```json
+{
+  "noteName": "calendar",
+  "templateHint": "board"
+}
+```
+- Response when no results found
+```json
+{
+  "noteId": null,
+  "title": null,
+  "found": false,
+  "matches": 0,
+  "nextSteps": "No notes found matching the search criteria. Try basic title search: resolve_note_id(noteName: \"calendar\")"
+}
+```
+- Use case: When template-specific search fails, provides direct guidance to try basic search
+
+#### Example: Failed Combined Template and Type Search
+- Enhanced resolve_note_id usage
+```json
+{
+  "noteName": "project",
+  "templateHint": "calendar",
+  "noteType": "canvas"
+}
+```
+- Response when no results found
+```json
+{
+  "noteId": null,
+  "title": null,
+  "found": false,
+  "matches": 0,
+  "nextSteps": "No notes found matching the search criteria. Try basic title search: resolve_note_id(noteName: \"project\")"
+}
+```
+- Use case: When overly restrictive combined criteria fail, provides simple fallback to basic search
+
+### Key Benefits of Fallback Guidance
+1. **User-friendly**: Prevents dead-end searches with actionable suggestion
+2. **Simple approach**: Direct fallback to least restrictive search
+3. **Clear instruction**: Provides exact function call to try next
+4. **Prevents frustration**: Eliminates confusion when restrictive searches fail
+
 ### Missing TriliumNext Features
 1. **Regex search** (`%=` operator) - not implemented
 2. **Smart date expressions** (TODAY-30, MONTH+1) - not implemented  

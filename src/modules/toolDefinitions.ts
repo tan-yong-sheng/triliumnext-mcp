@@ -135,7 +135,7 @@ export function createReadTools(): any[] {
     },
     {
       name: "resolve_note_id",
-      description: "Resolves a note/folder name to its actual note ID for use with other tools. You MUST call this function when users provide note names instead of note IDs (e.g., 'wqd7006', 'My Project') UNLESS the user explicitly provides a note ID. Enhanced with template and type awareness for specific note types.",
+      description: "Resolves a note/folder name to its actual note ID for use with other tools. You MUST call this function when users provide note names instead of note IDs (e.g., 'wqd7006', 'My Project') UNLESS the user explicitly provides a note ID. Enhanced with template and type awareness for specific note types. Provides fallback suggestions when template/type-specific searches return no results.",
       inputSchema: {
         type: "object",
         properties: {

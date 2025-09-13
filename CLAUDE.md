@@ -12,10 +12,12 @@ This is a Model Context Protocol (MCP) server for TriliumNext Notes that provide
 - **Main Server**: `src/index.ts` - Lightweight MCP server setup (~150 lines, down from 1400+)
 - **Business Logic Modules**: `src/modules/` - Core functionality separated by domain:
   - `noteManager.ts` - Note creation, update, append, delete, and retrieval
-  - `searchManager.ts` - Search operations with hierarchy navigation support
+  - `searchManager.ts` - Core search operations with hierarchy navigation support
+  - `resolveManager.ts` - Note ID resolution with template and type awareness
 - **Request Handlers**: `src/modules/` - MCP request/response processing:
   - `noteHandler.ts` - Note tool request handling with permission validation
   - `searchHandler.ts` - Search tool request handling with permission validation
+  - `resolveHandler.ts` - Resolve note ID request handling with permission validation
 - **Schema Definitions**: `src/modules/` - Tool schema generation:
   - `toolDefinitions.ts` - Permission-based tool schema generation and definitions
 - **Utility Modules**: `src/modules/` - Specialized helper functions:
@@ -214,6 +216,23 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - **Universal search**: Uses `note.noteId != ''` as universal match condition for ETAPI
 - **Hierarchy navigation**: Full support for hierarchy properties (`parents.noteId`, `children.title`, `ancestors.noteId`) with unlimited nesting depth
 
+### Tool Selection Guidelines - When to Use search_notes vs resolve_note_id
+
+**Use `search_notes` when:**
+- **Searching for content/topic**: "search calendar note" → find notes about calendars
+- **Multiple results expected**: "find project notes" → list all project-related notes
+- **Complex filtering needed**: "search notes modified this week with #important tag"
+- **Exploring/discovering**: user wants to see what's available
+- **Ambiguous intent**: when unclear if user wants search or specific note resolution
+
+**Use `resolve_note_id` when:**
+- **Identifying specific note**: "find the note called 'Meeting Notes'" → get exact note ID
+- **Single target expected**: user refers to a specific note by name/title
+- **Follow-up operations**: need note ID for get_note, update_note, etc.
+- **Reference resolution**: converting human-readable name to system ID
+
+**Enhanced Fallback Strategy**: `resolve_note_id` now provides intelligent fallback suggestions when no matches found, recommending `search_notes` for broader content-based searches.
+
 ### Tool Descriptions Optimized for LLM Selection
 - `search_notes`: Unified search with comprehensive filtering capabilities through searchCriteria structure - handles both complex search operations and simple hierarchy navigation
 - `resolve_note_id` provides clear workflow: resolve name → get ID → use with other tools (eliminates confusion when users provide note names instead of IDs)
@@ -276,6 +295,46 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - **Edge case handling**: Auto-cleanup of logic on last items, AND default logic, proper grouping
 
 ## Recent Enhancements (Latest)
+
+### Tool Selection Disambiguation - Enhanced Fallback Strategy Implementation
+- **Major usability enhancement**: Added clear disambiguation rules and enhanced fallback strategy for `search_notes` vs `resolve_note_id` selection
+- **Problem solved**: User queries like "search calendar note" are ambiguous - could mean searching for notes about calendars OR finding a specific note named "calendar"
+- **Clear guidelines established**:
+  - **Use `search_notes`**: For content/topic search, multiple results, complex filtering, exploration, or ambiguous intent
+  - **Use `resolve_note_id`**: For specific note identification, single target resolution, follow-up operations, or reference resolution
+- **Enhanced fallback mechanism**:
+  - When `resolve_note_id` finds no matches, it now suggests using `search_notes` for broader content-based searches
+  - Improved `nextSteps` guidance: `"Consider using search_notes for broader results: search_notes(text: 'calendar') to find notes containing 'calendar' in title or content"`
+- **Implementation details**:
+  - Enhanced fallback logic in `resolveManager.ts` lines 114-117
+  - Added comprehensive tool selection guidelines in CLAUDE.md
+  - Improved user experience for ambiguous queries with intelligent suggestions
+- **Benefits achieved**:
+  - **Clear decision rules**: LLMs and users now have definitive guidelines for tool selection
+  - **Better user experience**: Failed `resolve_note_id` operations provide actionable suggestions
+  - **Reduced confusion**: Explicit handling of ambiguous query scenarios
+- **Status**: ✅ **COMPLETED** - Full implementation with enhanced fallback strategy and comprehensive documentation
+
+### Resolve Note ID Separation - Clean Architecture Implementation
+- **Major architectural enhancement**: Separated `resolve_note_id` functionality from core `search_notes` to prevent parameter pollution
+- **Problem solved**: Eliminated confusion where `templateHint` and `noteType` parameters were incorrectly appearing in search criteria, causing invalid TriliumNext search queries
+- **Root cause identified**: LLM-friendly parameters (`templateHint`, `noteType`) were not valid TriliumNext search properties but were being mixed into core search functionality
+- **Enhanced architecture achieved**:
+  - **Separate resolve module**: Created `src/modules/resolveManager.ts` with specialized note resolution logic
+  - **Dedicated resolve handler**: Created `src/modules/resolveHandler.ts` for resolve-specific request processing
+  - **Clean search separation**: Core `search_notes` function now only accepts valid TriliumNext search properties
+  - **Internal parameter translation**: Resolve function internally converts template/type hints to valid search criteria before calling core search
+- **Implementation details**:
+  - Moved `handleResolveNoteId` function and interfaces from `searchManager.ts` to new `resolveManager.ts`
+  - Created dedicated `resolveHandler.ts` for resolve request processing
+  - Updated `index.ts` to use separate handlers for search vs resolve operations
+  - Maintained all existing functionality while ensuring proper separation of concerns
+- **Benefits achieved**:
+  - **Parameter validity**: `search_notes` tool now only exposes valid TriliumNext search syntax
+  - **LLM-friendly resolve**: `resolve_note_id` retains specialized parameters for better LLM workflows
+  - **Clean architecture**: Proper separation between core search functionality and user-friendly resolution
+  - **No breaking changes**: All existing usage patterns continue to work unchanged
+- **Status**: ✅ **COMPLETED** - Full separation with successful build validation and clean modular architecture
 
 ### Enhanced `resolve_note_id` with Template and Type Awareness - Complete Implementation
 - **Major capability enhancement**: Extended `resolve_note_id` function with `noteType` and `templateHint` parameters for specialized note resolution
@@ -522,12 +581,17 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 ### `resolve_note_id` Function Implementation
 - **Purpose**: LLM-friendly note ID resolution from note names/titles
 - **Problem solved**: Eliminates LLM confusion when users provide note names instead of IDs
-- **Key features**: 
+- **Key features**:
   - **JSON response format**: with top N alternatives (configurable via `maxResults`)
   - **Smart fuzzy search**: with intelligent prioritization (exact matches → folders → recent)
+  - **Template and type awareness**: Enhanced with `templateHint` and `noteType` parameters for specialized note types
+  - **Fallback guidance**: Provides `nextSteps` suggestions when template/type-specific searches fail
   - **Clear workflow guidance**: in responses
 - **Usage patterns**:
   - General: `resolve_note_id(name) → use returned noteId with other tools`
+  - Template-aware: `resolve_note_id(name, templateHint="calendar") → find calendar notes specifically`
+  - Type-aware: `resolve_note_id(name, noteType="canvas") → find canvas diagrams specifically`
+- **Fallback behavior**: When template/type searches return no results, provides suggestions to try broader searches
 
 ### Permission Case Mismatch Fix
 - **Issue**: Search functions were checking for lowercase `"read"` while environment uses uppercase `"READ"`

@@ -20,9 +20,9 @@ import {
   handleGetNoteRequest
 } from "./modules/noteHandler.js";
 import {
-  handleSearchNotesRequest,
-  handleResolveNoteIdRequest
+  handleSearchNotesRequest
 } from "./modules/searchHandler.js";
+import { handleResolveNoteRequest } from "./modules/resolveHandler.js";
 
 const TRILIUM_API_URL = process.env.TRILIUM_API_URL;
 const TRILIUM_API_TOKEN = process.env.TRILIUM_API_TOKEN;
@@ -109,7 +109,7 @@ class TriliumServer {
             return await handleSearchNotesRequest(request.params.arguments, this.axiosInstance, this);
 
           case "resolve_note_id":
-            return await handleResolveNoteIdRequest(request.params.arguments, this.axiosInstance, this);
+            return await handleResolveNoteRequest(request.params.arguments, this, this.axiosInstance);
 
           default:
             throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${request.params.name}`);
