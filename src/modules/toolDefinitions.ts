@@ -176,7 +176,7 @@ export function createReadTools(): any[] {
     },
     {
       name: "search_notes",
-      description: "Unified search with comprehensive filtering capabilities including full-text search, date ranges, field-specific searches, attribute searches, note properties, and hierarchy navigation through unified searchCriteria structure. Use hierarchy properties like 'parents.noteId', 'children.noteId', or 'ancestors.noteId' for navigation.",
+      description: "Unified search with comprehensive filtering capabilities including full-text search, date ranges, field-specific searches, attribute searches, note properties, template-based searches, and hierarchy navigation through unified searchCriteria structure. For template search: use relation type with 'template.title' property and built-in template values like 'Calendar', 'Board', 'Text Snippet', 'Grid View', 'Table', 'Geo Map'. Use hierarchy properties like 'parents.noteId', 'children.noteId', or 'ancestors.noteId' for navigation.",
       inputSchema: {
         type: "object",
         properties: searchProperties,
@@ -202,7 +202,7 @@ function createSearchProperties() {
         properties: {
           property: {
             type: "string",
-            description: "Property name. For labels: tag name (e.g., 'book', 'author'). For relations: relation name with optional property path (e.g., 'author', 'author.title'). For note properties: system property name (e.g., 'isArchived', 'type', 'title', 'content', 'dateCreated') OR hierarchy properties (e.g., 'parents.title', 'children.title', 'ancestors.title', 'parents.parents.title'). For fulltext: use 'fulltext'."
+            description: "Property name. For labels: tag name (e.g., 'book', 'author'). For relations: relation name with optional property path (e.g., 'author', 'author.title', 'template.title'). Built-in templates: use 'template.title' with values 'Calendar', 'Board', 'Text Snippet', 'Grid View', 'Table', 'Geo Map'. For note properties: system property name (e.g., 'isArchived', 'type', 'title', 'content', 'dateCreated') OR hierarchy properties (e.g., 'parents.title', 'children.title', 'ancestors.title', 'parents.parents.title'). For fulltext: use 'fulltext'."
           },
           type: {
             type: "string",
@@ -217,7 +217,7 @@ function createSearchProperties() {
           },
           value: {
             type: "string",
-            description: "Value to compare against (optional for exists operator). For noteProperty dates (dateCreated, dateModified): MUST use ISO date format - 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:mm:ss.sssZ'. For hierarchy navigation: parent/ancestor note title or 'root' for top-level. For fulltext type: the search token."
+            description: "Value to compare against (optional for exists operator). For built-in template relations: use 'Calendar' (calendar notes), 'Board' (task boards), 'Text Snippet' (text snippets), 'Grid View' (grid layouts), 'Table' (table views), 'Geo Map' (geography maps). For noteProperty dates (dateCreated, dateModified): MUST use ISO date format - 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:mm:ss.sssZ'. For hierarchy navigation: parent/ancestor note title or 'root' for top-level. For fulltext type: the search token."
           },
           logic: {
             type: "string",
