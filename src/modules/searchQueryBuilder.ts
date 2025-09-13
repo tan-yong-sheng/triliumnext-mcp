@@ -221,6 +221,48 @@ function buildAttributeQuery(criteria: SearchCriteria): string {
 }
 
 /**
+ * Validates note type values
+ */
+function validateNoteType(value: string): string {
+  const validNoteTypes = [
+    'text', 'code', 'mermaid', 'canvas', 'book', 'image',
+    'file', 'search', 'relationMap', 'render'
+  ];
+
+  if (!validNoteTypes.includes(value)) {
+    throw new Error(`Invalid note type: '${value}'. Valid note types are: ${validNoteTypes.join(', ')}`);
+  }
+
+  return value;
+}
+
+/**
+ * Validates common MIME type values
+ */
+function validateMimeType(value: string): string {
+  // Common MIME types for TriliumNext notes
+  const commonMimeTypes = [
+    // Code languages
+    'text/javascript', 'text/x-python', 'text/x-java', 'text/css', 'text/html',
+    'text/x-go', 'text/x-typescript', 'text/x-sql', 'text/x-yaml', 'text/x-markdown',
+    'text/x-c', 'text/x-cpp', 'text/x-csharp', 'text/x-php', 'text/x-ruby',
+    'text/x-shell', 'text/x-dockerfile', 'application/xml', 'application/x-httpd-php',
+    // Special note types
+    'text/vnd.mermaid', 'application/json',
+    // Generic text
+    'text/plain'
+  ];
+
+  // Allow any text/* or application/* MIME type, but warn about uncommon ones
+  if (!value.match(/^(text|application)\/[a-zA-Z0-9][a-zA-Z0-9\-_.]*$/)) {
+    throw new Error(`Invalid MIME type format: '${value}'. Must follow pattern 'text/*' or 'application/*'`);
+  }
+
+  // Just validate format, don't restrict to specific types as TriliumNext supports many
+  return value;
+}
+
+/**
  * Validates ISO date format for date properties
  */
 function validateISODate(value: string, property: string): string {
@@ -265,6 +307,9 @@ function buildNotePropertyQuery(criteria: SearchCriteria): string {
       break;
     case 'type':
       triliumProperty = 'note.type';
+      break;
+    case 'mime':
+      triliumProperty = 'note.mime';
       break;
     case 'title':
       triliumProperty = 'note.title';
@@ -375,6 +420,14 @@ function buildNotePropertyQuery(criteria: SearchCriteria): string {
   } else if (property === 'title' || property === 'content') {
     // Title and content properties need quotes for string operators
     processedValue = `'${value!.replace(/'/g, "\\'")}'`;
+  } else if (property === 'type') {
+    // Note type property - validate and wrap in quotes
+    const validatedValue = validateNoteType(value!);
+    processedValue = `'${validatedValue.replace(/'/g, "\\'")}'`;
+  } else if (property === 'mime') {
+    // MIME type property - validate and wrap in quotes
+    const validatedValue = validateMimeType(value!);
+    processedValue = `'${validatedValue.replace(/'/g, "\\'")}'`;
   } else if (property === 'dateCreated' || property === 'dateModified') {
     // Date properties - validate ISO format and wrap in quotes
     const validatedValue = validateISODate(value!, property);

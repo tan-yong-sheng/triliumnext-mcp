@@ -296,6 +296,31 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 
 ## Recent Enhancements (Latest)
 
+### Template Name Correction - Built-in Template Search Enhancement
+- **Critical functionality fix**: Corrected built-in TriliumNext template names in search documentation and tool definitions after user testing revealed actual working template names
+- **Problem solved**: User discovered that `~template.title = 'Calendar'` works but `~template.title = '_template_calendar'` does not work for built-in template searches
+- **Root cause identified**: Documentation was using underscore-prefixed template names that don't match TriliumNext's actual built-in template naming convention
+- **Corrected template names**: Updated from underscore-prefixed names to human-readable names:
+  - `'_template_calendar'` → `'Calendar'`
+  - `'_template_board'` → `'Board'`
+  - `'_template_text_snippet'` → `'Text Snippet'`
+  - Added support for additional built-in templates: `'Grid View'`, `'Table'`, `'Geo Map'`
+- **Implementation details**:
+  - Updated `toolDefinitions.ts` search_notes description with correct template names and clear usage guidance
+  - Updated property and value field descriptions with accurate template mapping
+  - Corrected all template search examples in `docs/search-query-examples.md` (6 instances updated)
+  - Updated template mapping reference section with working template names
+- **Benefits achieved**:
+  - **Functional template search**: Template searches now work correctly with TriliumNext built-in templates
+  - **Accurate documentation**: All examples and guidance now reflect actual working template syntax
+  - **Enhanced user experience**: Users can successfully search for template-based notes using correct names
+  - **Complete template support**: Added comprehensive list of all available built-in templates
+- **Files updated**:
+  - `src/modules/toolDefinitions.ts`: Tool schema descriptions with correct template names
+  - `docs/search-query-examples.md`: All template search examples corrected
+  - `CLAUDE.md`: Documentation of this enhancement
+- **Status**: ✅ **COMPLETED** - Full correction with working template search functionality and updated documentation
+
 ### Tool Selection Disambiguation - Enhanced Fallback Strategy Implementation
 - **Major usability enhancement**: Added clear disambiguation rules and enhanced fallback strategy for `search_notes` vs `resolve_note_id` selection
 - **Problem solved**: User queries like "search calendar note" are ambiguous - could mean searching for notes about calendars OR finding a specific note named "calendar"

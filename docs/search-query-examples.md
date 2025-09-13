@@ -1427,7 +1427,7 @@ The `resolve_note_id` function has been enhanced with template and type awarenes
 ```json
 {
   "searchCriteria": [
-    {"property": "template.title", "type": "relation", "op": "=", "value": "_template_calendar", "logic": "OR"},
+    {"property": "template.title", "type": "relation", "op": "=", "value": "Calendar", "logic": "OR"},
     {"property": "title", "type": "noteProperty", "op": "contains", "value": "calendar"}
   ]
 }
@@ -1447,7 +1447,7 @@ The `resolve_note_id` function has been enhanced with template and type awarenes
 ```json
 {
   "searchCriteria": [
-    {"property": "template.title", "type": "relation", "op": "=", "value": "_template_board", "logic": "OR"},
+    {"property": "template.title", "type": "relation", "op": "=", "value": "Board", "logic": "OR"},
     {"property": "title", "type": "noteProperty", "op": "contains", "value": "board"}
   ]
 }
@@ -1467,7 +1467,7 @@ The `resolve_note_id` function has been enhanced with template and type awarenes
 ```json
 {
   "searchCriteria": [
-    {"property": "template.title", "type": "relation", "op": "=", "value": "_template_text_snippet", "logic": "OR"},
+    {"property": "template.title", "type": "relation", "op": "=", "value": "Text Snippet", "logic": "OR"},
     {"property": "title", "type": "noteProperty", "op": "contains", "value": "snippet"}
   ]
 }
@@ -1572,7 +1572,7 @@ The `resolve_note_id` function has been enhanced with template and type awarenes
 ```json
 {
   "searchCriteria": [
-    {"property": "template.title", "type": "relation", "op": "=", "value": "_template_calendar", "logic": "OR"},
+    {"property": "template.title", "type": "relation", "op": "=", "value": "Calendar", "logic": "OR"},
     {"property": "type", "type": "noteProperty", "op": "=", "value": "book", "logic": "OR"},
     {"property": "title", "type": "noteProperty", "op": "contains", "value": "calendar"}
   ]
@@ -1594,7 +1594,7 @@ The `resolve_note_id` function has been enhanced with template and type awarenes
 ```json
 {
   "searchCriteria": [
-    {"property": "template.title", "type": "relation", "op": "=", "value": "_template_board", "logic": "OR"},
+    {"property": "template.title", "type": "relation", "op": "=", "value": "Board", "logic": "OR"},
     {"property": "type", "type": "noteProperty", "op": "=", "value": "book", "logic": "OR"},
     {"property": "title", "type": "noteProperty", "op": "contains", "value": "project board"}
   ]
@@ -1646,9 +1646,9 @@ The `resolve_note_id` function has been enhanced with template and type awarenes
 
 ### Template Mapping Reference
 
-- **"calendar"** → `~template.title = '_template_calendar'`
-- **"board"** → `~template.title = '_template_board'`
-- **"text snippet"** → `~template.title = '_template_text_snippet'`
+- **"calendar"** → `~template.title = 'Calendar'`
+- **"board"** → `~template.title = 'Board'`
+- **"text snippet"** → `~template.title = 'Text Snippet'`
 
 ### Supported Note Types
 
