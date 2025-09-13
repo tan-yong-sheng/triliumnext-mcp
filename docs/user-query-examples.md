@@ -1,169 +1,109 @@
 # User Query Examples
 
-This document provides examples of natural language queries that demonstrate how to use the TriliumNext MCP server effectively with the new unified search architecture.
+This document provides simple examples of natural language queries you can try with the TriliumNext MCP server.
 
-## Modern Search Architecture
+## Basic Search Queries
 
-### Unified searchCriteria Structure
-- **Complete boolean logic**: Cross-type OR/AND operations between labels, relations, note properties, and hierarchy navigation
-- **Single array structure**: Unified `searchCriteria` parameter for maximum expressiveness
-- **Type indicators**: Each criterion specifies `type` ("label", "relation", "noteProperty", "fulltext")
-- **Per-item logic**: Each criterion can specify `logic: "OR"` to combine with the next item
+### Simple Text Search
+- "Find notes containing 'docker'"
+- "Search for 'kubernetes' in my notes"
+- "Show me notes about 'machine learning'"
+- "Find notes with 'API' in them"
 
-### Tool Selection Guide
-- **`search_notes`**: Unified search with comprehensive filtering including hierarchy navigation (preferred for all search operations)
-- **`resolve_note_id`**: Convert note names to IDs for LLM workflows
+### Date-Based Searches
+- "Find notes created in the last 7 days"
+- "Show me notes I edited last week"
+- "What notes were modified in December 2024?"
+- "Find notes created between January and June this year"
+- "Show me my most recent 10 notes"
 
-## Search and Discovery
+### Content and Title Searches
+- "Find notes with 'project' in the title"
+- "Search for notes containing 'deadline' in the content"
+- "Find notes whose title starts with 'Meeting'"
+- "Show me notes with titles ending in 'Notes'"
 
-### Basic Search Queries
-- "Find my most recent 10 notes about 'n8n' since the beginning of 2020"
-- "Show me notes I've edited in the last 7 days"
-- "What are the 5 most recently modified notes about 'docker' from last year?"
-- "Find notes created in the last week"
-- "Search for 'kubernetes' in notes created between January and June of this year"
-- "List all notes I worked on in the last week, either created or modified"
+### Advanced Combined Searches
+- "Find notes with 'tutorial' in title and 'steps' in content"
+- "Search for 'n8n' notes created since 2024"
+- "Find recent notes about 'docker' or 'kubernetes'"
+- "Show me text notes that aren't archived"
 
-### Advanced Search Queries (Using Unified searchCriteria)
-- "Find notes with 'machine learning' in the title created this year" → Uses `search_notes` with unified `searchCriteria`
-- "Show me notes containing 'API' that were modified in the last month" → Uses `search_notes` with date properties
-- "Search for notes with 'project' in the title and 'deadline' in the content" → Uses `search_notes` with multiple noteProperty criteria
-- "Find books by Tolkien OR notes created this week" → Uses `search_notes` with cross-type OR logic between labels and date properties
-- "Search for notes with #book label AND ~author relation" → Uses `search_notes` with mixed attribute types
+## Note Navigation
 
-## Note Navigation and Browsing
+### Folder and Hierarchy Browsing
+- "Show me what's in my 'Projects' folder"
+- "List all notes under 'Work' folder"
+- "Find notes in 'Archive' and its subfolders"
+- "What are the children of this note?"
+- "Show me everything I have"
 
-### Hierarchical Navigation (Using search_notes)
-- "Show me what's in my 'n8n' note folder" → Uses `search_notes` with `searchCriteria` hierarchy properties like `{"property": "parents.noteId", "type": "noteProperty", "op": "=", "value": "noteId"}`
-- "What are the direct children of this note?" → `search_notes` with `parents.noteId` property for immediate children only
-- "Show me everything I have" → Uses `search_notes` with `searchCriteria` for recursive navigation through `ancestors.noteId`
-- "Find all notes under workspace folder" → Uses `search_notes` with hierarchy properties and specific parent/ancestor note IDs
+### Finding Specific Notes
+- "Find my note called 'Weekly Review'"
+- "Where is my 'Project Planning' note?"
+- "Find the note named 'Meeting Notes'"
 
-### Complex Navigation with Search (Using search_notes)
-- "Find notes under 'Projects' folder that contain 'API'" → Uses `search_notes` with hierarchy navigation in `searchCriteria`
-- "Show notes with parent 'Active Tasks' OR ancestor 'Archive'" → Uses `search_notes` with OR logic between hierarchy criteria
+## Note Types and Organization
 
-## Content Modification Examples (Exprimental)
+### By Note Type
+- "Find all my code notes"
+- "Show me canvas/drawing notes"
+- "Find Mermaid diagram notes"
+- "List all book/folder notes"
 
-### Content Addition (append_note)
-- "Add today's progress to my work log" 
-- "Append this meeting summary to my notes" 
+### By Labels and Tags
+- "Find notes with #book label"
+- "Show me notes tagged as #important"
+- "Find notes with #project tag"
 
-### Content Replacement (update_note)
+### By File Types (Code Notes)
+- "Find JavaScript code files"
+- "Show me Python notes"
+- "Find TypeScript code notes"
+- "List HTML and CSS files"
+
+## Content Management
+
+### Adding Content
+- "Add today's progress to my work log"
+- "Append this meeting summary to my notes"
+- "Add this code snippet to my development notes"
+
+### Updating Content
 - "Update my project plan with this new version"
-- "Rewrite this note with the corrected information"
+- "Replace the content of my draft note"
+- "Rewrite this note with corrected information"
 
-### Content Retrieval (get_note)
-- "Show me the content of note ABC123"
+### Note Creation
+- "Create a new note called 'Weekly Review'"
+- "Make a new note in my 'Projects' folder"
+- "Create a code note for JavaScript"
 
-### Note Creation (create_note)
-- "Create a new note called 'Weekly Review' in my journal folder"
+### Getting Note Content
+- "Show me the content of my 'TODO' note"
+- "What's in my 'Meeting Notes'?"
 
-### Note Management (delete_note)
-- "Delete this old draft note named 'n8n Templates'" (⚠️ Permanent operation)
+## Example Questions for Testing
 
-## Function Selection Guide (for Developer)
+### Simple Tests
+- "Find notes about 'testing'"
+- "Show me recent notes"
+- "What's in my root folder?"
 
-### When AI Should Use search_notes
-- All search operations including hierarchy navigation
-- Complex queries requiring boolean logic between multiple criteria types
-- Cross-type OR operations (e.g., "books by Tolkien OR notes created this week")
-- Advanced filtering with labels, relations, and note properties
-- Simple hierarchy navigation using hierarchy properties (parents.*, children.*, ancestors.*)
-- When sophisticated search criteria are needed for any search task
+### Intermediate Tests
+- "Find notes created this month with 'docker' in them"
+- "Show me code notes about 'python'"
+- "Find text notes that have more than 5 labels"
 
-### When AI Should Use resolve_note_id
-- User provides note names instead of IDs (e.g., "update the 'project planning' note")
-- Need to find note ID before using other tools
-- Fuzzy matching when exact note names are uncertain
+### Advanced Tests
+- "Find notes that are either books by a specific author OR created this week"
+- "Show me notes with 'project' in title OR 'deadline' in content"
+- "Find notes under 'Work' folder that were modified recently"
 
-### When AI Should Use append_note
-- User says "add", "append", "include", "attach"
-- Preserving existing content is important
-- Incremental updates (logs, journals, progress notes)
+## Tips for Better Results
 
-### When AI Should Use update_note
-- User says "replace", "update", "rewrite", "change entirely"
-- Complete content replacement needed
-- Major document revisions
-
-### Search Tool Selection
-- Use `search_notes` for all search operations including simple hierarchy navigation and complex queries with unified `searchCriteria` structure
-- Use `resolve_note_id` when users provide note names instead of IDs
-- `search_notes` automatically optimizes performance based on query complexity
-
-## Unified searchCriteria Parameters Guide
-
-The `search_notes` function uses a unified `searchCriteria` array with these key parameters:
-
-### SearchCriteria Object Structure
-```json
-{
-  "property": "string",     // Property name (book, author, title, content, dateCreated, etc.)
-  "type": "string",         // Type: "label", "relation", "noteProperty", "fulltext"
-  "op": "string",           // Operator: exists, =, !=, >=, <=, >, <, contains, starts_with, ends_with, regex
-  "value": "string",        // Value to compare against (optional for exists)
-  "logic": "string"         // Logic operator: "AND" or "OR" (combines with NEXT item)
-}
-```
-
-### Type Reference
-- **"label"**: User-defined labels (#book, #author) - user-defined tags and categories
-- **"relation"**: User-defined relations (~author.title, ~template.title) - connections between notes
-- **"noteProperty"**: System properties (isArchived, type, dateCreated, title, content, hierarchy navigation)
-- **"fulltext"**: Full-text search tokens (alternative to text parameter)
-
-### Cross-Type Boolean Logic Examples
-```json
-// Books by Tolkien OR notes created this week
-{
-  "searchCriteria": [
-    {"property": "book", "type": "label", "op": "exists", "logic": "AND"},
-    {"property": "author.title", "type": "relation", "op": "contains", "value": "Tolkien", "logic": "OR"},
-    {"property": "dateCreated", "type": "noteProperty", "op": ">=", "value": "2024-12-13"}
-  ]
-}
-```
-
-## Practical Examples: Unified Architecture
-
-### Simple Navigation (Use search_notes)
-**Unified approach**: `search_notes` with hierarchy properties
-
-```json
-// List direct children of a folder
-{
-  "searchCriteria": [
-    {"property": "parents.noteId", "type": "noteProperty", "op": "=", "value": "abc123"}
-  ],
-  "limit": 20
-}
-```
-
-### Complex Search (Use search_notes with unified searchCriteria)
-**Current Architecture**: Unified `searchCriteria` array with complete boolean expressiveness
-
-```json
-// Find notes that are either: books by Tolkien OR recent tutorials with steps
-{
-  "searchCriteria": [
-    {"property": "book", "type": "label", "op": "exists", "logic": "AND"},
-    {"property": "author.title", "type": "relation", "op": "contains", "value": "Tolkien", "logic": "OR"},
-    {"property": "title", "type": "noteProperty", "op": "contains", "value": "tutorial", "logic": "AND"},
-    {"property": "dateCreated", "type": "noteProperty", "op": ">=", "value": "2024-11-01", "logic": "AND"},
-    {"property": "content", "type": "noteProperty", "op": "contains", "value": "steps"}
-  ]
-}
-```
-
-### Note ID Resolution (Use resolve_note_id)
-**New capability**: Convert user-provided note names to IDs
-
-```json
-// Find note ID when user says "update my project planning note"
-{
-  "noteName": "project planning",
-  "exactMatch": false,
-  "maxResults": 3
-}
-```
+1. **Be specific**: "Find notes about docker" works better than "find stuff"
+2. **Use quotes**: For exact phrases, use quotes like "machine learning"
+3. **Specify time ranges**: "last week", "this month", "since 2024"
+4. **Combine criteria**: "Find code notes about python created recently"
+5. **Use note names**: "Find my 'Project Planning' note" for specific notes
