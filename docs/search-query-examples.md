@@ -801,6 +801,275 @@ note.content %= '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}'
 
 ---
 
+## Note Type and MIME Type Search Examples
+
+TriliumNext supports different note types and MIME types that can be searched using the unified searchCriteria structure. These examples show how to find specific note types and filter by MIME types for code notes.
+
+### Note Type Search Reference
+- **text**: Regular text notes (default type)
+- **code**: Code notes with syntax highlighting
+- **mermaid**: Mermaid diagram notes
+- **canvas**: Canvas/drawing notes (Excalidraw)
+- **book**: Book/folder notes (containers)
+- **image**: Image notes
+- **file**: File attachment notes
+- **search**: Saved search notes
+- **relationMap**: Relation map notes
+- **render**: Render notes
+
+### MIME Type Search Reference
+- **JavaScript**: `text/javascript`
+- **Python**: `text/x-python`
+- **Java**: `text/x-java`
+- **TypeScript**: `text/x-typescript`
+- **CSS**: `text/css`
+- **HTML**: `text/html`
+- **SQL**: `text/x-sql`
+- **YAML**: `text/x-yaml`
+- **Markdown**: `text/x-markdown`
+- **Mermaid**: `text/vnd.mermaid`
+- **JSON**: `application/json`
+
+### 76) Find All Text Notes
+- Composed query
+```
+note.type = 'text'
+```
+- One-Array Structure
+```json
+{
+  "searchCriteria": [
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "text"}
+  ]
+}
+```
+- Use case: Find all regular text notes
+
+### 77) Find All Code Notes
+- Composed query
+```
+note.type = 'code'
+```
+- One-Array Structure
+```json
+{
+  "searchCriteria": [
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "code"}
+  ]
+}
+```
+- Use case: Find all code notes with syntax highlighting
+
+### 78) Find Mermaid Diagrams
+- Composed query
+```
+note.type = 'mermaid'
+```
+- One-Array Structure
+```json
+{
+  "searchCriteria": [
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "mermaid"}
+  ]
+}
+```
+- Use case: Find all Mermaid diagram notes
+
+### 79) Find Canvas/Drawing Notes
+- Composed query
+```
+note.type = 'canvas'
+```
+- One-Array Structure
+```json
+{
+  "searchCriteria": [
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "canvas"}
+  ]
+}
+```
+- Use case: Find all canvas/Excalidraw drawing notes
+
+### 80) Find Book/Folder Notes
+- Composed query
+```
+note.type = 'book'
+```
+- One-Array Structure
+```json
+{
+  "searchCriteria": [
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "book"}
+  ]
+}
+```
+- Use case: Find all book/folder container notes
+
+### 81) Find JavaScript Code Notes
+- Composed query
+```
+note.type = 'code' AND note.mime = 'text/javascript'
+```
+- One-Array Structure
+```json
+{
+  "searchCriteria": [
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "code", "logic": "AND"},
+    {"property": "mime", "type": "noteProperty", "op": "=", "value": "text/javascript"}
+  ]
+}
+```
+- Use case: Find JavaScript code files specifically
+
+### 82) Find Python Code Notes
+- Composed query
+```
+note.type = 'code' AND note.mime = 'text/x-python'
+```
+- One-Array Structure
+```json
+{
+  "searchCriteria": [
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "code", "logic": "AND"},
+    {"property": "mime", "type": "noteProperty", "op": "=", "value": "text/x-python"}
+  ]
+}
+```
+- Use case: Find Python code files specifically
+
+### 83) Find TypeScript Code Notes
+- Composed query
+```
+note.type = 'code' AND note.mime = 'text/x-typescript'
+```
+- One-Array Structure
+```json
+{
+  "searchCriteria": [
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "code", "logic": "AND"},
+    {"property": "mime", "type": "noteProperty", "op": "=", "value": "text/x-typescript"}
+  ]
+}
+```
+- Use case: Find TypeScript code files specifically
+
+### 84) Find Multiple Code Types (OR Logic)
+- Composed query
+```
+~(note.mime = 'text/javascript' OR note.mime = 'text/x-python' OR note.mime = 'text/x-typescript')
+```
+- One-Array Structure
+```json
+{
+  "searchCriteria": [
+    {"property": "mime", "type": "noteProperty", "op": "=", "value": "text/javascript", "logic": "OR"},
+    {"property": "mime", "type": "noteProperty", "op": "=", "value": "text/x-python", "logic": "OR"},
+    {"property": "mime", "type": "noteProperty", "op": "=", "value": "text/x-typescript"}
+  ]
+}
+```
+- Use case: Find JavaScript, Python, or TypeScript code notes
+
+### 85) Find Visual Note Types (Canvas OR Mermaid)
+- Composed query
+```
+~(note.type = 'canvas' OR note.type = 'mermaid')
+```
+- One-Array Structure
+```json
+{
+  "searchCriteria": [
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "canvas", "logic": "OR"},
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "mermaid"}
+  ]
+}
+```
+- Use case: Find all visual diagram notes (canvas drawings or Mermaid diagrams)
+
+### 86) Find Content with Specific Note Type
+- Composed query
+```
+kubernetes note.type = 'code'
+```
+- One-Array Structure
+```json
+{
+  "text": "kubernetes",
+  "searchCriteria": [
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "code"}
+  ]
+}
+```
+- Use case: Find code notes containing "kubernetes"
+
+### 87) Find Web Development Files
+- Composed query
+```
+~(note.mime = 'text/html' OR note.mime = 'text/css' OR note.mime = 'text/javascript')
+```
+- One-Array Structure
+```json
+{
+  "searchCriteria": [
+    {"property": "mime", "type": "noteProperty", "op": "=", "value": "text/html", "logic": "OR"},
+    {"property": "mime", "type": "noteProperty", "op": "=", "value": "text/css", "logic": "OR"},
+    {"property": "mime", "type": "noteProperty", "op": "=", "value": "text/javascript"}
+  ]
+}
+```
+- Use case: Find all web development related code files
+
+### 88) Complex Note Type and Content Search
+- Composed query
+```
+docker ~(note.type = 'text' OR note.type = 'code') AND note.dateCreated >= '2024-01-01'
+```
+- One-Array Structure
+```json
+{
+  "text": "docker",
+  "searchCriteria": [
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "text", "logic": "OR"},
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "code", "logic": "AND"},
+    {"property": "dateCreated", "type": "noteProperty", "op": ">=", "value": "2024-01-01"}
+  ]
+}
+```
+- Use case: Find recent text or code notes containing "docker"
+
+### 89) Find All Non-Text Notes
+- Composed query
+```
+note.type != 'text'
+```
+- One-Array Structure
+```json
+{
+  "searchCriteria": [
+    {"property": "type", "type": "noteProperty", "op": "!=", "value": "text"}
+  ]
+}
+```
+- Use case: Find all specialized note types (excluding regular text notes)
+
+### 90) Find Image and File Attachments
+- Composed query
+```
+~(note.type = 'image' OR note.type = 'file')
+```
+- One-Array Structure
+```json
+{
+  "searchCriteria": [
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "image", "logic": "OR"},
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "file"}
+  ]
+}
+```
+- Use case: Find all attachment notes (images and files)
+
+---
+
 ## Hierarchy Navigation Examples (Unified searchCriteria Structure)
 
 The unified `search_notes` function supports hierarchy navigation through the `searchCriteria` parameter using hierarchy-specific note properties.

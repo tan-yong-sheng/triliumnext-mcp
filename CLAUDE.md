@@ -321,6 +321,36 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
   - `CLAUDE.md`: Documentation of this enhancement
 - **Status**: ✅ **COMPLETED** - Full correction with working template search functionality and updated documentation
 
+### Note Type and MIME Type Search Enhancement - Complete Implementation
+- **Major capability addition**: Added comprehensive note type and MIME type search support through the unified searchCriteria structure
+- **Problem solved**: Enables targeted searches for specific TriliumNext note types and code languages without needing complex query construction
+- **Enhanced capabilities achieved**:
+  - **Complete note type filtering**: Support for all TriliumNext note types including text, code, mermaid, canvas, book, image, file, search, relationMap, render
+  - **MIME type search**: Comprehensive MIME type filtering for code notes including JavaScript, Python, TypeScript, CSS, HTML, SQL, YAML, Markdown, and more
+  - **Validation and safety**: Added validateNoteType() and validateMimeType() functions to prevent invalid searches
+  - **Mixed search support**: Note type and MIME type filters work seamlessly with other search criteria using unified boolean logic
+- **Implementation details**:
+  - Enhanced `toolDefinitions.ts` with note type and MIME type descriptions and examples
+  - Added 'mime' property support in `searchQueryBuilder.ts` with comprehensive validation
+  - Implemented validateNoteType() function with all valid TriliumNext note types
+  - Implemented validateMimeType() function with format validation for text/* and application/* patterns
+  - Added comprehensive documentation with 15 new examples in `docs/search-query-examples.md`
+- **Usage examples**:
+  - Find all Mermaid diagrams: `{property: 'type', type: 'noteProperty', op: '=', value: 'mermaid'}`
+  - Find JavaScript code: `{property: 'mime', type: 'noteProperty', op: '=', value: 'text/javascript'}`
+  - Find visual notes: `{property: 'type', type: 'noteProperty', op: '=', value: 'canvas', logic: 'OR'}, {property: 'type', type: 'noteProperty', op: '=', value: 'mermaid'}`
+- **Benefits achieved**:
+  - **Targeted note discovery**: Users can find specific note types without complex query knowledge
+  - **Code language filtering**: Developers can locate code notes by programming language through MIME types
+  - **Enhanced workflows**: Supports specialized workflows for different note types (diagrams, code, documents)
+  - **Type safety**: Validation prevents invalid note types and MIME formats from reaching TriliumNext
+- **Files updated**:
+  - `src/modules/toolDefinitions.ts`: Enhanced tool descriptions with note type and MIME type support
+  - `src/modules/searchQueryBuilder.ts`: Added validation functions and MIME property support
+  - `docs/search-query-examples.md`: Added 15 comprehensive examples (76-90) for note type and MIME type searches
+  - `CLAUDE.md`: Documentation of this enhancement
+- **Status**: ✅ **COMPLETED** - Full implementation with validation, comprehensive examples, and successful build verification
+
 ### Tool Selection Disambiguation - Enhanced Fallback Strategy Implementation
 - **Major usability enhancement**: Added clear disambiguation rules and enhanced fallback strategy for `search_notes` vs `resolve_note_id` selection
 - **Problem solved**: User queries like "search calendar note" are ambiguous - could mean searching for notes about calendars OR finding a specific note named "calendar"
