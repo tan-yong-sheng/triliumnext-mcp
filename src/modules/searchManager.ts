@@ -24,6 +24,7 @@ export interface ResolveNoteOperation {
   noteName: string;
   exactMatch?: boolean;
   maxResults?: number;
+  autoSelect?: boolean;
 }
 
 export interface ResolveNoteResponse {
@@ -31,6 +32,7 @@ export interface ResolveNoteResponse {
   title: string | null;
   found: boolean;
   matches: number;
+  requiresUserChoice?: boolean;
   topMatches?: Array<{
     noteId: string;
     title: string;
@@ -86,7 +88,7 @@ export async function handleResolveNoteId(
   args: ResolveNoteOperation,
   axiosInstance: any
 ): Promise<ResolveNoteResponse> {
-  const { noteName, exactMatch = false, maxResults = 3 } = args;
+  const { noteName, exactMatch = false, maxResults = 3, autoSelect = false } = args;
   
   if (!noteName?.trim()) {
     throw new Error("Note name must be provided");
@@ -126,6 +128,42 @@ export async function handleResolveNoteId(
 
   // Store original results for top matches
   const originalResults = [...searchResults];
+
+  // Check if user choice is required (multiple matches and autoSelect is false)
+  if (totalMatches > 1 && !autoSelect) {
+    // Prepare top N matches for user choice (prioritized but not auto-selected)
+    const topMatches = originalResults
+      .sort((a: any, b: any) => {
+        // First priority: exact matches
+        const aExact = a.title && a.title.toLowerCase() === noteName.toLowerCase();
+        const bExact = b.title && b.title.toLowerCase() === noteName.toLowerCase();
+        if (aExact && !bExact) return -1;
+        if (!aExact && bExact) return 1;
+
+        // Second priority: book type (folders)
+        if (a.type === 'book' && b.type !== 'book') return -1;
+        if (a.type !== 'book' && b.type === 'book') return 1;
+
+        // Final priority: most recent
+        return new Date(b.dateModified).getTime() - new Date(a.dateModified).getTime();
+      })
+      .slice(0, maxResults)
+      .map((note: any) => ({
+        noteId: note.noteId,
+        title: note.title,
+        type: note.type,
+        dateModified: note.dateModified
+      }));
+
+    return {
+      noteId: null,
+      title: null,
+      found: true,
+      matches: totalMatches,
+      requiresUserChoice: true,
+      topMatches
+    };
+  }
 
   // Apply prioritization for selecting the best match
   // If exact match requested and we have results, prefer exact title matches

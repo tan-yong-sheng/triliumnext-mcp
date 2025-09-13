@@ -68,7 +68,8 @@ export async function handleResolveNoteIdRequest(
     const resolveOperation: ResolveNoteOperation = {
       noteName: args.noteName,
       exactMatch: args.exactMatch,
-      maxResults: args.maxResults
+      maxResults: args.maxResults,
+      autoSelect: args.autoSelect
     };
 
     const result = await handleResolveNoteId(resolveOperation, axiosInstance);
@@ -156,6 +157,35 @@ REMINDER: Adapt these suggestions based on user context, domain knowledge, and p
         content: [{
           type: "text",
           text: suggestionText
+        }]
+      };
+    }
+
+    // Check if user choice is required for multiple matches
+    if (result.requiresUserChoice) {
+      const choiceMessage = `Multiple notes found matching "${args.noteName}" (${result.matches} total matches).
+
+Please choose which note you want to work with:
+
+${result.topMatches?.map((note, index) =>
+  `${index + 1}. ${note.title}
+   - Note Type: ${note.type}
+   - Note ID: ${note.noteId}
+   - Last Modified: ${note.dateModified}`
+).join('\n\n')}
+
+To proceed, please:
+1. Tell me the number (1-${result.topMatches?.length}) of the note you want, OR
+2. Tell me the specific note ID from the list above, OR
+3. Call resolve_note_id again with autoSelect=true to auto-select the best match, OR
+4. Refine your search with a more specific note name
+
+Example: "I want note #2" or "Use noteId abc123" or use resolve_note_id(noteName="${args.noteName}", autoSelect=true)`;
+
+      return {
+        content: [{
+          type: "text",
+          text: choiceMessage
         }]
       };
     }

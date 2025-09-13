@@ -75,8 +75,10 @@ node build/index.js   # Run the server directly
 - `resolve_note_id`: Find note ID by name/title - use when users provide note names (like "wqd7006") instead of IDs. Essential for LLM workflows where users reference notes by name. Features:
   - **Smart fuzzy search**: `exactMatch` parameter (default: false) controls search precision - fuzzy search handles typos and partial matches while prioritizing exact matches
   - **Configurable results**: `maxResults` parameter (default: 3, range: 1-10) controls number of alternatives returned
+  - **User choice control**: `autoSelect` parameter (default: false) - when false, stops and asks user to choose from alternatives when multiple matches found; when true, uses intelligent auto-selection
   - **Intelligent prioritization**: Automatically prioritizes exact matches, then folder-type notes (book), then most recent
   - **JSON response format**: Returns structured data with selectedNote, totalMatches, topMatches array, and nextSteps guidance
+  - **Multiple match handling**: When `totalMatches > 1` and `autoSelect=false`, presents numbered list of options and asks user to choose
 - `get_note`: Retrieve note content by ID
 
 ### WRITE Permission Tools
@@ -448,6 +450,29 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
   - Migrated all field-specific examples to use noteProperties syntax
   - Removed deprecated `filters` parameter from interfaces and handlers
 - **Migration impact**: Breaking change - existing `filters` usage must migrate to `noteProperties`
+
+### `resolve_note_id` User Choice Enhancement - Complete Implementation
+- **Major UX improvement**: Added user choice capability when multiple matches are found to prevent automatic selection confusion
+- **Problem solved**: LLMs and users often get confused when `resolve_note_id` auto-selects from multiple matches without user input
+- **New parameter added**: `autoSelect` (boolean, default: false)
+  - `false`: Stops and asks user to choose when `totalMatches > 1`
+  - `true`: Uses original intelligent auto-selection behavior
+- **Enhanced capabilities achieved**:
+  - **User-friendly multiple match handling**: Presents numbered list with note details (title, type, ID, modified date)
+  - **Multiple response options**: Users can choose by number, specify note ID, use auto-select, or refine search
+  - **Backward compatibility**: Existing usage patterns continue to work with new default behavior
+  - **Improved workflow guidance**: Clear instructions on how to proceed when multiple matches found
+- **Implementation details**:
+  - Added `autoSelect` parameter to tool schema in `toolDefinitions.ts`
+  - Updated `ResolveNoteOperation` interface in `searchManager.ts`
+  - Added `requiresUserChoice` response field to handle multiple match scenarios
+  - Enhanced response handling in `searchHandler.ts` with formatted choice presentation
+  - Maintains intelligent prioritization logic for both auto-select and user choice scenarios
+- **Usage examples**:
+  - Default behavior: `resolve_note_id(noteName="project")` → Shows numbered list for user choice
+  - Auto-select: `resolve_note_id(noteName="project", autoSelect=true)` → Uses intelligent auto-selection
+  - Single match: Works identically regardless of `autoSelect` setting
+- **Status**: ✅ **COMPLETED** - Full implementation with TypeScript compilation validation
 
 ### `resolve_note_id` Function Implementation
 - **Purpose**: LLM-friendly note ID resolution from note names/titles

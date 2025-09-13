@@ -154,6 +154,11 @@ export function createReadTools(): any[] {
             default: 3,
             minimum: 1,
             maximum: 10
+          },
+          autoSelect: {
+            type: "boolean",
+            description: "When multiple matches found: true = auto-select best match (current behavior), false = stop and ask user to choose from alternatives (default: false for better user experience)",
+            default: false
           }
         },
         required: ["noteName"],
