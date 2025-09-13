@@ -97,7 +97,7 @@ note.title =* 'Meeting' AND note.content *=* 'agenda'
 ```
 - Use case: Find meeting notes that contain agenda items
 
-### 17) Advanced combination: Full-text + mixed criteria with OR logic
+### 17) Advanced combination: Keyword + mixed criteria with OR logic
 - Composed query
 ```
 setup guide ~(note.dateCreated >= '2024-01-01' OR note.title =* 'Tutorial' OR note.content *=* 'steps')

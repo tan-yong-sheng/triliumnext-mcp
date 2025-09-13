@@ -6,7 +6,7 @@ This document covers searches using attributes (labels and relations) and their 
 
 ## Attribute Search Examples
 
-Trilium supports searching by attributes (labels and relations) using the `#` and `~` syntax. These examples show how to combine full-text search with attribute filtering.
+Trilium supports searching by attributes (labels and relations) using the `#` and `~` syntax. These examples show how to combine keyword search with attribute filtering.
 
 ### Attribute Search Reference
 - `#label`: Search for notes with a specific label
@@ -33,7 +33,7 @@ Trilium supports searching by attributes (labels and relations) using the `#` an
 ```
 - Use case: Find all book-related notes
 
-### 22) Combined Full-text and Attribute Search
+### 22) Combined Keyword and Attribute Search
 - Composed query: Find notes containing "tolkien" with book label
 ```
 tolkien #book
@@ -273,7 +273,7 @@ Relations in TriliumNext allow connecting notes to other notes. The MCP supports
 ```
 - Use case: Find collaborative relationships
 
-### 38) Combined Full-text and Relation Search
+### 38) Combined Keyword and Relation Search
 - Composed query: Find Tolkien content with author relations
 ```
 tolkien ~author

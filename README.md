@@ -97,7 +97,7 @@ The server provides the following tools for note management:
 - `search_notes` - Unified search with comprehensive filtering capabilities
   - **Unified Architecture**: Uses `searchCriteria` parameter for complete boolean logic expressiveness
   - **Cross-type OR logic**: Combine labels, relations, note properties, and hierarchy navigation with OR/AND logic
-  - **Parameters**: `text` (full-text search), `searchCriteria` (unified array structure), `limit`
+  - **Parameters**: `text` (keyword search), `searchCriteria` (unified array structure), `limit`
   - **Smart optimization**: Automatically uses fastSearch when only text parameter is provided
   - **Complete filtering**: Supports labels (#book), relations (~author.title), note properties (title, content, dateCreated), hierarchy navigation (parents.*, children.*, ancestors.*)
   - **Navigation support**: Use hierarchy properties like `parents.noteId` for direct children, `ancestors.noteId` for all descendants

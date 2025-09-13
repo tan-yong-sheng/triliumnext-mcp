@@ -101,12 +101,12 @@ When title-based searches return no results, `resolve_note_id` provides fallback
 ## SearchCriteria Parameter Reference
 
 The unified `searchCriteria` parameter handles all search criteria types:
-- `text` parameter: Full-text indexed search (bare tokens, faster)
+- `text` parameter: Keyword indexed search (bare tokens, faster)
 - `searchCriteria` parameter: Unified array for all search criteria types
   - **Type: "label"**: User-defined labels (#book, #author) - user-defined tags and categories
   - **Type: "relation"**: User-defined relations (~author.title) - connections between notes
   - **Type: "noteProperty"**: System properties (isArchived, type, dateCreated, title, content, hierarchy navigation) - built into every note
-  - **Type: "fulltext"**: Full-text search tokens (alternative to text parameter)
+  - **Type: "fulltext"**: Keyword search tokens (alternative to text parameter)
   - **Supported operators**: exists, =, !=, >=, <=, >, <, contains, starts_with, ends_with, regex
   - **Per-item logic**: Each item can specify `logic: "OR"` to create OR groups with the next item
   - **Default logic**: AND when logic not specified (matches TriliumNext behavior)
@@ -117,7 +117,7 @@ The unified `searchCriteria` parameter handles all search criteria types:
 - **Relations**: `~property` syntax - any user-defined relation name, supports nested (author.title)
 - **Note Properties**: `note.property` syntax - system properties like note.isArchived, note.type, note.title, note.content, note.dateCreated
 - **Hierarchy Navigation**: `note.parents.title`, `note.children.title`, `note.ancestors.title`, `note.parents.parents.title` - navigate note hierarchy relationships
-- **Full-text**: bare token for indexed search
+- **Keyword**: bare token for indexed search
 
 **Critical**: Trilium requires an "expression separator sign" (`~` or `#`) before parentheses when they start an expression - this is automatically handled by the searchQueryBuilder for OR queries
 

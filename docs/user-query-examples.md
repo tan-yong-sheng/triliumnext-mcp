@@ -22,12 +22,12 @@ This document provides simple examples of natural language queries you can try w
 - "Search for notes containing 'deadline' in the content"
 - "Find notes whose title starts with 'Meeting'"
 - "Show me notes with titles ending in 'Notes'"
+- "Find notes with 'tutorial' in title and 'steps' in content"
 
 ### Advanced Combined Searches
-- "Find notes with 'tutorial' in title and 'steps' in content"
 - "Search for 'n8n' notes created since 2024"
-- "Find recent notes about 'docker' or 'kubernetes'"
 - "Show me text notes that aren't archived"
+- "Find recent notes about 'docker' or 'kubernetes'"
 
 ## Note Navigation
 

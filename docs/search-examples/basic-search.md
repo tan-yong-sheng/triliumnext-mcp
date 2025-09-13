@@ -9,12 +9,12 @@ This guide demonstrates how to use the unified searchCriteria structure for comp
 ## Function Contract: search_notes
 
 Input parameters:
-- text: string (full-text search token, uses Trilium's indexed search)
+- text: string (keyword search token, uses Trilium's indexed search)
 - searchCriteria: array (unified search criteria for all types: labels, relations, note properties, content, hierarchy navigation)
 - limit: number (max results to return, e.g., 10)
 
 Query composition:
-- text: `<token>` (bare token for full-text search)
+- text: `<token>` (bare token for keyword search)
 - searchCriteria: Individual conditions joined with AND/OR based on logic parameter (default: AND)
 - limit: `limit <number>` (appended to query)
 - Final query: join all groups with space separation, then append limit
@@ -42,7 +42,7 @@ Query composition:
 - `"label"`: User-defined labels (#book, #author)
 - `"relation"`: User-defined relations (~author, ~template)
 - `"noteProperty"`: System properties (isArchived, type, dateCreated, title, content, hierarchy navigation)
-- `"fulltext"`: Full-text search tokens (alternative to text parameter)
+- `"fulltext"`: Keyword search tokens (alternative to text parameter)
 
 ---
 
@@ -94,7 +94,7 @@ Query composition:
 
 ---
 
-### 3) Mixed Full-text + Attribute + Note Property OR
+### 3) Mixed Keyword + Attribute + Note Property OR
 
 **TriliumNext pattern:**
 ```
@@ -195,7 +195,7 @@ towers (#book OR #article) AND note.dateCreated >= '2024-01-01' OR note.isArchiv
 
 ---
 
-### 8) Alternative Full-text Representation
+### 8) Alternative Keyword Representation
 
 Instead of separate `text` parameter, can use searchCriteria:
 

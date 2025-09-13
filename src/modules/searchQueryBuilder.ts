@@ -34,7 +34,7 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
     queryParts.push(...searchExpressions);
   }
 
-  // Add full-text search token
+  // Add keyword search token
   if (params.text) {
     queryParts.unshift(params.text); // Add at beginning for better query structure
   }
