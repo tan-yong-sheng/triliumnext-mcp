@@ -9,8 +9,7 @@ export interface TrimmedNote {
   isProtected: boolean;
   dateCreated: string;
   dateModified: string;
-  utcDateCreated: string;
-  utcDateModified: string;
+  attributes: any[];
 }
 
 /**
@@ -25,8 +24,7 @@ export function trimNoteResults(notes: any[]): TrimmedNote[] {
     isProtected: note.isProtected,
     dateCreated: note.dateCreated,
     dateModified: note.dateModified,
-    utcDateCreated: note.utcDateCreated,
-    utcDateModified: note.utcDateModified
+    attributes: note.attributes || []
   }));
 }
 
