@@ -156,7 +156,7 @@ The server provides the following tools for note management:
 
 - [Content Modification Guide](docs/content-modification-guide.md) - Safe content editing with revision control
 - [User Query Examples](docs/user-query-examples.md) - Natural language query examples
-- [Search Query Examples](docs/search-query-examples.md) - Advanced search syntax and filters
+- [Search Query Examples](docs/search-examples/) - Advanced search syntax and filters
 
 ## Development
 
@@ -181,7 +181,7 @@ npm run watch
 Contributions are welcome! If you are looking to improve the server, especially the search functionality, please familiarize yourself with the following resources:
 
 - **Trilium Search DSL**: The [official documentation](https://triliumnext.github.io/Docs/Wiki/search.html) provides the foundation for all search queries.
-- **Internal Search Implementation**: Our [Search Query Examples](docs/search-query-examples.md) document details how `search_notes` parameters are translated into Trilium search strings. This is crucial for understanding and extending the current implementation.
+- **Internal Search Implementation**: Our [Search Query Examples](docs/search-examples/) document details how `search_notes` parameters are translated into Trilium search strings. This is crucial for understanding and extending the current implementation.
 
 Please feel free to open an issue or submit a pull request.
 
