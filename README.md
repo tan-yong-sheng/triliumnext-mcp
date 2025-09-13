@@ -94,28 +94,43 @@ The server provides the following tools for note management:
 
 ### Search Tools
 
-- `search_notes` - Unified search with advanced filtering capabilities
-  - Supports: full-text search, date ranges, field-specific searches, attribute searches, note properties, hierarchy navigation
-  - Parameters: text, attributes, noteProperties, hierarchyType, parentNoteId, limit  
-  - Use hierarchyType='descendants' with parentNoteId='root' for listing all notes (like Unix 'find')
-  - Use hierarchyType='children' for browsing direct children (like Unix 'ls')
-  - Automatically optimizes with fast search when only text search is used
+- `search_notes` - Unified search with comprehensive filtering capabilities
+  - **Unified Architecture**: Uses `searchCriteria` parameter for complete boolean logic expressiveness
+  - **Cross-type OR logic**: Combine labels, relations, note properties, and hierarchy navigation with OR/AND logic
+  - **Parameters**: `text` (full-text search), `searchCriteria` (unified array structure), `limit`
+  - **Smart optimization**: Automatically uses fastSearch when only text parameter is provided
+  - **Complete filtering**: Supports labels (#book), relations (~author.title), note properties (title, content, dateCreated), hierarchy navigation
 
-- `manage_attributes` - Comprehensive attribute management system for CRUD operations on both labels and relations
-  - **Operations**: list (discover attributes), create (add to note), update (modify), delete (remove), get (details)
-  - **Types**: Supports both labels (#tags) and relations (~connections) with `attributeType` parameter
-  - **Discovery**: Find all unique attribute names across notes with usage counts and values, filtered by type
-  - **Management**: Create, update, and delete labels and relations on notes with full ETAPI integration
-  - **Features**: Support for attribute values, positioning, inheritance, validation, and type-specific constraints
+- `list_notes` - Simple hierarchy navigation wrapper around search_notes
+  - **Dedicated navigation**: Optimized for browsing folder structures and note hierarchies
+  - **Parameters**: `parentNoteId`, `hierarchyType`, `limit`
+  - **Usage patterns**:
+    - `hierarchyType='children'` for direct children (like Unix `ls`)
+    - `hierarchyType='descendants'` for all descendants recursively (like Unix `find`)
+    - `parentNoteId='root'` for top-level notes
+  - **Clean API**: Simple parameters for common navigation tasks without complex search criteria
+
+- `resolve_note_id` - Find note ID by name/title for LLM-friendly workflows
+  - **Smart fuzzy search**: Handles typos and partial matches while prioritizing exact matches
+  - **Intelligent prioritization**: Exact matches → folder-type notes → most recent
+  - **Configurable results**: `maxResults` parameter (default: 3, range: 1-10)
+  - **JSON response format**: Returns structured data with selectedNote, totalMatches, and nextSteps guidance
+  - **Essential workflow**: resolve name → get ID → use with other tools
 
 ### Note Discovery Tools
 
-- `search_notes` - Unified search and discovery tool with hierarchy navigation
-  - Use hierarchyType='children' for direct children only (like Unix `ls` command)
-  - Use hierarchyType='descendants' for ALL descendant notes recursively (like Unix `find` command)  
-  - Supports all advanced search parameters for powerful filtering
-  - For complete note inventory: `search_notes` with hierarchyType='descendants' and parentNoteId='root'
-  - For browsing note hierarchy: `search_notes` with hierarchyType='children'
+- `list_notes` - Dedicated hierarchy navigation for browsing note structures
+  - **Simple navigation**: Use for folder browsing and hierarchy exploration
+  - **Direct children**: `hierarchyType='children'` (like Unix `ls` command)
+  - **All descendants**: `hierarchyType='descendants'` (like Unix `find` command)
+  - **Complete inventory**: Use with `parentNoteId='root'` and `hierarchyType='descendants'`
+  - **Clean interface**: Simple parameters optimized for common navigation tasks
+
+- `search_notes` - Advanced search with unified filtering capabilities
+  - **Complex queries**: Use for sophisticated filtering with multiple criteria
+  - **Boolean logic**: Cross-type OR/AND operations between all search criteria types
+  - **Unified structure**: Single `searchCriteria` parameter handles labels, relations, properties, and hierarchy
+  - **Performance optimized**: Automatic fastSearch when appropriate
 
 ### Note Management Tools
 
@@ -130,17 +145,18 @@ The server provides the following tools for note management:
 ## Example Queries
 
 ### Search & Discovery
-- "Find my most recent 10 notes about 'n8n' since the beginning of 2020"
-- "Show me notes I've edited in the last 7 days"
-- "Find notes with 'machine learning' in the title created this year"
-- "Search for 'kubernetes' in notes created between January and June"
+- "Find my most recent 10 notes about 'n8n' since the beginning of 2020" → Uses `search_notes` with unified searchCriteria
+- "Show me notes I've edited in the last 7 days" → Uses `search_notes` with date properties
+- "Find notes with 'machine learning' in the title created this year" → Uses `search_notes` with cross-type criteria
+- "Search for 'kubernetes' in notes created between January and June" → Uses `search_notes` with boolean logic
 
 ### Navigation & Browsing
-- "List all notes including subfolders" → Uses `search_notes` with hierarchyType='descendants' and parentNoteId='root'
-- "Show me everything I have" → Uses `search_notes` with hierarchyType='descendants' for complete inventory
-- "List all notes" → Uses `search_notes` with hierarchyType='children' and specific parentNoteId
-- "List all notes under 'n8n Template' folder" → Uses `search_notes` with hierarchyType='children' and specific parentNoteId
-- "List all notes under 'n8n Template' folder, including subfolders" → Uses `search_notes` with hierarchyType='descendants' and specific parentNoteId
+- "List all notes including subfolders" → Uses `list_notes` with `hierarchyType='descendants'` and `parentNoteId='root'`
+- "Show me everything I have" → Uses `list_notes` with `hierarchyType='descendants'` for complete inventory
+- "List all notes" → Uses `list_notes` with `hierarchyType='children'` and specific `parentNoteId`
+- "List all notes under 'n8n Template' folder" → Uses `list_notes` with `hierarchyType='children'` and specific `parentNoteId`
+- "List all notes under 'n8n Template' folder, including subfolders" → Uses `list_notes` with `hierarchyType='descendants'` and specific `parentNoteId`
+- "Find notes by author Tolkien OR created this week" → Uses `search_notes` with unified `searchCriteria` for cross-type OR logic
 
 
 ### Content Management

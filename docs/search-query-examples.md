@@ -10,15 +10,19 @@ This guide shows how to call MCP `search_notes` using a unified single-array str
 
 Input parameters:
 - text: string (full-text search token, uses Trilium's indexed search)
-- searchCriteria: array (unified search criteria for all types: labels, relations, note properties, content)
-- hierarchyType: string ('children' or 'descendants' for hierarchy searches)
-- parentNoteId: string (parent note for hierarchy searches)
+- searchCriteria: array (unified search criteria for all types: labels, relations, note properties, content, hierarchy navigation)
 - limit: number (max results to return, e.g., 10)
+
+## Function Contract: list_notes (Hierarchy Navigation)
+
+Input parameters:
+- parentNoteId: string (ID of parent note, use 'root' for top-level)
+- hierarchyType: string ('children' for direct children, 'descendants' for all descendants)
+- limit: number (optional, max results to return)
 
 Query composition:
 - text: `<token>` (bare token for full-text search)
 - searchCriteria: Individual conditions joined with AND/OR based on logic parameter (default: AND)
-- hierarchyType: `note.parents.noteId` (children) or `note.ancestors.noteId` (descendants)
 - limit: `limit <number>` (appended to query)
 - Final query: join all groups with space separation, then append limit
 
@@ -45,7 +49,7 @@ Query composition:
 **Type Reference:**
 - `"label"`: User-defined labels (#book, #author)
 - `"relation"`: User-defined relations (~author, ~template)
-- `"noteProperty"`: System properties (isArchived, type, dateCreated, title, content)
+- `"noteProperty"`: System properties (isArchived, type, dateCreated, title, content, hierarchy navigation)
 - `"fulltext"`: Full-text search tokens (alternative to text parameter)
 
 ---
@@ -215,18 +219,17 @@ Instead of separate `text` parameter, can use searchCriteria:
 
 ---
 
-### 9) Hierarchy Search (Unchanged)
+### 9) Hierarchy Navigation with list_notes
 
-**One-Array Structure:**
+**list_notes Structure:**
 ```json
 {
-  "hierarchyType": "descendants",
   "parentNoteId": "root",
-  "searchCriteria": [
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "text"}
-  ]
+  "hierarchyType": "descendants",
+  "limit": 50
 }
 ```
+- Use case: Simple hierarchy navigation without complex search criteria
 
 ---
 
@@ -804,41 +807,117 @@ note.content %= '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}'
 
 ---
 
-## Hierarchy Search Examples
+## Hierarchy Navigation Examples (Unified searchCriteria Structure)
 
-The unified `search_notes` function also supports hierarchy searches when combined with `hierarchyType` and `parentNoteId` parameters.
+The unified `search_notes` function supports hierarchy navigation through the `searchCriteria` parameter using hierarchy-specific note properties.
 
-### 31) List direct children with additional filters
-- Params
+### 31) Find notes with a specific parent name
+- Unified Structure
 ```json
 {
-  "hierarchyType": "children",
-  "parentNoteId": "projectFolderId",
-  "text": "docker"
-}
-```
-- Composed query
-```
-docker note.parents.noteId = 'projectFolderId'
-```
-- Use case: Find children containing "docker" in a specific folder
-
-### 32) List descendants with date filtering (using searchCriteria)
-- Params
-```json
-{
-  "hierarchyType": "descendants",
-  "parentNoteId": "workspaceId",
   "searchCriteria": [
-    {"property": "dateModified", "type": "noteProperty", "op": ">=", "value": "MONTH-1"}
+    {"property": "parents.title", "type": "noteProperty", "op": "=", "value": "Task Board"}
   ]
 }
 ```
 - Composed query
 ```
-note.dateModified >= 'MONTH-1' AND note.ancestors.noteId = 'workspaceId'
+note.parents.title = 'Task Board'
 ```
-- Use case: Find all descendants modified recently in a workspace
+- Use case: Find all notes that have a parent named "Task Board"
+
+### 32) Find notes with a specific child name
+- Unified Structure
+```json
+{
+  "searchCriteria": [
+    {"property": "children.title", "type": "noteProperty", "op": "=", "value": "Task Board"}
+  ]
+}
+```
+- Composed query
+```
+note.children.title = 'Task Board'
+```
+- Use case: Find all notes that have a child named "Task Board"
+
+### 33) Find notes with a specific ancestor name
+- Unified Structure
+```json
+{
+  "searchCriteria": [
+    {"property": "ancestors.title", "type": "noteProperty", "op": "=", "value": "Books"}
+  ]
+}
+```
+- Composed query
+```
+note.ancestors.title = 'Books'
+```
+- Use case: Find all notes that have an ancestor named "Books" (recursive search up the hierarchy)
+
+### 34) Find notes with a specific grandparent name
+- Unified Structure
+```json
+{
+  "searchCriteria": [
+    {"property": "parents.parents.title", "type": "noteProperty", "op": "=", "value": "Project Root"}
+  ]
+}
+```
+- Composed query
+```
+note.parents.parents.title = 'Project Root'
+```
+- Use case: Find all notes whose grandparent is named "Project Root"
+
+### 35) Combined hierarchy navigation with content search
+- Unified Structure
+```json
+{
+  "text": "docker",
+  "searchCriteria": [
+    {"property": "parents.title", "type": "noteProperty", "op": "=", "value": "Development"}
+  ]
+}
+```
+- Composed query
+```
+docker note.parents.title = 'Development'
+```
+- Use case: Find notes containing "docker" that have a parent named "Development"
+
+### 36) Multiple hierarchy conditions with OR logic
+- Unified Structure
+```json
+{
+  "searchCriteria": [
+    {"property": "parents.title", "type": "noteProperty", "op": "=", "value": "Active Projects", "logic": "OR"},
+    {"property": "ancestors.title", "type": "noteProperty", "op": "=", "value": "Archive"}
+  ]
+}
+```
+- Composed query
+```
+~(note.parents.title = 'Active Projects' OR note.ancestors.title = 'Archive')
+```
+- Use case: Find notes that either have "Active Projects" as parent OR "Archive" as ancestor
+
+### 37) Hierarchy navigation with date filtering
+- Unified Structure
+```json
+{
+  "searchCriteria": [
+    {"property": "ancestors.title", "type": "noteProperty", "op": "=", "value": "Workspace", "logic": "AND"},
+    {"property": "dateModified", "type": "noteProperty", "op": ">=", "value": "2024-12-01"}
+  ]
+}
+```
+- Composed query
+```
+note.ancestors.title = 'Workspace' note.dateModified >= '2024-12-01'
+```
+- Use case: Find all notes under "Workspace" ancestor that were modified recently
 
 ---
 
@@ -849,8 +928,11 @@ Trilium supports searching by built-in note properties using the `searchCriteria
 ### Note Properties Reference
 - **Boolean properties**: `isArchived`, `isProtected` - use `"true"` or `"false"` values
 - **String properties**: `type`, `title` - use string values like `"text"`, `"code"`, `"book"`
+- **Content properties**: `content` - searchable text content within notes
+- **Date properties**: `dateCreated`, `dateModified` - creation and modification timestamps
 - **Numeric properties**: `labelCount`, `ownedLabelCount`, `attributeCount`, `relationCount`, `parentCount`, `childrenCount`, `contentSize`, `revisionCount` - use numeric values without quotes
-- **Operators**: `=`, `!=`, `>`, `<`, `>=`, `<=`
+- **Hierarchy properties**: `parents.title`, `children.title`, `ancestors.title`, `parents.parents.title` - navigate note hierarchy relationships
+- **Operators**: `=`, `!=`, `>`, `<`, `>=`, `<=`, `contains`, `starts_with`, `ends_with`
 
 ### 34) Find archived notes
 - Composed query
@@ -1337,7 +1419,7 @@ The unified `searchCriteria` parameter handles all search criteria types:
 - `searchCriteria` parameter: Unified array for all search criteria types
   - **Type: "label"**: User-defined labels (#book, #author) - user-defined tags and categories
   - **Type: "relation"**: User-defined relations (~author.title) - connections between notes
-  - **Type: "noteProperty"**: System properties (isArchived, type, dateCreated, title, content) - built into every note
+  - **Type: "noteProperty"**: System properties (isArchived, type, dateCreated, title, content, hierarchy navigation) - built into every note
   - **Type: "fulltext"**: Full-text search tokens (alternative to text parameter)
   - **Supported operators**: exists, =, !=, >=, <=, >, <, contains, starts_with, ends_with, regex
   - **Per-item logic**: Each item can specify `logic: "OR"` to create OR groups with the next item
@@ -1348,6 +1430,7 @@ The unified `searchCriteria` parameter handles all search criteria types:
 - **Labels**: `#property` syntax - any user-defined label name
 - **Relations**: `~property` syntax - any user-defined relation name, supports nested (author.title)
 - **Note Properties**: `note.property` syntax - system properties like note.isArchived, note.type, note.title, note.content, note.dateCreated
+- **Hierarchy Navigation**: `note.parents.title`, `note.children.title`, `note.ancestors.title`, `note.parents.parents.title` - navigate note hierarchy relationships
 - **Full-text**: bare token for indexed search
 
 **Critical**: Trilium requires an "expression separator sign" (`~` or `#`) before parentheses when they start an expression - this is automatically handled by the searchQueryBuilder for OR queries

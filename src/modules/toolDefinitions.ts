@@ -160,8 +160,33 @@ export function createReadTools(): any[] {
       },
     },
     {
+      name: "list_notes",
+      description: "List notes by hierarchy navigation - direct children or all descendants. Ideal for browsing folder structures and navigation tasks. Use 'children' to list direct children (like Unix 'ls'), or 'descendants' to list all descendants recursively (like Unix 'find'). For complex searches with multiple criteria, use search_notes instead.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          parentNoteId: {
+            type: "string",
+            description: "ID of the parent note to list children/descendants from. Use 'root' for top-level notes.",
+            default: "root"
+          },
+          hierarchyType: {
+            type: "string",
+            enum: ["children", "descendants"],
+            description: "Type of hierarchy listing: 'children' for direct children only, 'descendants' for all descendants recursively",
+            default: "children"
+          },
+          limit: {
+            type: "number",
+            description: "Maximum number of results to return",
+          }
+        },
+        required: ["parentNoteId", "hierarchyType"]
+      }
+    },
+    {
       name: "search_notes",
-      description: "Unified search with comprehensive filtering capabilities. Supports full-text search, attributes, note properties, date ranges, and hierarchy navigation. For 'list all notes' requests: use hierarchyType='descendants' with parentNoteId='root' (like Unix 'find'). For browsing specific folders: use hierarchyType='children' (like Unix 'ls').",
+      description: "Unified search with comprehensive filtering capabilities including full-text search, date ranges, field-specific searches, attribute searches, and note properties through unified searchCriteria structure. For simple hierarchy navigation, use list_notes instead.",
       inputSchema: {
         type: "object",
         properties: searchProperties,
@@ -181,18 +206,18 @@ function createSearchProperties() {
     },
     searchCriteria: {
       type: "array",
-      description: "Unified search criteria array that supports all search types with complete boolean logic. This single parameter replaces the previous attributes+noteProperties separation and enables cross-type OR operations (e.g., 'relation OR dateCreated' searches). Supports labels, relations, note properties, and fulltext searches with per-item logic control. Use OR logic between items for 'either/or' searches across ANY criteria types.",
+      description: "Unified search criteria array that supports all search types with complete boolean logic. Enables cross-type OR operations (e.g., 'relation OR dateCreated' searches). Supports labels, relations, note properties (including hierarchy navigation: parents.title, children.title, ancestors.title), and fulltext searches with per-item logic control. Use OR logic between items for 'either/or' searches across ANY criteria types.",
       items: {
         type: "object",
         properties: {
           property: {
             type: "string",
-            description: "Property name. For labels: tag name (e.g., 'book', 'author'). For relations: relation name with optional property path (e.g., 'author', 'author.title'). For note properties: system property name (e.g., 'isArchived', 'type', 'title', 'content', 'dateCreated'). For fulltext: use 'fulltext'."
+            description: "Property name. For labels: tag name (e.g., 'book', 'author'). For relations: relation name with optional property path (e.g., 'author', 'author.title'). For note properties: system property name (e.g., 'isArchived', 'type', 'title', 'content', 'dateCreated') OR hierarchy properties (e.g., 'parents.title', 'children.title', 'ancestors.title', 'parents.parents.title'). For fulltext: use 'fulltext'."
           },
           type: {
             type: "string",
             enum: ["label", "relation", "noteProperty", "fulltext"],
-            description: "Type of search criteria: 'label' for #tags, 'relation' for ~relations, 'noteProperty' for note.* system properties, 'fulltext' for full-text search tokens"
+            description: "Type of search criteria: 'label' for #tags, 'relation' for ~relations, 'noteProperty' for note.* system properties and hierarchy navigation, 'fulltext' for full-text search tokens"
           },
           op: {
             type: "string",
@@ -202,12 +227,12 @@ function createSearchProperties() {
           },
           value: {
             type: "string",
-            description: "Value to compare against (optional for exists operator). For noteProperty dates (dateCreated, dateModified): MUST use ISO date format - 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:mm:ss.sssZ'. For fulltext type: the search token."
+            description: "Value to compare against (optional for exists operator). For noteProperty dates (dateCreated, dateModified): MUST use ISO date format - 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:mm:ss.sssZ'. For hierarchy navigation: parent/ancestor note title or 'root' for top-level. For fulltext type: the search token."
           },
           logic: {
             type: "string",
             enum: ["AND", "OR"],
-            description: "Logic operator to combine with NEXT search criteria item. Enables cross-type boolean expressions like 'relation OR noteProperty'. Default AND matches TriliumNext behavior. System automatically ignores logic on last item.",
+            description: "Logic operator to combine with NEXT search criteria item. Enables cross-type boolean expressions like 'relation OR noteProperty' or 'hierarchy OR dateCreated'. Default AND matches TriliumNext behavior. System automatically ignores logic on last item.",
             default: "AND"
           }
         },
@@ -217,16 +242,6 @@ function createSearchProperties() {
     limit: {
       type: "number",
       description: "Maximum number of results to return",
-    },
-    hierarchyType: {
-      type: "string",
-      enum: ["children", "descendants"],
-      description: "Optional hierarchy search type: 'descendants' (can list all notes, including subfolders); 'children' (can list direct children only)"
-    },
-    parentNoteId: {
-      type: "string", 
-      description: "Parent note ID for hierarchy searches. Use 'root' for top-level. Only used when hierarchyType is specified.",
-      default: "root"
     },
   };
 }
