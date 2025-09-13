@@ -13,7 +13,7 @@ Trilium supports regex searches using the `%=` operator. This is now supported i
 ```
 #publicationYear %= '19[0-9]{2}'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -27,7 +27,7 @@ Trilium supports regex searches using the `%=` operator. This is now supported i
 ```
 note.title %= '^Project.*2024$'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -41,7 +41,7 @@ note.title %= '^Project.*2024$'
 ```
 note.content %= '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -86,7 +86,7 @@ TriliumNext supports different note types and MIME types that can be searched us
 ```
 note.type = 'text'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -101,7 +101,7 @@ note.type = 'text'
 ```
 note.type = 'code'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -116,7 +116,7 @@ note.type = 'code'
 ```
 note.type = 'mermaid'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -131,7 +131,7 @@ note.type = 'mermaid'
 ```
 note.type = 'canvas'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -146,7 +146,7 @@ note.type = 'canvas'
 ```
 note.type = 'book'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -161,7 +161,7 @@ note.type = 'book'
 ```
 note.type = 'code' AND note.mime = 'text/javascript'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -177,7 +177,7 @@ note.type = 'code' AND note.mime = 'text/javascript'
 ```
 note.type = 'code' AND note.mime = 'text/x-python'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -193,7 +193,7 @@ note.type = 'code' AND note.mime = 'text/x-python'
 ```
 note.type = 'code' AND note.mime = 'text/x-typescript'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -209,7 +209,7 @@ note.type = 'code' AND note.mime = 'text/x-typescript'
 ```
 ~(note.mime = 'text/javascript' OR note.mime = 'text/x-python' OR note.mime = 'text/x-typescript')
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -226,7 +226,7 @@ note.type = 'code' AND note.mime = 'text/x-typescript'
 ```
 ~(note.type = 'canvas' OR note.type = 'mermaid')
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -242,7 +242,7 @@ note.type = 'code' AND note.mime = 'text/x-typescript'
 ```
 kubernetes note.type = 'code'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "text": "kubernetes",
@@ -258,7 +258,7 @@ kubernetes note.type = 'code'
 ```
 ~(note.mime = 'text/html' OR note.mime = 'text/css' OR note.mime = 'text/javascript')
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -275,7 +275,7 @@ kubernetes note.type = 'code'
 ```
 docker ~(note.type = 'text' OR note.type = 'code') AND note.dateCreated >= '2024-01-01'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "text": "docker",
@@ -293,7 +293,7 @@ docker ~(note.type = 'text' OR note.type = 'code') AND note.dateCreated >= '2024
 ```
 note.type != 'text'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -308,7 +308,7 @@ note.type != 'text'
 ```
 ~(note.type = 'image' OR note.type = 'file')
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [

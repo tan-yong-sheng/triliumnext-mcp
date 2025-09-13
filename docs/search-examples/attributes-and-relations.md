@@ -23,7 +23,7 @@ Trilium supports searching by attributes (labels and relations) using the `#` an
 ```
 #book
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -38,7 +38,7 @@ Trilium supports searching by attributes (labels and relations) using the `#` an
 ```
 tolkien #book
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "text": "tolkien",
@@ -48,12 +48,12 @@ tolkien #book
 }
 ```
 
-### 23) **ENABLED**: Cross-Type OR Logic - Book OR Author Label
+### 23) Cross-Type OR Logic - Book OR Author Label
 - Composed query: Find notes containing "towers" with book OR author label
 ```
 towers ~(#book OR #author)
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "text": "towers",
@@ -70,7 +70,7 @@ towers ~(#book OR #author)
 ```
 #genre *=* fan
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -84,7 +84,7 @@ towers ~(#book OR #author)
 ```
 #book #publicationYear >= 1950 #publicationYear < 1960
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -100,7 +100,7 @@ towers ~(#book OR #author)
 ```
 #author=Tolkien limit 10
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -116,7 +116,7 @@ towers ~(#book OR #author)
 ```
 ~(#genre = 'fantasy' OR #genre = 'science fiction')
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -127,12 +127,12 @@ towers ~(#book OR #author)
 ```
 - Use case: Find notes in either of two specific genres
 
-### 28) **ENABLED**: Mixed Label and Note Properties OR Logic
+### 28) Mixed Label and Note Properties OR Logic
 - Composed query: Find archived notes OR text notes
 ```
 ~(note.isArchived = true OR note.type = 'text')
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -143,12 +143,12 @@ towers ~(#book OR #author)
 ```
 - Use case: Find notes that are either archived or text type
 
-### 29) **ENABLED**: Mixed Attributes AND Note Properties Cross-Type Query
+### 29) Mixed Attributes AND Note Properties Cross-Type Query
 - Composed query: Find book notes with high label count
 ```
 towers #book AND note.labelCount > 3
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "text": "towers",
@@ -171,7 +171,7 @@ Relations in TriliumNext allow connecting notes to other notes. The MCP supports
 ```
 ~author
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -186,7 +186,7 @@ Relations in TriliumNext allow connecting notes to other notes. The MCP supports
 ```
 ~author.title *=* 'Tolkien'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -201,7 +201,7 @@ Relations in TriliumNext allow connecting notes to other notes. The MCP supports
 ```
 ~author = 'authorNoteId123'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -211,12 +211,12 @@ Relations in TriliumNext allow connecting notes to other notes. The MCP supports
 ```
 - Use case: Find all works by a specific author note
 
-### 34) **ENABLED**: Mixed Label and Relation Search
+### 34) Mixed Label and Relation Search
 - Composed query: Find books by Tolkien
 ```
 #book ~author.title *=* 'Tolkien'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -227,12 +227,12 @@ Relations in TriliumNext allow connecting notes to other notes. The MCP supports
 ```
 - Use case: Find book notes authored by Tolkien
 
-### 35) **ENABLED**: Relation OR Logic - Find notes with multiple possible relations
+### 35) Relation OR Logic - Find notes with multiple possible relations
 - Composed query: Find notes with author OR editor relations
 ```
 ~(~author OR ~editor)
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -248,7 +248,7 @@ Relations in TriliumNext allow connecting notes to other notes. The MCP supports
 ```
 ~author.relations.publisher.title = 'Penguin Books'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -263,7 +263,7 @@ Relations in TriliumNext allow connecting notes to other notes. The MCP supports
 ```
 ~collaborator =* 'co-'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -278,7 +278,7 @@ Relations in TriliumNext allow connecting notes to other notes. The MCP supports
 ```
 tolkien ~author
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "text": "tolkien",
@@ -289,12 +289,12 @@ tolkien ~author
 ```
 - Use case: Find Tolkien-related content that has author metadata
 
-### 39) **ENABLED**: Multiple Search Types with Default AND Logic
+### 39) Multiple Search Types with Default AND Logic
 - Composed query: Find books published in 1954 (demonstrates default AND behavior)
 ```
 #book #publicationYear = 1954
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -306,12 +306,12 @@ tolkien ~author
 - Use case: Find notes that have BOTH the book label AND publicationYear set to 1954
 - **Note**: When logic is not specified, default is AND (TriliumNext default behavior)
 
-### 40) **ENABLED**: Multiple Note Properties with Default AND Logic
+### 40) Multiple Note Properties with Default AND Logic
 - Composed query: Find text notes that are not archived and have content
 ```
 note.type = 'text' AND note.isArchived = false AND note.contentSize > 0
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [

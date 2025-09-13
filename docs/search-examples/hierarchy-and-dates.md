@@ -118,7 +118,7 @@ note.ancestors.title = 'Workspace' note.dateModified >= '2024-12-01'
 
 ---
 
-## Enhanced Date Search Examples (Using searchCriteria with ISO Format)
+## Date Search Examples (Using searchCriteria with ISO Format)
 
 ### MCP Date Properties Reference
 - **Date properties**: `dateCreated`, `dateModified` - note creation and modification timestamps
@@ -131,7 +131,7 @@ note.ancestors.title = 'Workspace' note.dateModified >= '2024-12-01'
 ```
 note.dateCreated >= '2024-12-13'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -146,7 +146,7 @@ note.dateCreated >= '2024-12-13'
 ```
 note.dateCreated >= '2024-01-01' AND note.dateCreated < '2024-12-31'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -162,7 +162,7 @@ note.dateCreated >= '2024-01-01' AND note.dateCreated < '2024-12-31'
 ```
 note.dateModified >= '2024-11-20'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -177,7 +177,7 @@ note.dateModified >= '2024-11-20'
 ```
 ~(note.dateCreated >= '2024-12-13' OR note.dateModified >= '2024-12-13')
 ```
-- One-Array Structure with per-item OR logic
+- Search Structure with per-item OR logic
 ```json
 {
   "searchCriteria": [
@@ -193,7 +193,7 @@ note.dateModified >= '2024-11-20'
 ```
 note.type = 'text' AND note.dateCreated >= '2024-11-20' AND note.labelCount > 0
 ```
-- One-Array Structure combining dates with other properties
+- Search Structure combining dates with other properties
 ```json
 {
   "searchCriteria": [
@@ -210,7 +210,7 @@ note.type = 'text' AND note.dateCreated >= '2024-11-20' AND note.labelCount > 0
 ```
 kubernetes ~(note.dateCreated >= 'YEAR-1' OR note.dateModified >= 'MONTH-3') AND note.type = 'text'
 ```
-- One-Array Structure with mixed search criteria
+- Search Structure with mixed search criteria
 ```json
 {
   "text": "kubernetes",
@@ -228,7 +228,7 @@ kubernetes ~(note.dateCreated >= 'YEAR-1' OR note.dateModified >= 'MONTH-3') AND
 ```
 note.dateCreated >= '2024-01-01' AND note.dateCreated < '2024-12-31' AND note.dateModified != '2024-06-15'
 ```
-- One-Array Structure with date ranges and exclusions
+- Search Structure with date ranges and exclusions
 ```json
 {
   "searchCriteria": [

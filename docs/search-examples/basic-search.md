@@ -2,11 +2,11 @@
 
 This guide shows how to call MCP `search_notes` using a unified single-array structure. The function constructs the Trilium search string internally from the provided structured parameters.
 
-**MAJOR ARCHITECTURAL CHANGE**: Unified single-array structure replaces the previous two-array separation (attributes + noteProperties). This enables complete boolean logic expressions across all search criteria types.
+This guide demonstrates how to use the unified searchCriteria structure for complete boolean logic expressions across all search criteria types.
 
 ---
 
-## Function Contract: search_notes (One-Array Structure)
+## Function Contract: search_notes
 
 Input parameters:
 - text: string (full-text search token, uses Trilium's indexed search)
@@ -19,9 +19,8 @@ Query composition:
 - limit: `limit <number>` (appended to query)
 - Final query: join all groups with space separation, then append limit
 
-**Key Benefits of Unified Structure:**
+**Key Benefits:**
 - **Complete boolean expressiveness**: Can represent any TriliumNext query including cross-type OR logic
-- **No artificial barriers**: Between search criteria types (attributes vs noteProperties vs hierarchy)
 - **Unified logic**: Single consistent logic system across all criteria
 - **LLM-friendly**: Single array structure, consistent field names
 
@@ -49,7 +48,7 @@ Query composition:
 
 ## Basic Examples
 
-### 1) **ENABLED**: Cross-Type OR Logic (Previously Impossible)
+### 1) Cross-Type OR Logic
 
 **Use Case**: "search notes created this week with relation to template titled 'Grid View'"
 
@@ -58,7 +57,7 @@ Query composition:
 ~template.title = 'Grid View' OR note.dateCreated >= '2024-12-13'
 ```
 
-**One-Array Structure:**
+**Search Structure:**
 ```json
 {
   "searchCriteria": [
@@ -75,14 +74,14 @@ Query composition:
 
 ---
 
-### 2) **ENABLED**: Complex TriliumNext Boolean Expression
+### 2) Complex TriliumNext Boolean Expression
 
 **TriliumNext native query:**
 ```
 ~author.title *= Tolkien OR (#publicationDate >= 1954 AND #publicationDate <= 1960)
 ```
 
-**One-Array Structure:**
+**Search Structure:**
 ```json
 {
   "searchCriteria": [
@@ -95,14 +94,14 @@ Query composition:
 
 ---
 
-### 3) **ENABLED**: Mixed Full-text + Attribute + Note Property OR
+### 3) Mixed Full-text + Attribute + Note Property OR
 
 **TriliumNext pattern:**
 ```
 note.content *=* rings OR note.content *=* tolkien OR #book OR ~author
 ```
 
-**One-Array Structure:**
+**Search Structure:**
 ```json
 {
   "text": "fantasy",
@@ -119,7 +118,7 @@ note.content *=* rings OR note.content *=* tolkien OR #book OR ~author
 
 ### 4) Simple Date Search (Unchanged Functionality)
 
-**One-Array Structure:**
+**Search Structure:**
 ```json
 {
   "searchCriteria": [
@@ -137,7 +136,7 @@ note.dateCreated >= '2024-12-13'
 
 ### 5) Label + Relation AND Logic (Unchanged Functionality)
 
-**One-Array Structure:**
+**Search Structure:**
 ```json
 {
   "searchCriteria": [
@@ -154,14 +153,14 @@ note.dateCreated >= '2024-12-13'
 
 ---
 
-### 6) **ENABLED**: Complex Multi-Type Search
+### 6) Complex Multi-Type Search
 
 **TriliumNext query:**
 ```
 towers (#book OR #article) AND note.dateCreated >= '2024-01-01' OR note.isArchived = true
 ```
 
-**One-Array Structure:**
+**Search Structure:**
 ```json
 {
   "text": "towers",
@@ -176,9 +175,9 @@ towers (#book OR #article) AND note.dateCreated >= '2024-01-01' OR note.isArchiv
 
 ---
 
-### 7) Note Properties OR Logic (Enhanced)
+### 7) Note Properties OR Logic
 
-**One-Array Structure:**
+**Search Structure:**
 ```json
 {
   "searchCriteria": [
@@ -196,11 +195,11 @@ towers (#book OR #article) AND note.dateCreated >= '2024-01-01' OR note.isArchiv
 
 ---
 
-### 8) **ENABLED**: Alternative Full-text Representation
+### 8) Alternative Full-text Representation
 
 Instead of separate `text` parameter, can use searchCriteria:
 
-**One-Array Structure:**
+**Search Structure:**
 ```json
 {
   "searchCriteria": [
@@ -227,11 +226,11 @@ Instead of separate `text` parameter, can use searchCriteria:
 
 ---
 
-### 10) **ENABLED**: Complex Real-World Query
+### 10) Complex Real-World Query
 
 **Use Case**: "Find notes that are either: (book by Tolkien) OR (recent tutorial with steps) OR (archived important notes)"
 
-**One-Array Structure:**
+**Search Structure:**
 ```json
 {
   "searchCriteria": [

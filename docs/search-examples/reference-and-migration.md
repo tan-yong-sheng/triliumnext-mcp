@@ -1,4 +1,4 @@
-# Reference Documentation and Migration Guide
+# Reference Documentation
 
 This document provides comprehensive reference information for the unified searchCriteria structure and migration guidance from previous implementations.
 
@@ -6,7 +6,7 @@ This document provides comprehensive reference information for the unified searc
 
 ## Critical Testing Notes
 
-### ✅ IMPLEMENTED: One-Array Structure Unified Boolean Logic
+### ✅ IMPLEMENTED: Unified Boolean Logic
 
 **Implementation Benefits Achieved**:
 - ✅ **Complete boolean expressiveness**: Can represent any TriliumNext query including cross-type OR logic
@@ -14,18 +14,17 @@ This document provides comprehensive reference information for the unified searc
 - ✅ **Unified logic**: Single consistent logic system across all criteria
 - ✅ **LLM-friendly**: Single array structure, consistent field names
 - ✅ **ISO date format enforcement**: MCP interface requires exact ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss.sssZ) to prevent LLM guessing errors
-- ✅ **Enhanced OR logic**: All search criteria can be mixed with per-item `logic: "OR"`
+- ✅ **OR logic**: All search criteria can be mixed with per-item `logic: "OR"`
 
-**Migration Examples**:
-- **Before (Two-Array - Limited)**: `{"attributes": [{"type": "label", "name": "book"}], "noteProperties": [{"property": "dateCreated", "op": ">=", "value": "2024-01-01"}]}`
-- **After (One-Array - Complete Boolean Logic)**: `{"searchCriteria": [{"property": "book", "type": "label", "op": "exists", "logic": "OR"}, {"property": "dateCreated", "type": "noteProperty", "op": ">=", "value": "2024-01-01"}]}`
+**Implementation Examples**:
+- **Current Structure**: `{"searchCriteria": [{"property": "book", "type": "label", "op": "exists", "logic": "OR"}, {"property": "dateCreated", "type": "noteProperty", "op": ">=", "value": "2024-01-01"}]}`
 - **Cross-Type OR**: `{"searchCriteria": [{"property": "template.title", "type": "relation", "op": "=", "value": "Grid View", "logic": "OR"}, {"property": "dateCreated", "type": "noteProperty", "op": ">=", "value": "2024-12-13"}]}`
 
 **Important Change**: Smart date expressions (e.g., `TODAY-7`, `MONTH-1`) are NO LONGER supported in the MCP interface. Only exact ISO dates are accepted to ensure LLM consistency and prevent incorrect date calculations.
 
 ---
 
-## Enhanced resolve_note_id Examples (Simplified Implementation)
+## resolve_note_id Examples (Simplified Implementation)
 
 The `resolve_note_id` function has been simplified to focus on title-based search with user choice workflow for multiple matches.
 
@@ -134,7 +133,7 @@ The unified `searchCriteria` parameter handles all search criteria types:
 - ✅ **COMPLETED**: Field-specific search unification - `filters` parameter removed and `title`/`content` moved to `noteProperties`
 - ✅ **UPDATED**: All documentation examples migrated from `filters` to `noteProperties` syntax (examples 12-23, 47-52)
 - ✅ **RESEARCHED**: Date parameter unification feasibility - confirmed TriliumNext native support for date properties and smart date expressions
-- ✅ **DOCUMENTED**: Enhanced date search examples (examples 55-62) showing unified noteProperties approach with smart dates and UTC support
+- ✅ **DOCUMENTED**: Date search examples (examples 55-62) showing unified noteProperties approach with smart dates and UTC support
 - ✅ **IMPLEMENTED**: Date parameter unification - removed legacy date parameters and unified into noteProperties with smart date support
 - ✅ **MIGRATED**: All date examples (1-11, 18, 32) updated to use noteProperties syntax with smart date expressions
 - ✅ **IMPLEMENTED - UNTESTED**: Relation search support - full implementation with comprehensive examples and updated schemas, but not validated against live TriliumNext instances

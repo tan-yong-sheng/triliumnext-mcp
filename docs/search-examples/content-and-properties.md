@@ -11,7 +11,7 @@ This document covers content searches (title and content), note property searche
 ```
 note.title *=* 'Tolkien'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -26,7 +26,7 @@ note.title *=* 'Tolkien'
 ```
 note.title =* 'Project'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -41,7 +41,7 @@ note.title =* 'Project'
 ```
 note.title *= 'Notes'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -56,7 +56,7 @@ note.title *= 'Notes'
 ```
 note.title != 'Backup'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -71,7 +71,7 @@ note.title != 'Backup'
 ```
 note.content *=* 'dead letter'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -86,7 +86,7 @@ note.content *=* 'dead letter'
 ```
 note.title =* 'Meeting' AND note.content *=* 'agenda'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -102,7 +102,7 @@ note.title =* 'Meeting' AND note.content *=* 'agenda'
 ```
 setup guide ~(note.dateCreated >= '2024-01-01' OR note.title =* 'Tutorial' OR note.content *=* 'steps')
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "text": "setup guide",
@@ -120,7 +120,7 @@ setup guide ~(note.dateCreated >= '2024-01-01' OR note.title =* 'Tutorial' OR no
 ```
 note.content *=* 'machine learning'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -135,7 +135,7 @@ note.content *=* 'machine learning'
 ```
 note.dateCreated >= '2025-06-01' ~(note.title *=* 'n8n' OR note.content *=* 'n8n')
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -152,7 +152,7 @@ note.dateCreated >= '2025-06-01' ~(note.title *=* 'n8n' OR note.content *=* 'n8n
 ```
 machine learning note.title *= 'Notes' AND note.content *=* 'algorithm' limit 10
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "text": "machine learning",
@@ -185,7 +185,7 @@ Trilium supports searching by built-in note properties using the `searchCriteria
 ```
 note.isArchived = true
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -200,7 +200,7 @@ note.isArchived = true
 ```
 note.isArchived = false
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -215,7 +215,7 @@ note.isArchived = false
 ```
 note.isProtected = true
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -230,7 +230,7 @@ note.isProtected = true
 ```
 note.type = 'text'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -245,7 +245,7 @@ note.type = 'text'
 ```
 note.type = 'code'
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -260,7 +260,7 @@ note.type = 'code'
 ```
 note.labelCount > 5
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -275,7 +275,7 @@ note.labelCount > 5
 ```
 note.ownedLabelCount = 3
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -290,7 +290,7 @@ note.ownedLabelCount = 3
 ```
 note.childrenCount >= 10
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -305,7 +305,7 @@ note.childrenCount >= 10
 ```
 note.contentSize > 50000
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -320,7 +320,7 @@ note.contentSize > 50000
 ```
 note.revisionCount >= 5
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -335,7 +335,7 @@ note.revisionCount >= 5
 ```
 note.type = 'text' AND note.labelCount > 0 AND note.isArchived = false
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -352,7 +352,7 @@ note.type = 'text' AND note.labelCount > 0 AND note.isArchived = false
 ```
 kubernetes note.type = 'text' AND note.labelCount >= 2 AND note.contentSize > 1000
 ```
-- One-Array Structure combining text search and note properties
+- Search Structure combining text search and note properties
 ```json
 {
   "text": "kubernetes",
@@ -370,7 +370,7 @@ kubernetes note.type = 'text' AND note.labelCount >= 2 AND note.contentSize > 10
 ```
 note.labelCount = 0
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -392,7 +392,7 @@ These examples test OR logic for note properties searches using the unified `sea
 note.content *=* rings OR note.content *=* tolkien
 ```
 - Expected behavior: Find notes containing "rings" OR "tolkien" in content
-- One-Array Structure (with OR logic support)
+- Search Structure (with OR logic support)
 ```json
 {
   "searchCriteria": [
@@ -409,7 +409,7 @@ note.content *=* rings OR note.content *=* tolkien
 note.title *=* project OR note.content *=* documentation
 ```
 - Expected behavior: Find notes with "project" in title OR "documentation" in content
-- One-Array Structure (with OR logic support)
+- Search Structure (with OR logic support)
 ```json
 {
   "searchCriteria": [
@@ -433,7 +433,7 @@ note.title *=* project OR note.content *=* documentation
 ```
 note.content *=* docker OR note.content *=* kubernetes OR note.content *=* containers
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -450,7 +450,7 @@ note.content *=* docker OR note.content *=* kubernetes OR note.content *=* conta
 ```
 note.title *=* meeting OR note.content *=* agenda OR note.title =* "Project"
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
@@ -483,7 +483,7 @@ towers #!book
 ```
 note.isArchived = true
 ```
-- One-Array Structure
+- Search Structure
 ```json
 {
   "searchCriteria": [
