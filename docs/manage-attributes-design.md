@@ -65,39 +65,73 @@ Unified management of note attributes including labels, relations, and metadata 
 
 ## Response Format
 
-### Success Response
+### Extensible Typed Array Response Format
+
+All MCP tool responses now use an extensible array of typed objects under the `content` field. Each object has:
+- `type`: Identifies the content (e.g., 'text', 'attributes', 'nextStep', etc.)
+- `text`: Human-readable summary or message (optional except for 'text' type)
+- `data`: Structured, machine-readable data (optional except for types that require it)
+
+#### Example: Success Response
 ```json
 {
-  "success": true,
-  "operation": "create|read|update|delete",
-  "noteId": "abc123",
-  "attributes": [
+  "content": [
     {
-      "attributeId": "attr456",
-      "type": "relation",
-      "name": "template",
-      "value": "Board",
-      "position": 10,
-      "isInheritable": false,
-      "utcDateModified": "2024-01-01T12:00:00.000Z"
+      "type": "text",
+      "text": "Attributes created successfully"
+    },
+    {
+      "type": "attributes",
+      "data": {
+        "success": true,
+        "operation": "create",
+        "noteId": "abc123",
+        "attributes": [
+          {
+            "attributeId": "attr456",
+            "type": "relation",
+            "name": "template",
+            "value": "Board",
+            "position": 10,
+            "isInheritable": false,
+            "utcDateModified": "2024-01-01T12:00:00.000Z"
+          }
+        ],
+        "count": 1
+      }
     }
-  ],
-  "message": "Attributes created successfully",
-  "count": 1
+  ]
 }
 ```
 
-### Error Response
+#### Example: Error Response
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "ATTRIBUTE_NOT_FOUND",
-    "message": "Attribute with ID attr456 not found",
-    "details": "The specified attribute does not exist on the note"
-  }
+  "content": [
+    {
+      "type": "text",
+      "text": "Error: Attribute with ID attr456 not found"
+    },
+    {
+      "type": "error",
+      "data": {
+        "success": false,
+        "error": {
+          "code": "ATTRIBUTE_NOT_FOUND",
+          "message": "Attribute with ID attr456 not found",
+          "details": "The specified attribute does not exist on the note"
+        }
+      }
+    }
+  ]
 }
 ```
+
+### Rationale
+- **Extensible**: New content types can be added without breaking existing clients.
+- **Machine-readable**: Structured data is easy for clients to parse.
+- **Backward compatible**: Human-readable text remains available for all responses.
+- **Separation of concerns**: Each object in the array has a clear, single purpose.
 
 ## cURL Examples
 
@@ -454,48 +488,92 @@ curl -X POST "$BASE_URL/attributes" \
 #### Note Not Found (404)
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "NOTE_NOT_FOUND",
-    "message": "Note with ID abc123 not found",
-    "details": "The specified note does not exist"
-  }
+  "content": [
+    {
+      "type": "text",
+      "text": "Error: Note with ID abc123 not found"
+    },
+    {
+      "type": "error",
+      "data": {
+        "success": false,
+        "error": {
+          "code": "NOTE_NOT_FOUND",
+          "message": "Note with ID abc123 not found",
+          "details": "The specified note does not exist"
+        }
+      }
+    }
+  ]
 }
 ```
 
 #### Attribute Not Found (404)
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "ATTRIBUTE_NOT_FOUND",
-    "message": "Attribute with ID attr456 not found",
-    "details": "The specified attribute does not exist on the note"
-  }
+  "content": [
+    {
+      "type": "text",
+      "text": "Error: Attribute with ID attr456 not found"
+    },
+    {
+      "type": "error",
+      "data": {
+        "success": false,
+        "error": {
+          "code": "ATTRIBUTE_NOT_FOUND",
+          "message": "Attribute with ID attr456 not found",
+          "details": "The specified attribute does not exist on the note"
+        }
+      }
+    }
+  ]
 }
 ```
 
 #### Validation Error (400)
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Invalid attribute name",
-    "details": "Attribute name must not contain spaces and match pattern ^[^\\s]+"
-  }
+  "content": [
+    {
+      "type": "text",
+      "text": "Error: Invalid attribute name"
+    },
+    {
+      "type": "error",
+      "data": {
+        "success": false,
+        "error": {
+          "code": "VALIDATION_ERROR",
+          "message": "Invalid attribute name",
+          "details": "Attribute name must not contain spaces and match pattern ^[^\\s]+"
+        }
+      }
+    }
+  ]
 }
 ```
 
 #### Permission Error (403)
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "PERMISSION_DENIED",
-    "message": "Insufficient permissions to modify attributes",
-    "details": "You do not have write access to this note"
-  }
+  "content": [
+    {
+      "type": "text",
+      "text": "Error: Insufficient permissions to modify attributes"
+    },
+    {
+      "type": "error",
+      "data": {
+        "success": false,
+        "error": {
+          "code": "PERMISSION_DENIED",
+          "message": "Insufficient permissions to modify attributes",
+          "details": "You do not have write access to this note"
+        }
+      }
+    }
+  ]
 }
 ```
 

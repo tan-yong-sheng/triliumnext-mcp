@@ -8,62 +8,41 @@ The enhanced `create_note` function will analyze the created note and provide in
 
 ## Enhanced Response Format
 
-### Current Response
-```json
-{
-  "note": {
-    "noteId": "abc123",
-    "title": "My Note",
-    "type": "text",
-    "content": "<p>Content here</p>",
-    "parentNoteIds": ["root"],
-    "dateCreated": "2024-01-01T12:00:00.000Z"
-  },
-  "branch": {
-    "branchId": "branch456",
-    "noteId": "abc123",
-    "parentNoteId": "root",
-    "notePosition": 10
-  }
-}
-```
+All create_note responses now use an extensible array of typed objects under the `content` field. Each object has:
+- `type`: Identifies the content (e.g., 'text', 'note', 'nextStep')
+- `text`: Human-readable summary or message (optional except for 'text' type)
+- `data`: Structured, machine-readable data (optional except for types that require it)
 
-### Enhanced Response with nextStep
+### Example: Success Response with nextStep
 ```json
 {
-  "note": {
-    "noteId": "abc123",
-    "title": "My Note",
-    "type": "text",
-    "content": "<p>Content here</p>",
-    "parentNoteIds": ["root"],
-    "dateCreated": "2024-01-01T12:00:00.000Z"
-  },
-  "branch": {
-    "branchId": "branch456",
-    "noteId": "abc123",
-    "parentNoteId": "root",
-    "notePosition": 10
-  },
-  "nextStep": {
-    "suggested": true,
-    "operation": "manage_attributes",
-    "reason": "Template relation recommended for this note type",
-    "attributes": [
-      {
-        "type": "relation",
-        "name": "template",
-        "value": "Board",
-        "position": 10,
-        "description": "Add Board template for better organization"
+  "content": [
+    {
+      "type": "text",
+      "text": "Created note: abc123"
+    },
+    {
+      "type": "note",
+      "data": {
+        "noteId": "abc123",
+        "title": "My Note",
+        "type": "book"
+        // ...other note fields
       }
-    ],
-    "priority": "high",
-    "examples": {
-      "curl": "curl -X POST \"$BASE_URL/attributes\" -H \"Authorization: $ETAPI_TOKEN\" -H \"Content-Type: application/json\" -d '{\"noteId\": \"abc123\", \"type\": \"relation\", \"name\": \"template\", \"value\": \"Board\", \"position\": 10}'",
-      "mcp": "manage_attributes({\"operation\": \"create\", \"noteId\": \"abc123\", \"attributes\": [{\"type\": \"relation\", \"name\": \"template\", \"value\": \"Board\", \"position\": 10}]})"
+    },
+    {
+      "type": "nextStep",
+      "data": {
+        "suggested": true,
+        "operation": "manage_attributes",
+        "reason": "Book notes work best with templates for organization",
+        "attributes": [
+          // ...suggested attributes
+        ],
+        "priority": "high"
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -152,10 +131,6 @@ interface NextStepSuggestion {
   reason: string;
   attributes: SuggestedAttribute[];
   priority: "low" | "medium" | "high";
-  examples: {
-    curl: string;
-    mcp: string;
-  };
 }
 
 interface SuggestedAttribute {
@@ -213,27 +188,41 @@ const suggestionRules = [
 **Enhanced Response:**
 ```json
 {
-  "note": { /* ... */ },
-  "branch": { /* ... */ },
-  "nextStep": {
-    "suggested": true,
-    "operation": "manage_attributes",
-    "reason": "Book notes work best with templates for organization",
-    "attributes": [
-      {
-        "type": "relation",
-        "name": "template",
-        "value": "Board",
-        "position": 10,
-        "description": "Add Board template for task management"
+  "content": [
+    {
+      "type": "text",
+      "text": "Created note: abc123"
+    },
+    {
+      "type": "note",
+      "data": {
+        "noteId": "abc123",
+        "title": "My Note",
+        "type": "book",
+        "content": "<p>Content here</p>",
+        "parentNoteIds": ["root"],
+        "dateCreated": "2024-01-01T12:00:00.000Z"
       }
-    ],
-    "priority": "high",
-    "examples": {
-      "curl": "curl -X POST \"$BASE_URL/attributes\" -H \"Authorization: $ETAPI_TOKEN\" -H \"Content-Type: application/json\" -d '{\"noteId\": \"abc123\", \"type\": \"relation\", \"name\": \"template\", \"value\": \"Board\", \"position\": 10}'",
-      "mcp": "manage_attributes({\"operation\": \"create\", \"noteId\": \"abc123\", \"attributes\": [{\"type\": \"relation\", \"name\": \"template\", \"value\": \"Board\", \"position\": 10}]})"
+    },
+    {
+      "type": "nextStep",
+      "data": {
+        "suggested": true,
+        "operation": "manage_attributes",
+        "reason": "Book notes work best with templates for organization",
+        "attributes": [
+          {
+            "type": "relation",
+            "name": "template",
+            "value": "Board",
+            "position": 10,
+            "description": "Add Board template for task management"
+          }
+        ],
+        "priority": "high"
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -253,34 +242,49 @@ const suggestionRules = [
 **Enhanced Response:**
 ```json
 {
-  "note": { /* ... */ },
-  "branch": { /* ... */ },
-  "nextStep": {
-    "suggested": true,
-    "operation": "manage_attributes",
-    "reason": "Python code notes benefit from language and project tagging",
-    "attributes": [
-      {
-        "type": "label",
-        "name": "language",
-        "value": "python",
-        "position": 10,
-        "description": "Tag with programming language"
-      },
-      {
-        "type": "label",
-        "name": "project",
-        "value": "api",
-        "position": 20,
-        "description": "Tag with project category"
+  "content": [
+    {
+      "type": "text",
+      "text": "Created note: abc123"
+    },
+    {
+      "type": "note",
+      "data": {
+        "noteId": "abc123",
+        "title": "My Note",
+        "type": "code",
+        "content": "<p>Content here</p>",
+        "parentNoteIds": ["root"],
+        "dateCreated": "2024-01-01T12:00:00.000Z",
+        "mime": "text/x-python"
       }
-    ],
-    "priority": "medium",
-    "examples": {
-      "curl": "curl -X POST \"$BASE_URL/attributes\" -H \"Authorization: $ETAPI_TOKEN\" -H \"Content-Type: application/json\" -d '{\"noteId\": \"abc123\", \"type\": \"label\", \"name\": \"language\", \"value\": \"python\", \"position\": 10}'",
-      "mcp": "manage_attributes({\"operation\": \"create\", \"noteId\": \"abc123\", \"attributes\": [{\"type\": \"label\", \"name\": \"language\", \"value\": \"python\", \"position\": 10}]})"
+    },
+    {
+      "type": "nextStep",
+      "data": {
+        "suggested": true,
+        "operation": "manage_attributes",
+        "reason": "Python code notes benefit from language and project tagging",
+        "attributes": [
+          {
+            "type": "label",
+            "name": "language",
+            "value": "python",
+            "position": 10,
+            "description": "Tag with programming language"
+          },
+          {
+            "type": "label",
+            "name": "project",
+            "value": "api",
+            "position": 20,
+            "description": "Tag with project category"
+          }
+        ],
+        "priority": "medium"
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -299,34 +303,48 @@ const suggestionRules = [
 **Enhanced Response:**
 ```json
 {
-  "note": { /* ... */ },
-  "branch": { /* ... */ },
-  "nextStep": {
-    "suggested": true,
-    "operation": "manage_attributes",
-    "reason": "Search notes work better with categorization",
-    "attributes": [
-      {
-        "type": "label",
-        "name": "category",
-        "value": "devops",
-        "position": 10,
-        "description": "Categorize search by topic"
-      },
-      {
-        "type": "relation",
-        "name": "template",
-        "value": "Grid View",
-        "position": 20,
-        "description": "Use Grid View for search results"
+  "content": [
+    {
+      "type": "text",
+      "text": "Created note: abc123"
+    },
+    {
+      "type": "note",
+      "data": {
+        "noteId": "abc123",
+        "title": "My Note",
+        "type": "search",
+        "content": "<p>Content here</p>",
+        "parentNoteIds": ["root"],
+        "dateCreated": "2024-01-01T12:00:00.000Z"
       }
-    ],
-    "priority": "medium",
-    "examples": {
-      "curl": "curl -X POST \"$BASE_URL/attributes\" -H \"Authorization: $ETAPI_TOKEN\" -H \"Content-Type: application/json\" -d '{\"noteId\": \"abc123\", \"type\": \"label\", \"name\": \"category\", \"value\": \"devops\", \"position\": 10}'",
-      "mcp": "manage_attributes({\"operation\": \"create\", \"noteId\": \"abc123\", \"attributes\": [{\"type\": \"label\", \"name\": \"category\", \"value\": \"devops\", \"position\": 10}]})"
+    },
+    {
+      "type": "nextStep",
+      "data": {
+        "suggested": true,
+        "operation": "manage_attributes",
+        "reason": "Search notes work better with categorization",
+        "attributes": [
+          {
+            "type": "label",
+            "name": "category",
+            "value": "devops",
+            "position": 10,
+            "description": "Categorize search by topic"
+          },
+          {
+            "type": "relation",
+            "name": "template",
+            "value": "Grid View",
+            "position": 20,
+            "description": "Use Grid View for search results"
+          }
+        ],
+        "priority": "medium"
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -345,12 +363,30 @@ const suggestionRules = [
 **Enhanced Response:**
 ```json
 {
-  "note": { /* ... */ },
-  "branch": { /* ... */ },
-  "nextStep": {
-    "suggested": false,
-    "reason": "No specific attributes recommended for this note type and content"
-  }
+  "content": [
+    {
+      "type": "text",
+      "text": "Created note: abc123"
+    },
+    {
+      "type": "note",
+      "data": {
+        "noteId": "abc123",
+        "title": "My Note",
+        "type": "text",
+        "content": "<p>Just a simple text note</p>",
+        "parentNoteIds": ["root"],
+        "dateCreated": "2024-01-01T12:00:00.000Z"
+      }
+    },
+    {
+      "type": "nextStep",
+      "data": {
+        "suggested": false,
+        "reason": "No specific attributes recommended for this note type and content"
+      }
+    }
+  ]
 }
 ```
 
