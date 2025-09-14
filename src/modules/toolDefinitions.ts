@@ -166,7 +166,7 @@ export function createReadTools(): any[] {
     },
     {
       name: "search_notes",
-      description: "Unified search with comprehensive filtering capabilities including keyword search, date ranges, field-specific searches, attribute searches, note properties, template-based searches, note type filtering, MIME type filtering, and hierarchy navigation through unified searchCriteria structure. CRITICAL: When users want to search for 'docker OR kubernetes' or similar boolean logic, DO NOT use text parameter - instead use searchCriteria with fulltext type. The 'text' parameter only supports single terms or exact phrases without boolean operators. For template search: use relation type with 'template.title' property and built-in template values like 'Calendar', 'Board', 'Text Snippet', 'Grid View', 'Table', 'Geo Map'. For note type search: use noteProperty type with 'type' property and values like 'text', 'code', 'mermaid', 'canvas', 'book', 'image', 'file', 'search', 'relationMap', 'render'. For MIME type search: use noteProperty type with 'mime' property and MIME values like 'text/javascript', 'text/x-python', 'text/vnd.mermaid', 'application/json'. Use hierarchy properties like 'parents.noteId', 'children.noteId', or 'ancestors.noteId' for navigation.",
+      description: "Unified search with comprehensive filtering capabilities including keyword search, date ranges, field-specific searches, attribute searches, note properties, template-based searches, note type filtering, MIME type filtering, and hierarchy navigation through unified searchCriteria structure. For simple keyword searches, use the 'text' parameter. For complex boolean logic like 'docker OR kubernetes', use searchCriteria with proper OR logic. For template search: use relation type with 'template.title' property and built-in template values like 'Calendar', 'Board', 'Text Snippet', 'Grid View', 'Table', 'Geo Map'. For note type search: use noteProperty type with 'type' property and values like 'text', 'code', 'mermaid', 'canvas', 'book', 'image', 'file', 'search', 'relationMap', 'render'. For MIME type search: use noteProperty type with 'mime' property and MIME values like 'text/javascript', 'text/x-python', 'text/vnd.mermaid', 'application/json'. Use hierarchy properties like 'parents.noteId', 'children.noteId', or 'ancestors.noteId' for navigation.",
       inputSchema: {
         type: "object",
         properties: searchProperties,
@@ -182,7 +182,7 @@ function createSearchProperties() {
   return {
     text: {
       type: "string",
-      description: "Simple keyword search for single terms or exact phrases (e.g., 'kubernetes', 'machine learning'). NEVER use for boolean logic like 'docker OR kubernetes' - this will search for the literal phrase 'docker OR kubernetes' instead of either term. For multiple term searches with OR/AND logic, use searchCriteria with type 'fulltext' instead.",
+      description: "Simple keyword search for single terms or exact phrases (e.g., 'kubernetes', 'machine learning'). For boolean logic like 'docker OR kubernetes', use searchCriteria with proper OR logic instead.",
     },
     searchCriteria: {
       type: "array",
@@ -192,22 +192,22 @@ function createSearchProperties() {
         properties: {
           property: {
             type: "string",
-            description: "Property name. For labels: tag name (e.g., 'book', 'author'). For relations: relation name with optional property path (e.g., 'author', 'author.title', 'template.title'). Built-in templates: use 'template.title' with values 'Calendar', 'Board', 'Text Snippet', 'Grid View', 'Table', 'Geo Map'. For note properties: system property name (e.g., 'isArchived', 'type', 'mime', 'title', 'content', 'dateCreated') OR hierarchy properties (e.g., 'parents.title', 'children.title', 'ancestors.title', 'parents.parents.title'). For search: use 'fulltext'."
+            description: "Property name. For labels: tag name (e.g., 'book', 'author'). For relations: relation name with optional property path (e.g., 'author', 'author.title', 'template.title'). Built-in templates: use 'template.title' with values 'Calendar', 'Board', 'Text Snippet', 'Grid View', 'Table', 'Geo Map'. For note properties: system property name (e.g., 'isArchived', 'type', 'mime', 'title', 'content', 'dateCreated') OR hierarchy properties (e.g., 'parents.title', 'children.title', 'ancestors.title', 'parents.parents.title')."
           },
           type: {
             type: "string",
-            enum: ["label", "relation", "noteProperty", "search"],
-            description: "Type of search criteria: 'label' for #tags, 'relation' for ~relations, 'noteProperty' for note.* system properties and hierarchy navigation, 'search' for keyword search tokens"
+            enum: ["label", "relation", "noteProperty"],
+            description: "Type of search criteria: 'label' for #tags, 'relation' for ~relations, 'noteProperty' for note.* system properties and hierarchy navigation"
           },
           op: {
             type: "string",
             enum: ["exists", "=", "!=", ">=", "<=", ">", "<", "contains", "starts_with", "ends_with", "regex"],
-            description: "Operator: 'exists' for presence checks, comparison operators for values, string operators for text fields. For search type: operator is ignored.",
+            description: "Operator: 'exists' for presence checks, comparison operators for values, string operators for text fields.",
             default: "exists"
           },
           value: {
             type: "string",
-            description: "Value to compare against (optional for exists operator). For built-in template relations: use 'Calendar' (calendar notes), 'Board' (task boards), 'Text Snippet' (text snippets), 'Grid View' (grid layouts), 'Table' (table views), 'Geo Map' (geography maps). For note type property: use note types like 'text' (rich text), 'code' (code with syntax highlighting), 'mermaid' (Mermaid diagrams), 'canvas' (Excalidraw drawings), 'book' (folders/containers), 'image' (images), 'file' (attachments), 'search' (saved searches), 'relationMap' (relation maps), 'render' (render notes). For note MIME property: use MIME types like 'text/javascript', 'text/x-python', 'text/x-java', 'text/css', 'text/html', 'text/x-typescript', 'text/x-sql', 'text/x-yaml', 'text/x-markdown', 'text/vnd.mermaid', 'application/json'. For noteProperty dates (dateCreated, dateModified): MUST use ISO date format - 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:mm:ss.sssZ'. For hierarchy navigation: parent/ancestor note title or 'root' for top-level. For search type: the search token."
+            description: "Value to compare against (optional for exists operator). For built-in template relations: use 'Calendar' (calendar notes), 'Board' (task boards), 'Text Snippet' (text snippets), 'Grid View' (grid layouts), 'Table' (table views), 'Geo Map' (geography maps). For note type property: use note types like 'text' (rich text), 'code' (code with syntax highlighting), 'mermaid' (Mermaid diagrams), 'canvas' (Excalidraw drawings), 'book' (folders/containers), 'image' (images), 'file' (attachments), 'search' (saved searches), 'relationMap' (relation maps), 'render' (render notes). For note MIME property: use MIME types like 'text/javascript', 'text/x-python', 'text/x-java', 'text/css', 'text/html', 'text/x-typescript', 'text/x-sql', 'text/x-yaml', 'text/x-markdown', 'text/vnd.mermaid', 'application/json'. For noteProperty dates (dateCreated, dateModified): MUST use ISO date format - 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:mm:ss.sssZ'. For hierarchy navigation: parent/ancestor note title or 'root' for top-level."
           },
           logic: {
             type: "string",
