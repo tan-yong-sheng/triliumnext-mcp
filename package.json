@@ -1,6 +1,6 @@
 {
   "name": "triliumnext-mcp",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "A model context protocol server for TriliumNext Notes",
   "type": "module",
   "bin": {
