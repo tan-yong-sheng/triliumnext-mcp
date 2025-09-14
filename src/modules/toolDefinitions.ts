@@ -192,22 +192,22 @@ function createSearchProperties() {
         properties: {
           property: {
             type: "string",
-            description: "Property name. For labels: tag name (e.g., 'book', 'author'). For relations: relation name with optional property path (e.g., 'author', 'author.title', 'template.title'). Built-in templates: use 'template.title' with values 'Calendar', 'Board', 'Text Snippet', 'Grid View', 'Table', 'Geo Map'. For note properties: system property name (e.g., 'isArchived', 'type', 'mime', 'title', 'content', 'dateCreated') OR hierarchy properties (e.g., 'parents.title', 'children.title', 'ancestors.title', 'parents.parents.title'). For fulltext: use 'fulltext'."
+            description: "Property name. For labels: tag name (e.g., 'book', 'author'). For relations: relation name with optional property path (e.g., 'author', 'author.title', 'template.title'). Built-in templates: use 'template.title' with values 'Calendar', 'Board', 'Text Snippet', 'Grid View', 'Table', 'Geo Map'. For note properties: system property name (e.g., 'isArchived', 'type', 'mime', 'title', 'content', 'dateCreated') OR hierarchy properties (e.g., 'parents.title', 'children.title', 'ancestors.title', 'parents.parents.title'). For search: use 'fulltext'."
           },
           type: {
             type: "string",
-            enum: ["label", "relation", "noteProperty", "fulltext"],
-            description: "Type of search criteria: 'label' for #tags, 'relation' for ~relations, 'noteProperty' for note.* system properties and hierarchy navigation, 'fulltext' for keyword search tokens"
+            enum: ["label", "relation", "noteProperty", "search"],
+            description: "Type of search criteria: 'label' for #tags, 'relation' for ~relations, 'noteProperty' for note.* system properties and hierarchy navigation, 'search' for keyword search tokens"
           },
           op: {
             type: "string",
             enum: ["exists", "=", "!=", ">=", "<=", ">", "<", "contains", "starts_with", "ends_with", "regex"],
-            description: "Operator: 'exists' for presence checks, comparison operators for values, string operators for text fields. For fulltext type: operator is ignored.",
+            description: "Operator: 'exists' for presence checks, comparison operators for values, string operators for text fields. For search type: operator is ignored.",
             default: "exists"
           },
           value: {
             type: "string",
-            description: "Value to compare against (optional for exists operator). For built-in template relations: use 'Calendar' (calendar notes), 'Board' (task boards), 'Text Snippet' (text snippets), 'Grid View' (grid layouts), 'Table' (table views), 'Geo Map' (geography maps). For note type property: use note types like 'text' (rich text), 'code' (code with syntax highlighting), 'mermaid' (Mermaid diagrams), 'canvas' (Excalidraw drawings), 'book' (folders/containers), 'image' (images), 'file' (attachments), 'search' (saved searches), 'relationMap' (relation maps), 'render' (render notes). For note MIME property: use MIME types like 'text/javascript', 'text/x-python', 'text/x-java', 'text/css', 'text/html', 'text/x-typescript', 'text/x-sql', 'text/x-yaml', 'text/x-markdown', 'text/vnd.mermaid', 'application/json'. For noteProperty dates (dateCreated, dateModified): MUST use ISO date format - 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:mm:ss.sssZ'. For hierarchy navigation: parent/ancestor note title or 'root' for top-level. For fulltext type: the search token."
+            description: "Value to compare against (optional for exists operator). For built-in template relations: use 'Calendar' (calendar notes), 'Board' (task boards), 'Text Snippet' (text snippets), 'Grid View' (grid layouts), 'Table' (table views), 'Geo Map' (geography maps). For note type property: use note types like 'text' (rich text), 'code' (code with syntax highlighting), 'mermaid' (Mermaid diagrams), 'canvas' (Excalidraw drawings), 'book' (folders/containers), 'image' (images), 'file' (attachments), 'search' (saved searches), 'relationMap' (relation maps), 'render' (render notes). For note MIME property: use MIME types like 'text/javascript', 'text/x-python', 'text/x-java', 'text/css', 'text/html', 'text/x-typescript', 'text/x-sql', 'text/x-yaml', 'text/x-markdown', 'text/vnd.mermaid', 'application/json'. For noteProperty dates (dateCreated, dateModified): MUST use ISO date format - 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:mm:ss.sssZ'. For hierarchy navigation: parent/ancestor note title or 'root' for top-level. For search type: the search token."
           },
           logic: {
             type: "string",

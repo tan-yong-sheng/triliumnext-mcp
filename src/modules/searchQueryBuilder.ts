@@ -1,9 +1,9 @@
 // Unified SearchCriteria interface for all search types
 interface SearchCriteria {
   property: string;  // Property name (varies by type)
-  type: 'label' | 'relation' | 'noteProperty' | 'fulltext'; // Type of search criteria
+  type: 'label' | 'relation' | 'noteProperty' | 'search'; // Type of search criteria
   op?: string;       // Operator (exists, =, !=, >=, <=, >, <, contains, starts_with, ends_with, regex)
-  value?: string;    // Value to search for (optional for exists, required for fulltext)
+  value?: string;    // Value to search for (optional for exists, required for search)
   logic?: 'AND' | 'OR'; // Logic operator to combine with NEXT item
 }
 
@@ -66,7 +66,7 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
 
 /**
  * Builds unified search expressions with cross-type boolean logic support
- * Handles all search criteria types: labels, relations, note properties, and fulltext
+ * Handles all search criteria types: labels, relations, note properties, and search
  * Enables previously impossible cross-type OR operations
  */
 function buildUnifiedSearchExpressions(searchCriteria: SearchCriteria[]): string[] {
@@ -120,8 +120,8 @@ function buildSearchCriteriaQuery(criteria: SearchCriteria): string {
       return buildAttributeQuery(criteria);
     case 'noteProperty':
       return buildNotePropertyQuery(criteria);
-    case 'fulltext':
-      // For fulltext, simply return the value as a search token
+    case 'search':
+      // For search, simply return the value as a search token
       return criteria.value || '';
     default:
       return '';
@@ -138,8 +138,8 @@ function finalizeGroup(queries: string[], logic: 'AND' | 'OR'): string {
   }
   
   if (logic === 'OR') {
-    // Join with OR and add ~ prefix for Trilium parser compatibility
-    return `~(${queries.join(' OR ')})`;
+    // Use parentheses for OR expressions without ~ prefix (per TriliumNext documentation)
+    return `(${queries.join(' OR ')})`;
   } else {
     // AND logic - just join with spaces (Trilium's default)
     return queries.join(' ');
