@@ -182,7 +182,7 @@ function createSearchProperties() {
   return {
     text: {
       type: "string",
-      description: "Simple keyword search for single terms or exact phrases (e.g., 'kubernetes', 'machine learning'). For boolean logic like 'docker OR kubernetes', use searchCriteria with proper OR logic instead.",
+      description: "SIMPLE keyword search ONLY - single terms or exact phrases. Examples: 'kubernetes' (finds notes containing 'kubernetes'), 'machine learning' (finds notes containing both 'machine' AND 'learning' together), '\"docker kubernetes\"' (finds notes containing the exact phrase 'docker kubernetes'). ⚠️ WARNING: This parameter does NOT support boolean operators like OR, AND, NOT. If you use 'docker OR kubernetes', it will search for the literal text 'docker OR kubernetes' and return no results. For any boolean logic (OR, AND, NOT), you MUST use searchCriteria parameter instead.",
     },
     searchCriteria: {
       type: "array",
