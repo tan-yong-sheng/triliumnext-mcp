@@ -93,7 +93,6 @@ This document provides simple examples of natural language queries you can try w
 ### Intermediate Tests
 - "Find notes created this month with 'docker' in them"
 - "Show me code notes about 'python'"
-- "Find text notes that have more than 5 labels"
 
 ### Advanced Tests
 - "Find notes that are either books by a specific author OR created this week"
