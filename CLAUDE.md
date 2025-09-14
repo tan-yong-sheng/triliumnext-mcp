@@ -446,6 +446,17 @@ Corrected relation search syntax:
 - **Updates**: Corrected all documentation examples to use proper relation syntax
 - **Key insight**: Relations are connections between notes - access target note properties (`.title`) rather than comparing relation to string values
 
+### Negation Operator Enhancement
+Enhanced negation operator support and documentation:
+- **Issue**: `not_exists` operator was implemented in searchQueryBuilder.ts but missing from toolDefinitions.ts operator enum
+- **Resolution**: Added `"not_exists"` to the operator enum in toolDefinitions.ts
+- **Description improvement**: Refined tool descriptions to clearly distinguish between `not_exists` and `!=` operators
+- **Documentation**: Added comprehensive examples in `docs/search-examples/advanced-queries.md` (examples 91-95)
+- **Key distinction**:
+  - `not_exists`: Finds notes WITHOUT a property at all (generates `#!collection`)
+  - `!=`: Finds notes WITH a property but excluding specific values (generates `#collection != 'value'`)
+- **Use cases**: Examples cover finding notes without specific labels, mixed negation scenarios, and proper operator selection
+
 ## Documentation Status
 
 ### Testing Status
