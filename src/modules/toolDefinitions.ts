@@ -150,8 +150,8 @@ export function createReadTools(): any[] {
           },
           maxResults: {
             type: "number",
-            description: "Maximum number of results to return in topMatches array (default: 3)",
-            default: 3,
+            description: "Maximum number of results to return in topMatches array (default: 10)",
+            default: 10,
             minimum: 1,
             maximum: 10
           },
