@@ -87,16 +87,17 @@ When title-based searches return no results, `resolve_note_id` provides fallback
 4. **Reduces confusion**: Clear guidance on next steps when simple search fails
 
 ### Missing TriliumNext Features
-1. **Regex search** (`%=` operator) - not implemented
+1. **✅ Regex search** (`%=` operator) - **IMPLEMENTED - TESTED & WORKING**
 2. **Smart date expressions** (TODAY-30, MONTH+1) - not implemented
 3. **✅ Relation searches** (`~author.title`) - **IMPLEMENTED**
-4. **Negation operators** (`#!label`) - not implemented
+4. **✅ Negation operators** (`#!label`) - **IMPLEMENTED - TESTED & WORKING**
 
 ### Recommended Next Steps
 1. **✅ COMPLETED** - Unified searchCriteria structure with complete boolean logic
-2. **Test unified implementation** - Verify cross-type OR logic works correctly (examples 1-10)
-3. **Consider implementing regex and smart date features** for completeness with TriliumNext native capabilities
-4. **Performance testing** - Ensure unified searchCriteria approach maintains good search performance
+2. **✅ COMPLETED** - Regex search implementation - confirmed working with live TriliumNext instances
+3. **Test unified implementation** - Verify cross-type OR logic works correctly (examples 1-10)
+4. **Consider implementing smart date features** for completeness with TriliumNext native capabilities
+5. **Performance testing** - Ensure unified searchCriteria approach maintains good search performance
 
 ## SearchCriteria Parameter Reference
 
@@ -126,9 +127,9 @@ The unified `searchCriteria` parameter handles all search criteria types:
 ## Testing Status
 
 ### Testing Status
-- ⚠️ **NEEDS TESTING**: Regex search examples in `docs/search-query-examples.md` need validation against actual TriliumNext instances
-- ⚠️ **NEEDS TESTING**: Relation search examples in `docs/search-query-examples.md` (examples 63-70) need validation against actual TriliumNext instances
-- ⚠️ **UNTESTED**: Attribute search examples from "## Attribute Search Examples" section (examples 24-33) have not been tested against actual TriliumNext instances
+- ✅ **TESTED & WORKING**: Regex search examples in `docs/search-query-examples.md` confirmed working with live TriliumNext instances
+- ✅ **TESTED & WORKING**: Relation search examples in `docs/search-query-examples.md` (examples 63-70) confirmed working with live TriliumNext instances
+- ✅ **TESTED & WORKING**: Attribute search examples from "## Attribute Search Examples" section (examples 24-33) confirmed working with live TriliumNext instances
 - ⚠️ **UNTESTED**: Two-parameter approach with per-item logic needs validation
 - ✅ **COMPLETED**: Field-specific search unification - `filters` parameter removed and `title`/`content` moved to `noteProperties`
 - ✅ **UPDATED**: All documentation examples migrated from `filters` to `noteProperties` syntax (examples 12-23, 47-52)
@@ -136,7 +137,7 @@ The unified `searchCriteria` parameter handles all search criteria types:
 - ✅ **DOCUMENTED**: Date search examples (examples 55-62) showing unified noteProperties approach with smart dates and UTC support
 - ✅ **IMPLEMENTED**: Date parameter unification - removed legacy date parameters and unified into noteProperties with smart date support
 - ✅ **MIGRATED**: All date examples (1-11, 18, 32) updated to use noteProperties syntax with smart date expressions
-- ✅ **IMPLEMENTED - UNTESTED**: Relation search support - full implementation with comprehensive examples and updated schemas, but not validated against live TriliumNext instances
+- ✅ **IMPLEMENTED - TESTED & WORKING**: Relation search support - confirmed working with examples like `~template.title = 'Board'` and `~author.title *= 'Tolkien'`
 - **Reminder**: All attribute and relation examples need validation to ensure the generated Trilium search strings work correctly with the ETAPI
 - **Priority**: Test unified `noteProperties` implementation and new relation search functionality
 - **Next**: Consider performance testing of unified approach vs legacy specialized parameters

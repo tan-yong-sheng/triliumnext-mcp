@@ -6,37 +6,34 @@ This document outlines planned features and enhancements for the TriliumNext MCP
 
 ### 1. Double check search notes by relation (~author.title)
 
-**Status**: Currently implemented, but still needs testing if it works properly or not
+**Status**: ✅ **COMPLETED & TESTED** - Relation search confirmed working with examples like `~template.title = 'Board'` and `~author.title *= 'Tolkien'`
 
 ## Medium Priority Features
 
-### 2. Attribute Management System - **NEEDS REIMPLEMENTATION**
+### 2. Attribute Management System - **BEING REIMPLEMENTED**
 
-**Status**: Removed due to reliability issues - requires redesign and testing
+**Status**: Being reintroduced with comprehensive design based on `docs/create-notes-examples/manage-attributes-design.md`
 
-**Reliability Issues Identified**:
-- ❌ **List operation confusion**: Implementation unclear about noteId requirements vs database-wide discovery
-- ❌ **ETAPI compatibility concerns**: Uncertain reliability with TriliumNext External API endpoints
-- ❌ **Error handling gaps**: Insufficient validation and error recovery mechanisms  
-- ❌ **Testing gaps**: Insufficient validation against actual TriliumNext instances
-- ❌ **User experience issues**: Confusing operation semantics (list vs get operations)
+**Previous Issues Resolved**:
+- ✅ **Clear operation semantics**: Well-defined CRUD operations with specific purposes
+- ✅ **ETAPI compatibility**: Design based on actual TriliumNext ETAPI endpoints (`/attributes`, `/notes/{noteId}`)
+- ✅ **Comprehensive error handling**: Robust validation and user-friendly error messages
+- ✅ **Testing approach**: Includes cURL examples and validation strategies
+- ✅ **User experience**: Unified interface with extensible typed array response format
 
-**Future Implementation Requirements**:
-- **Thorough ETAPI testing**: Validate all operations against live TriliumNext instances
-- **Clear operation semantics**: Redesign with unambiguous operation purposes and requirements
-- **Comprehensive error handling**: Robust validation and user-friendly error messages
-- **Progressive rollout**: Implement and test one operation at a time (starting with read-only operations)
-- **Documentation first**: Complete API documentation before implementation
-- **User feedback integration**: Design based on actual user needs and workflows
+**Implementation Features**:
+- 🔄 `manage_attributes`: Unified interface for all CRUD operations (create, read, update, delete)
+- 🔄 **Modular architecture**: Separate modules for each operation type
+- 🔄 **Comprehensive design**: Complete specification with validation and error handling
+- 🔄 **Extensible responses**: Typed array format for structured data
 
-**Proposed Features for Future Implementation**:
-- ⏳ `list_attributes`: Database-wide attribute discovery with clear semantics
-- ⏳ `get_attribute`: Specific attribute instance details with attributeId
-- ⏳ `create_attribute`: Add labels and relations with full validation
-- ⏳ `update_attribute`: Modify existing attributes with constraint checking
-- ⏳ `delete_attribute`: Remove attributes with safety confirmations
+**Next Steps**:
+- **Implementation**: Build modular components based on design specification
+- **Testing**: Validate against live TriliumNext instances using provided cURL examples
+- **Integration**: Add to WRITE permission tools in `toolDefinitions.ts`
+- **Documentation**: Update tool descriptions and examples
 
-After adding this function to manage attributes, create_note(), update_note() should natively support adding labels + relation...
+After implementation, create_note() and update_note() should natively support adding labels + relations...
 
 
 ### 3. Negation Support Enhancement for search_note() function

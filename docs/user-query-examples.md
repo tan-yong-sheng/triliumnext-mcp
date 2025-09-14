@@ -29,6 +29,7 @@ This document provides simple examples of natural language queries you can try w
 - "Search for 'n8n' notes created since 2024"
 - "Show me text notes that aren't archived"
 - "Find recent notes about 'docker' or 'kubernetes'"
+- "Find notes with phone number/emails in the content"
 
 ## Note Navigation
 
