@@ -431,15 +431,15 @@ note.title *=* project OR note.content *=* documentation
 ### 50) Multiple Content OR Searches
 - TriliumNext pattern for multiple OR conditions
 ```
-note.content *=* docker OR note.content *=* kubernetes OR note.content *=* containers
+note.content *=* project OR note.content *=* documentation OR note.content *=* guide
 ```
 - Search Structure
 ```json
 {
   "searchCriteria": [
-    {"property": "content", "type": "noteProperty", "op": "contains", "value": "docker", "logic": "OR"},
-    {"property": "content", "type": "noteProperty", "op": "contains", "value": "kubernetes", "logic": "OR"},
-    {"property": "content", "type": "noteProperty", "op": "contains", "value": "containers"}
+    {"property": "content", "type": "noteProperty", "op": "contains", "value": "project", "logic": "OR"},
+    {"property": "content", "type": "noteProperty", "op": "contains", "value": "documentation", "logic": "OR"},
+    {"property": "content", "type": "noteProperty", "op": "contains", "value": "guide"}
   ]
 }
 ```

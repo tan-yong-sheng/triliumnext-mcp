@@ -273,12 +273,12 @@ kubernetes note.type = 'code'
 ### 88) Complex Note Type and Content Search
 - Composed query
 ```
-docker ~(note.type = 'text' OR note.type = 'code') AND note.dateCreated >= '2024-01-01'
+project ~(note.type = 'text' OR note.type = 'code') AND note.dateCreated >= '2024-01-01'
 ```
 - Search Structure
 ```json
 {
-  "text": "docker",
+  "text": "project",
   "searchCriteria": [
     {"property": "type", "type": "noteProperty", "op": "=", "value": "text", "logic": "OR"},
     {"property": "type", "type": "noteProperty", "op": "=", "value": "code", "logic": "AND"},
@@ -286,7 +286,7 @@ docker ~(note.type = 'text' OR note.type = 'code') AND note.dateCreated >= '2024
   ]
 }
 ```
-- Use case: Find recent text or code notes containing "docker"
+- Use case: Find recent text or code notes containing "project"
 
 ### 89) Find All Non-Text Notes
 - Composed query

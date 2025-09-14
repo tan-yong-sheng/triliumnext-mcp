@@ -72,7 +72,7 @@ note.parents.parents.title = 'Project Root'
 - Unified Structure
 ```json
 {
-  "text": "docker",
+  "text": "project",
   "searchCriteria": [
     {"property": "parents.title", "type": "noteProperty", "op": "=", "value": "Development"}
   ]
@@ -80,9 +80,9 @@ note.parents.parents.title = 'Project Root'
 ```
 - Composed query
 ```
-docker note.parents.title = 'Development'
+project note.parents.title = 'Development'
 ```
-- Use case: Find notes containing "docker" that have a parent named "Development"
+- Use case: Find notes containing "project" that have a parent named "Development"
 
 ### 36) Multiple hierarchy conditions with OR logic
 - Unified Structure

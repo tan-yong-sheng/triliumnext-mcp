@@ -37,7 +37,13 @@ export async function handleSearchNotes(
 
   const params = new URLSearchParams();
   params.append("search", query);
-  params.append("fastSearch", "false"); // Always use comprehensive search
+  
+  // Smart fastSearch logic: use fastSearch=true ONLY when ONLY text parameter is provided (no other parameters)
+  const hasOnlyText = args.text &&
+    (!args.searchCriteria || !Array.isArray(args.searchCriteria) || args.searchCriteria.length === 0) &&
+    !args.limit; // fastSearch doesn't support limit clauses
+  
+  params.append("fastSearch", hasOnlyText ? "true" : "false");
   params.append("includeArchivedNotes", "true"); // Always include archived notes
 
   const response = await axiosInstance.get(`/notes?${params.toString()}`);
