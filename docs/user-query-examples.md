@@ -23,6 +23,7 @@ This document provides simple examples of natural language queries you can try w
 - "Find notes whose title starts with 'Meeting'"
 - "Show me notes with titles ending in 'Notes'"
 - "Find notes with 'tutorial' in title and 'steps' in content"
+- show all my n8n folders please. -> (Note: it will search note with note type of 'book' and title contains n8n)
 
 ### Advanced Combined Searches
 - "Search for 'n8n' notes created since 2024"
