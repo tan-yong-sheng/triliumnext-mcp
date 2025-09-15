@@ -44,7 +44,7 @@ export function createWriteTools(): any[] {
     },
     {
       name: "update_note",
-      description: "Complete content replacement with automatic backup. Ideal for major restructuring, complete rewrites, or final document organization after iterative building with append_note. SAFE: Creates revision backup by default (revision=true). WORKFLOW: Often used after building content with append_note when restructuring is needed.",
+      description: "Complete content replacement with automatic backup. ONLY use this tool when the user explicitly requests note update (e.g., 'update the note', 'replace the content', 'rewrite this note'). TRY NOT to use this tool proactively or for automated content modification unless part of a clear workflow. Ideal for major restructuring, complete rewrites, or final document organization after iterative building with append_note. SAFE: Creates revision backup by default (revision=true). WORKFLOW: Often used after building content with append_note when restructuring is needed.",
       inputSchema: {
         type: "object",
         properties: {
@@ -67,7 +67,7 @@ export function createWriteTools(): any[] {
     },
     {
       name: "append_note",
-      description: "Append content without overwriting existing text. Perfect for iterative building (logs, drafts, sections). WORKFLOW: Build content incrementally, then use update_note for major restructuring when needed. Performance optimized with revision=false by default.",
+      description: "Append content without overwriting existing text. ONLY use this tool when the user explicitly requests content addition (e.g., 'add to the note', 'append this text', 'add this to my notes'). TRY NOT to use this tool proactively unless building content incrementally as part of a clear workflow. Perfect for iterative building (logs, drafts, sections). WORKFLOW: Build content incrementally, then use update_note for major restructuring when needed. Performance optimized with revision=false by default.",
       inputSchema: {
         type: "object",
         properties: {
@@ -90,7 +90,7 @@ export function createWriteTools(): any[] {
     },
     {
       name: "delete_note",
-      description: "Delete a note permanently. CAUTION: This action cannot be undone and will permanently remove the note and all its content.",
+      description: "Delete a note permanently. ONLY use this tool when the user explicitly requests note deletion (e.g., 'delete the note', 'remove this note', 'delete this permanently'). TRY NOT to use this tool proactively or for automated cleanup. CAUTION: This action cannot be undone and will permanently remove the note and all its content.",
       inputSchema: {
         type: "object",
         properties: {
@@ -258,7 +258,7 @@ export function createWriteAttributeTools(): any[] {
   return [
     {
       name: "manage_attributes",
-      description: "Manage note attributes (labels and relations) with write operations. Create labels (#tags), template relations (~template), update existing attributes, and organize notes with metadata. UPDATE LIMITATIONS: For labels, only value and position can be updated. For relations, only position can be updated. The isInheritable property cannot be changed via update - delete and recreate to modify inheritability. Supports single operations and efficient batch creation for better performance. Template relations like ~template.title = 'Board' enable specialized note layouts and functionality.",
+      description: "Manage note attributes (labels and relations) with write operations. ONLY use this tool when the user explicitly requests attribute management (e.g., 'add a tag', 'create a relation', 'manage attributes'). TRY NOT to use this tool proactively unless for automated metadata tagging as part of a clear workflow. Create labels (#tags), template relations (~template), update existing attributes, and organize notes with metadata. IMPORTANT: Relations require values pointing to existing notes (e.g., template relations use 'Board', 'Calendar'; author relations use target note titles or IDs). UPDATE LIMITATIONS: For labels, only value and position can be updated. For relations, only position can be updated. The isInheritable property cannot be changed via update - delete and recreate to modify inheritability. Supports single operations and efficient batch creation for better performance. Template relations like ~template.title = 'Board' enable specialized note layouts and functionality.",
       inputSchema: {
         type: "object",
         properties: {
@@ -284,11 +284,11 @@ export function createWriteAttributeTools(): any[] {
                 },
                 name: {
                   type: "string",
-                  description: "Attribute name: for labels use descriptive tags like 'status', 'priority', 'project'; for relations use connection types like 'template', 'author', 'publisher'. Template relations should use 'template' for built-in Trilium templates."
+                  description: "Attribute name: for labels use descriptive tags like 'status', 'priority', 'project'; for relations use connection types that define relationships between notes (e.g., 'template' for built-in templates, 'author' for content creators, 'publisher' for publications). Relations connect notes and always require a target note value."
                 },
                 value: {
                   type: "string",
-                  description: "Attribute value: required for relations (e.g., template relations use built-in names like 'Board', 'Calendar', 'Text Snippet'), optional for labels (e.g., status labels like 'In Progress', priority labels like 'High'). For relations pointing to specific notes, use the target note's ID."
+                  description: "Attribute value: REQUIRED for relations (relations must point to existing notes - use template names like 'Board', 'Calendar', 'Text Snippet' or target note IDs/titles like 'Tolkien' or 'abc123def'), optional for labels (e.g., status labels like 'In Progress', priority labels like 'High'). Relations always need values since they connect notes together."
                 },
                 position: {
                   type: "number",

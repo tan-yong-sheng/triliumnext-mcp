@@ -158,7 +158,7 @@ function buildAttributeQuery(criteria: SearchCriteria): string {
     // For relations, ensure property access syntax is used
     // TriliumNext requires ~relation.property, not ~relation = value
     if (!name.includes('.') && op !== 'exists' && op !== 'not_exists') {
-      enhancedName = `${name}.title`;
+      enhancedName = enhanceRelationProperty(name, op, value);
 
       // Verbose logging for auto-enhancement
       logVerboseTransform("relation", name, enhancedName, "TriliumNext requires property access for relations");
@@ -209,6 +209,53 @@ function buildAttributeQuery(criteria: SearchCriteria): string {
     default:
       return '';
   }
+}
+
+/**
+ * Enhances relation property with appropriate suffix (.noteId or .title)
+ * Smart detection based on value patterns and relation types
+ */
+function enhanceRelationProperty(name: string, op: string, value?: string): string {
+  // If user provides explicit property path, use it as-is
+  if (name.includes('.')) {
+    return name;
+  }
+
+  // For exists/not_exists operators, don't add suffix
+  if (op === 'exists' || op === 'not_exists' || !value) {
+    return name;
+  }
+
+  // Auto-detect noteId patterns and apply appropriate suffix
+  if (isNoteIdPattern(value) && isTemplateOrSystemRelation(name)) {
+    return `${name}.noteId`;
+  }
+
+  // Default to title-based search for user-friendly behavior
+  return `${name}.title`;
+}
+
+/**
+ * Detects if value matches Trilium noteId patterns
+ */
+function isNoteIdPattern(value: string): boolean {
+  const noteIdPatterns = [
+    /^_[a-zA-Z0-9_]+$/,      // Templates and system notes (e.g., _template_board, _calendar)
+    /^[a-zA-Z0-9]{8,}$/,      // Regular note IDs (e.g., abc123def, xyz789uvw)
+    /^_[a-zA-Z0-9]+$/,        // Simple system notes (e.g., _home, _inbox)
+  ];
+  return noteIdPatterns.some(pattern => pattern.test(value));
+}
+
+/**
+ * Identifies relations that commonly use noteId targeting
+ */
+function isTemplateOrSystemRelation(property: string): boolean {
+  const templateRelations = [
+    'template', 'prototype', 'archetype', 'icon', 'cssClass',
+    'widget', 'launcher', 'search', 'relationMapTemplate'
+  ];
+  return templateRelations.includes(property.toLowerCase());
 }
 
 /**

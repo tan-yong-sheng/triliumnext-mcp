@@ -362,9 +362,9 @@ Note: Template functionality depends on the target note existing in your Trilium
 
 ## Error Handling Examples
 
-### 13. Validation Error - Missing Value for Relation
+### 13. Validation Error - Template Relation Without Value
 
-**Request**:
+**Use Case**: Attempt to create a template relation without specifying which template to use
 ```json
 {
   "noteId": "abc123",
@@ -384,6 +384,27 @@ Note: Template functionality depends on the target note existing in your Trilium
 ❌ Attribute validation failed
 📋 Error details:
 1. Relation attributes require a value
+```
+
+**Explanation**: Template relations must point to an existing note. You need to specify either:
+- A template name: `"value": "Board"`
+- A template note ID: `"value": "_template_board"`
+- A custom template title: `"value": "My Custom Template"`
+
+**Correct Request**:
+```json
+{
+  "noteId": "abc123",
+  "operation": "create",
+  "attributes": [
+    {
+      "type": "relation",
+      "name": "template",
+      "value": "Board",
+      "position": 10
+    }
+  ]
+}
 ```
 
 ### 14. Attribute Not Found - Update Error
