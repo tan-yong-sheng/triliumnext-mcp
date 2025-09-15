@@ -3,7 +3,6 @@
  * Handles CRUD operations for TriliumNext notes
  */
 
-import { processContent } from "../utils/contentProcessor.js";
 
 export interface NoteOperation {
   parentNoteId?: string;
@@ -50,14 +49,13 @@ export async function handleCreateNote(
     throw new Error("parentNoteId, title, type, and content are required for create operation.");
   }
 
-  // Process content and convert Markdown to HTML if detected
-  const content = await processContent(rawContent);
+  // Use content directly (HTML input required)
 
   const response = await axiosInstance.post("/create-note", {
     parentNoteId,
     title,
     type,
-    content,
+    content: rawContent,
     mime,
   });
 
@@ -93,10 +91,9 @@ export async function handleUpdateNote(
     }
   }
 
-  // Process content and convert Markdown to HTML if detected
-  const content = await processContent(rawContent);
+  // Use content directly (HTML input required)
 
-  const response = await axiosInstance.put(`/notes/${noteId}/content`, content, {
+  const response = await axiosInstance.put(`/notes/${noteId}/content`, rawContent, {
     headers: {
       "Content-Type": "text/plain"
     }
@@ -145,11 +142,10 @@ export async function handleAppendNote(
     responseType: 'text'
   });
 
-  // Process the content to append and convert Markdown to HTML if detected
-  const processedContentToAppend = await processContent(contentToAppend);
+  // Use content to append directly (HTML input required)
 
   // Concatenate current content with new content
-  const newContent = currentContent + processedContentToAppend;
+  const newContent = currentContent + contentToAppend;
 
   // Update note content
   const response = await axiosInstance.put(`/notes/${noteId}/content`, newContent, {

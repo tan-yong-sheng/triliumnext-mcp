@@ -338,7 +338,7 @@ TriliumNext supports two types of negation operators with different semantics: `
   ]
 }
 ```
-- Use case: Find all notes that are not marked as private
+- Use case: Find all notes that are not tagged as private
 - **Key distinction**: This finds notes that completely lack the "private" label
 
 ### 92) Find Notes Without Label but With Another Label
@@ -355,7 +355,7 @@ TriliumNext supports two types of negation operators with different semantics: `
   ]
 }
 ```
-- Use case: Find important notes that are not marked as private
+- Use case: Find important notes that are not tagged as private
 
 ### 93) Find Notes With Label But Excluding Specific Value (!=)
 - Composed query: Find notes with status label but status is not "completed"

@@ -19,7 +19,6 @@ triliumnext-mcp/
 │       ├── permissionUtils.ts    # Permission management
 │       ├── validationUtils.ts    # Zod schema validation
 │       ├── verboseUtils.ts      # Verbose formatting
-│       ├── contentProcessor.ts   # Content processing
 │       └── noteFormatter.ts      # Output formatting
 ├── tests/                        # Test files
 │   └── validation.test.js        # Zod validation tests
@@ -125,7 +124,7 @@ src/
 
 #### Note Manager (`noteManager.ts`)
 - Note CRUD operations
-- Content processing and revision management
+- Revision management
 - Integration with Trilium ETAPI `/notes` endpoint
 
 #### Search Manager (`searchManager.ts`)
@@ -153,7 +152,7 @@ src/
 
 #### Note Handler (`noteHandler.ts`)
 - Note operation permissions (READ/WRITE)
-- Content processing with revision control
+- Revision control
 - Parameter validation and error handling
 
 #### Search Handler (`searchHandler.ts`)
@@ -183,10 +182,6 @@ src/
 - Response structure standardization
 - Error message formatting
 
-#### Content Processor (`contentProcessor.ts`)
-- Markdown detection and conversion
-- HTML processing with `marked` library
-- Content type detection
 
 #### Note Formatter (`noteFormatter.ts`)
 - Output formatting for note listings
@@ -338,7 +333,7 @@ VERBOSE              # Debug logging (optional, defaults to false)
 - Zod schema validation for all parameters
 - Runtime type checking
 - SQL injection prevention
-- XSS protection in content processing
+- XSS protection
 
 ### 3. API Security
 

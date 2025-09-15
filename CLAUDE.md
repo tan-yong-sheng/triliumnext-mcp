@@ -22,7 +22,6 @@ This is a Model Context Protocol (MCP) server for TriliumNext Notes that provide
   - `toolDefinitions.ts` - Permission-based tool schema generation and definitions
 - **Utility Modules**: `src/utils/` - Specialized helper functions:
   - `searchQueryBuilder.ts` - Builds Trilium search query strings from structured parameters
-  - `contentProcessor.ts` - Markdown detection and HTML conversion
   - `noteFormatter.ts` - Output formatting for note listings
   - `verboseUtils.ts` - Centralized verbose logging utilities with specialized functions for input/output tracking, API requests, error handling, and data transformation logging
   - `validationUtils.ts` - Zod-based type validation and schema definitions
@@ -261,12 +260,12 @@ TriliumNext supports specialized note types through templates:
 
 **Note**: For template-based searches, use the `search_notes` function with template criteria rather than `resolve_note_id`.
 
-## Content Processing
+## Content Input
 
-The server includes automatic Markdown detection and conversion:
-- Detects likely Markdown content using heuristics
-- Converts Markdown to HTML using the `marked` library
-- Falls back to original content if parsing fails
+The server expects HTML content for all note operations:
+- Content parameters should be provided as HTML
+- Users should convert Markdown to HTML before submission
+- Direct HTML input ensures compatibility with all TriliumNext note types
 
 ## API Integration
 

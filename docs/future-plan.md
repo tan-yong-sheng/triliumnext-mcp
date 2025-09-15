@@ -4,68 +4,10 @@ This document outlines planned features and enhancements for the TriliumNext MCP
 
 ## High Priority Features
 
-### 1. File must be read first before performing update operation... (applies to update attributes as well)
+### 1. Note must be read first before performing update operation... (applies to update attributes as well)
 - so, we should explicitly suggest people to define 'READ' as well, when people only define 'WRITE' -> because of this case? -> this rule can directly write src/index.js server...
+- Need to have a way to prevent editing when note is modified during the process... Note has been unexpectedly modified. Read it again before attempting to write it.
 
-### 2. Remove marked Library and Require HTML Input
-
-**Status**: **HIGH PRIORITY** - Proposed architectural improvement for content processing
-
-**Overview**: Remove the `marked` library dependency and require HTML input for all content parameters in `create_note`, `update_note`, and `append_note` functions.
-
-**Current Issues**:
-- **Type Conflicts**: Markdown auto-conversion is incompatible with many TriliumNext note types (code, files, mermaid, canvas, etc.)
-- **Content Corruption**: Risk of mangled JSON, YAML, code files, and structured content
-- **False Positives**: Simple Markdown detection incorrectly processes non-Markdown content
-- **ETAPI Misalignment**: TriliumNext ETAPI explicitly expects "html content", not Markdown
-
-**Proposed Changes**:
-- **Remove Dependency**: Eliminate `marked` library from package.json
-- **Simplify Code**: Remove `src/utils/contentProcessor.ts` entirely
-- **Direct HTML Input**: Require users to provide HTML-formatted content directly
-- **Update Documentation**: Clear specification that content parameters expect HTML
-
-**Implementation Impact**:
-```typescript
-// Current workflow:
-rawContent → markdownDetection → htmlConversion → triliumNext
-
-// Proposed workflow:
-htmlContent → triliumNext
-```
-
-**Files to Modify**:
-- `package.json`: Remove `marked` dependency
-- `src/utils/contentProcessor.ts`: Remove entire file
-- `src/modules/noteManager.ts`: Remove `processContent()` calls, use content directly
-- `src/modules/noteHandler.ts`: Update validation and error handling
-- Documentation: Update all content parameter descriptions
-
-**Benefits**:
-- ✅ **Type Safety**: Proper content handling for all 15 TriliumNext note types
-- ✅ **No Corruption**: Eliminate risk of automatic conversion damaging structured content
-- ✅ **ETAPI Alignment**: Matches TriliumNext's "html content" specification
-- ✅ **Simplified Architecture**: Remove complexity and potential failure points
-- ✅ **Better Performance**: Eliminate parsing overhead
-- ✅ **User Control**: Users can use preferred Markdown-to-HTML tools
-
-**User Migration**:
-- **Current Users**: Will need to convert Markdown to HTML before content submission
-- **Tool Recommendations**: Document suggested Markdown-to-HTML conversion tools
-- **Examples**: Provide HTML equivalents for common Markdown patterns
-- **Transition Guide**: Clear migration path for existing workflows
-
-**Technical Justification**:
-TriliumNext supports 15 diverse note types including:
-- `code` notes with specific MIME types (application/json, text/javascript, etc.)
-- `mermaid` diagrams with text/vnd.mermaid content
-- `canvas` notes with application/json structure
-- `file` attachments with binary/base64 content
-- `relationMap` notes with complex JSON structures
-
-Markdown conversion is inappropriate and potentially harmful for these non-text note types.
-
-**Priority**: HIGH - This is a fundamental architectural improvement that affects content integrity and system reliability.
 
 ### 2. File Upload Capabilities for create_note Function
 
@@ -520,14 +462,13 @@ function isTemplateRelation(property: string): boolean {
 
 
 **Implementation Strategy**:
-1. **marked Library Removal**: Remove markdown conversion and require HTML input for content parameters
-2. **File Upload Implementation**: Add file handling capabilities to `create_note` function
-3. **Response Formatter**: Standardize output formats across all tools with multiple format support
-4. **Intent Resolution**: Develop semantic analysis for intelligent tool selection
-5. **Search Enhancements**: Implement offset parameters, search/replace functionality, and relation search by noteId
-6. **Note Resolution**: Enhance `resolve_note_id` with multiple resolution strategies
-7. **Append Options**: Add position control and template support to `append_note`
-8. **create_note Enhancement**: Complete Phase 2 with integrated attribute support
+1. **File Upload Implementation**: Add file handling capabilities to `create_note` function
+2. **Response Formatter**: Standardize output formats across all tools with multiple format support
+3. **Intent Resolution**: Develop semantic analysis for intelligent tool selection
+4. **Search Enhancements**: Implement offset parameters, search/replace functionality, and relation search by noteId
+5. **Note Resolution**: Enhance `resolve_note_id` with multiple resolution strategies
+6. **Append Options**: Add position control and template support to `append_note`
+7. **create_note Enhancement**: Complete Phase 2 with integrated attribute support
 
 ## Future Architecture Considerations
 - Maintain backward compatibility with existing tools
@@ -577,10 +518,9 @@ function isTemplateRelation(property: string): boolean {
 
 ## Timeline
 
-**Phase 1** (Immediate): Remove marked library and require HTML input (HIGH PRIORITY)
-**Phase 2** (Near-term): Enhanced create_note function with attribute integration
-**Phase 3** (Mid-term): File upload capabilities and response formatting
-**Phase 4** (Future): Intent resolution and search enhancements
+**Phase 1** (Near-term): Enhanced create_note function with attribute integration
+**Phase 2** (Mid-term): File upload capabilities and response formatting
+**Phase 3** (Future): Intent resolution and search enhancements
 
 ## Implementation Status
 
@@ -596,7 +536,6 @@ function isTemplateRelation(property: string): boolean {
 - 🔄 Enhanced create_note function with integrated attribute support (Phase 2)
 
 **Proposed**:
-- 🚨 **HIGH PRIORITY**: Remove marked library and require HTML input for content parameters
 - 📋 File upload capabilities for create_note function
 - 📊 Response formatter for standardized output formats
 - 🎯 Intent resolution function for semantic routing

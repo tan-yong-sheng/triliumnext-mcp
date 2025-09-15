@@ -32,7 +32,7 @@ export function createWriteTools(): any[] {
           },
           content: {
             type: "string",
-            description: "Content of the note",
+            description: "HTML content of the note",
           },
           mime: {
             type: "string",
@@ -54,7 +54,7 @@ export function createWriteTools(): any[] {
           },
           content: {
             type: "string",
-            description: "New content for the note"
+            description: "New HTML content for the note"
           },
           revision: {
             type: "boolean",
@@ -77,7 +77,7 @@ export function createWriteTools(): any[] {
           },
           content: {
             type: "string",
-            description: "Content to append to the existing note"
+            description: "HTML content to append to the existing note"
           },
           revision: {
             type: "boolean",
