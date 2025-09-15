@@ -3,9 +3,7 @@
  * Centralized tool schema definitions based on permissions
  */
 
-export interface PermissionChecker {
-  hasPermission(permission: string): boolean;
-}
+import { PermissionChecker } from '../utils/permissionUtils.js';
 
 /**
  * Generate write operation tools (CREATE, UPDATE, DELETE operations)

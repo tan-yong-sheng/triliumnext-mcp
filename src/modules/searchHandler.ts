@@ -4,15 +4,12 @@
  */
 
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
+import { PermissionChecker } from "../utils/permissionUtils.js";
 import {
   SearchOperation,
   handleSearchNotes
 } from "./searchManager.js";
 import { formatNotesForListing } from "./noteFormatter.js";
-
-export interface PermissionChecker {
-  hasPermission(permission: string): boolean;
-}
 
 /**
  * Handle search_notes tool requests

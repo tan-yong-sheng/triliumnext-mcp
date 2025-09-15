@@ -4,6 +4,7 @@
  */
 
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
+import { PermissionChecker } from "../utils/permissionUtils.js";
 import {
   NoteOperation,
   handleCreateNote,
@@ -12,10 +13,6 @@ import {
   handleDeleteNote,
   handleGetNote
 } from "./noteManager.js";
-
-export interface PermissionChecker {
-  hasPermission(permission: string): boolean;
-}
 
 /**
  * Handle create_note tool requests

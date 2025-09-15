@@ -5,6 +5,7 @@
 
 import { AxiosInstance } from 'axios';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
+import { PermissionChecker } from '../utils/permissionUtils.js';
 import {
   manage_attributes,
   get_note_attributes,
@@ -12,10 +13,6 @@ import {
   Attribute,
   AttributeOperationResult
 } from './attributeManager.js';
-
-export interface PermissionChecker {
-  hasPermission(permission: string): boolean;
-}
 
 export interface ManageAttributesRequest {
   noteId: string;
