@@ -113,7 +113,7 @@ class TriliumServer {
             return await handleResolveNoteRequest(request.params.arguments, this, this.axiosInstance);
 
           case "manage_attributes":
-            return await handleManageAttributes(request.params.arguments as any, this.axiosInstance);
+            return await handleManageAttributes(request.params.arguments as any, this.axiosInstance, this);
 
           default:
             throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${request.params.name}`);

@@ -4,6 +4,7 @@
  */
 
 import { AxiosInstance } from 'axios';
+import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import {
   manage_attributes,
   get_note_attributes,
@@ -11,7 +12,10 @@ import {
   Attribute,
   AttributeOperationResult
 } from './attributeManager.js';
-import { hasWritePermission } from '../utils/permissionUtils.js';
+
+export interface PermissionChecker {
+  hasPermission(permission: string): boolean;
+}
 
 export interface ManageAttributesRequest {
   noteId: string;
@@ -24,19 +28,12 @@ export interface ManageAttributesRequest {
  */
 export async function handleManageAttributes(
   args: ManageAttributesRequest,
-  axiosInstance: AxiosInstance
+  axiosInstance: AxiosInstance,
+  permissionChecker: PermissionChecker
 ): Promise<any> {
   // Check permissions
-  if (!hasWritePermission()) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: "❌ Permission denied: WRITE permission required for attribute management operations"
-        }
-      ],
-      isError: true
-    };
+  if (!permissionChecker.hasPermission("WRITE")) {
+    throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to manage attributes.");
   }
 
   try {

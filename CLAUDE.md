@@ -26,7 +26,6 @@ This is a Model Context Protocol (MCP) server for TriliumNext Notes that provide
   - `noteFormatter.ts` - Output formatting for note listings
   - `responseUtils.ts` - Debug info and response formatting utilities
   - `validationUtils.ts` - Zod-based type validation and schema definitions
-  - `permissionUtils.ts` - Permission validation utilities
 
 ### MCP Tool Architecture
 - **Permission-based tools**: READ vs WRITE permissions control available tools
