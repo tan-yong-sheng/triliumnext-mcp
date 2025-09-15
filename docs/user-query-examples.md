@@ -85,6 +85,47 @@ This document provides simple examples of natural language queries you can try w
 - "Show me the content of my 'TODO' note"
 - "What's in my 'Meeting Notes'?"
 
+## Attribute Management
+
+### Viewing Attributes
+- "Show me all attributes on my project note"
+- "What labels and relations are attached to this note?"
+- "List all tags and metadata for the meeting notes"
+
+### Adding Labels and Tags
+- "Add a #status label with value 'In Progress' to my project note"
+- "Tag this note as #important"
+- "Add a #priority label with value 'High' to the task note"
+- "Create a #project label with value 'Website Redesign' on the current note"
+
+### Working with Templates
+- "Apply the Board template to this note"
+- "Set this note to use the Calendar template"
+- "Make this note use the Text Snippet template"
+- "Apply the Grid View template to my project folder"
+
+### Managing Relations
+- "Create an author relation pointing to Tolkien"
+- "Set up a publisher relation for this book note"
+- "Add a template relation using Board template"
+- "Create a series relation connecting related notes"
+
+### Updating Attributes
+- "Change the status label from 'In Progress' to 'Completed'"
+- "Update the priority label to 'Urgent'"
+- "Modify the project label value to 'New Project Name'"
+- "Change the template relation to use Calendar instead of Board"
+
+### Batch Operations
+- "Add multiple tags at once: #important, #frontend, #javascript"
+- "Create several labels for status tracking"
+- "Set up multiple template relations in one operation"
+
+### Removing Attributes
+- "Remove the #draft label from this note"
+- "Delete the old status attribute"
+- "Remove the template relation"
+
 ## Example Questions for Testing
 
 ### Simple Tests
@@ -101,6 +142,15 @@ This document provides simple examples of natural language queries you can try w
 - "Show me notes with 'project' in title OR 'deadline' in content"
 - "Find notes under 'Work' folder that were modified recently"
 
+### Attribute Management Tests
+- "Add status=In Progress and priority=High labels to my project note"
+- "Apply the Board template to this folder note"
+- "Show me all attributes currently on the weekly review note"
+- "Update the status label from 'Planning' to 'In Progress'"
+- "Remove the #draft label from all completed notes"
+- "Create author and publisher relations for this book note"
+- "Batch add multiple project tags to related notes"
+
 ## Tips for Better Results
 
 1. **Be specific**: "Find notes about docker" works better than "find stuff"
@@ -108,3 +158,6 @@ This document provides simple examples of natural language queries you can try w
 3. **Specify time ranges**: "last week", "this month", "since 2024"
 4. **Combine criteria**: "Find code notes about python created recently"
 5. **Use note names**: "Find my 'Project Planning' note" for specific notes
+6. **For template relations**: Use built-in template names like "Board", "Calendar", "Text Snippet", "Grid View"
+7. **For attribute updates**: Remember that only label values and positions can be updated - other properties require delete + recreate
+8. **Batch operations**: Use batch_create for adding multiple attributes at once for better performance
