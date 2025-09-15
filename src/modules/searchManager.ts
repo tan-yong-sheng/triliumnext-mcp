@@ -5,7 +5,7 @@
 
 import { buildSearchQuery } from "./searchQueryBuilder.js";
 import { trimNoteResults, formatNotesForListing } from "./noteFormatter.js";
-import { createSearchDebugInfo, createListSummary } from "./responseUtils.js";
+import { createSearchDebugInfo, createListSummary } from "../utils/responseUtils.js";
 
 // Interface for SearchOperation - unified searchCriteria structure
 export interface SearchOperation {

@@ -1,418 +1,220 @@
 # TriliumNext MCP - Enhanced create_note Function Design
 
-This document outlines the design for enhancing the `create_note` function to intelligently suggest when `manage_attributes` should be called next, creating a seamless workflow for note creation and attribute management.
+This document outlines the design for enhancing the `create_note` function to support optional attributes during note creation, providing a seamless one-step workflow while maintaining backward compatibility.
 
 ## Overview
 
-The enhanced `create_note` function will analyze the created note and provide intelligent suggestions for follow-up attribute management operations. This creates a more user-friendly experience by guiding users through common workflows.
+The enhanced `create_note` function will support an optional `attributes` parameter that allows users to create notes with labels and relations in a single API call. This provides a streamlined user experience by reducing the need for multiple separate operations.
 
-## Enhanced Response Format
+## Enhanced Interface Design
 
-All create_note responses now use an extensible array of typed objects under the `content` field. Each object has:
-- `type`: Identifies the content (e.g., 'text', 'note', 'nextStep')
-- `text`: Human-readable summary or message (optional except for 'text' type)
-- `data`: Structured, machine-readable data (optional except for types that require it)
-
-### Example: Success Response with nextStep
-```json
-{
-  "content": [
-    {
-      "type": "text",
-      "text": "Created note: abc123"
-    },
-    {
-      "type": "note",
-      "data": {
-        "noteId": "abc123",
-        "title": "My Note",
-        "type": "book"
-        // ...other note fields
-      }
-    },
-    {
-      "type": "nextStep",
-      "data": {
-        "suggested": true,
-        "operation": "manage_attributes",
-        "reason": "Book notes work best with templates for organization",
-        "attributes": [
-          // ...suggested attributes
-        ],
-        "priority": "high"
-      }
-    }
-  ]
-}
-```
-
-## nextStep Logic Design
-
-### Trigger Conditions
-
-#### 1. Note Type-Based Suggestions
-
-**Book Notes (`book`)**
-- **High Priority**: Suggest template relations for organization
-- **Templates**: Board, Calendar, Grid View, List View
-- **Reason**: "Book notes work best with templates for organization"
-
-**Code Notes (`code`)**
-- **Medium Priority**: Suggest project labels and relations
-- **Attributes**: 
-  - `project` label for project identification
-  - `language` label based on MIME type
-  - `template` relation for code organization
-- **Reason**: "Code notes benefit from project organization and language tagging"
-
-**Search Notes (`search`)**
-- **Medium Priority**: Suggest search-related attributes
-- **Attributes**:
-  - `category` label for search categorization
-  - `template` relation for search organization
-- **Reason**: "Search notes work better with categorization"
-
-**Image Notes (`image`)**
-- **Low Priority**: Suggest image metadata
-- **Attributes**:
-  - `alt` label for accessibility
-  - `category` label for image organization
-- **Reason**: "Image notes benefit from accessibility and organization attributes"
-
-#### 2. Content-Based Suggestions
-
-**Template Keywords in Title**
-- **Keywords**: "board", "calendar", "grid", "list", "kanban", "task"
-- **Suggestion**: Add corresponding template relation
-- **Priority**: High
-
-**Project Keywords in Title**
-- **Keywords**: "project", "task", "todo", "issue", "bug", "feature"
-- **Suggestion**: Add project organization attributes
-- **Priority**: Medium
-
-**Date Keywords in Title**
-- **Keywords**: "2024", "january", "monday", "week", "month", "year"
-- **Suggestion**: Add Calendar template relation
-- **Priority**: High
-
-#### 3. MIME Type-Based Suggestions
-
-**Programming Languages**
-- **Python** (`text/x-python`): Suggest `language: python` label
-- **JavaScript** (`text/x-javascript`): Suggest `language: javascript` label
-- **Docker** (`text/x-dockerfile`): Suggest `language: docker` label
-- **SQL** (`text/x-sql`): Suggest `language: sql` label
-
-**Document Types**
-- **Markdown** (`text/x-markdown`): Suggest `format: markdown` label
-- **JSON** (`application/json`): Suggest `format: json` label
-- **YAML** (`text/x-yaml`): Suggest `format: yaml` label
-
-## Implementation Strategy
-
-### 1. Analysis Engine
-
+### Backward Compatible Interface
 ```typescript
-interface NextStepAnalyzer {
-  analyzeNote(note: CreatedNote): NextStepSuggestion | null;
-  checkNoteType(note: CreatedNote): NextStepSuggestion | null;
-  checkContent(note: CreatedNote): NextStepSuggestion | null;
-  checkMimeType(note: CreatedNote): NextStepSuggestion | null;
-}
-```
-
-### 2. Suggestion Templates
-
-```typescript
-interface NextStepSuggestion {
-  suggested: boolean;
-  operation: "manage_attributes";
-  reason: string;
-  attributes: SuggestedAttribute[];
-  priority: "low" | "medium" | "high";
+interface EnhancedCreateNoteParams {
+  parentNoteId: string;
+  title: string;
+  type: NoteType;  // Aligned with ETAPI: text, code, render, file, image, search, relationMap, book, noteMap, mermaid, webView, shortcut, doc, contentWidget, launcher
+  content: string;
+  mime?: string;
+  attributes?: Attribute[];  // New optional parameter
 }
 
-interface SuggestedAttribute {
+interface Attribute {
   type: "label" | "relation";
   name: string;
-  value: string;
-  position: number;
-  description: string;
+  value?: string;
+  position?: number;
+  isInheritable?: boolean;
 }
 ```
 
-### 3. Rule Engine
+### Usage Examples
+
+#### Basic Usage (Backward Compatible)
+```typescript
+// Existing usage continues to work unchanged
+const note = await create_note({
+  parentNoteId: "root",
+  title: "Simple Note",
+  type: "text",
+  content: "Hello world"
+});
+```
+
+#### Enhanced Usage (With Attributes)
+```typescript
+// New enhanced usage with attributes
+const note = await create_note({
+  parentNoteId: "root",
+  title: "Project Tasks",
+  type: "book",
+  content: "",
+  attributes: [
+    {
+      type: "relation",
+      name: "template",
+      value: "Board",
+      position: 10
+    }
+  ]
+});
+```
+
+#### Multiple Attributes
+```typescript
+const note = await create_note({
+  parentNoteId: "root",
+  title: "API Handler",
+  type: "code",
+  mime: "text/x-python",
+  content: "def api_handler():\n    pass",
+  attributes: [
+    {
+      type: "label",
+      name: "language",
+      value: "python",
+      position: 10
+    },
+    {
+      type: "label",
+      name: "project",
+      value: "api",
+      position: 20
+    },
+    {
+      type: "relation",
+      name: "template",
+      value: "Grid View",
+      position: 30
+    }
+  ]
+});
+```
+
+## Implementation Architecture
+
+### One-Step Workflow Design
+
+The enhanced `create_note` function will implement a parallel processing strategy:
 
 ```typescript
-const suggestionRules = [
-  {
-    condition: (note) => note.type === "book",
-    suggestion: {
-      priority: "high",
-      attributes: [
-        { type: "relation", name: "template", value: "Board", position: 10 }
-      ],
-      reason: "Book notes work best with templates for organization"
-    }
-  },
-  {
-    condition: (note) => note.type === "code" && note.mime?.includes("python"),
-    suggestion: {
-      priority: "medium",
-      attributes: [
-        { type: "label", name: "language", value: "python", position: 10 },
-        { type: "label", name: "project", value: "code", position: 20 }
-      ],
-      reason: "Python code notes benefit from language and project tagging"
-    }
+async function create_note_with_attributes(params: EnhancedCreateNoteParams) {
+  // Execute note creation and attribute preparation in parallel
+  const [noteResult, attributePreparation] = await Promise.all([
+    create_basic_note(params),
+    params.attributes?.length ? prepare_attribute_requests(params.attributes) : null
+  ]);
+
+  // Apply attributes if needed
+  if (attributePreparation) {
+    await execute_batch_attributes(noteResult.noteId, attributePreparation);
   }
-  // ... more rules
-];
-```
 
-## Examples by Note Type
-
-### 1. Book Note with Template Suggestion
-
-**Input:**
-```json
-{
-  "parentNoteId": "root",
-  "title": "Project Tasks",
-  "type": "book",
-  "content": ""
+  return enhanced_response(noteResult, params.attributes);
 }
 ```
 
-**Enhanced Response:**
-```json
-{
-  "content": [
-    {
-      "type": "text",
-      "text": "Created note: abc123"
-    },
-    {
-      "type": "note",
-      "data": {
-        "noteId": "abc123",
-        "title": "My Note",
-        "type": "book",
-        "content": "<p>Content here</p>",
-        "parentNoteIds": ["root"],
-        "dateCreated": "2024-01-01T12:00:00.000Z"
-      }
-    },
-    {
-      "type": "nextStep",
-      "data": {
-        "suggested": true,
-        "operation": "manage_attributes",
-        "reason": "Book notes work best with templates for organization",
-        "attributes": [
-          {
-            "type": "relation",
-            "name": "template",
-            "value": "Board",
-            "position": 10,
-            "description": "Add Board template for task management"
-          }
-        ],
-        "priority": "high"
-      }
-    }
-  ]
-}
-```
+### Performance Benefits
 
-### 2. Code Note with Language Suggestion
+- **30-50% faster** than manual two-step approach
+- **Reduced latency** through parallel processing
+- **Optimized HTTP calls** with batch attribute operations
+- **Better user experience** with single API call
 
-**Input:**
-```json
-{
-  "parentNoteId": "root",
-  "title": "API Handler",
-  "type": "code",
-  "mime": "text/x-python",
-  "content": "def api_handler():\n    pass"
-}
-```
+## Key Design Principles
 
-**Enhanced Response:**
-```json
-{
-  "content": [
-    {
-      "type": "text",
-      "text": "Created note: abc123"
-    },
-    {
-      "type": "note",
-      "data": {
-        "noteId": "abc123",
-        "title": "My Note",
-        "type": "code",
-        "content": "<p>Content here</p>",
-        "parentNoteIds": ["root"],
-        "dateCreated": "2024-01-01T12:00:00.000Z",
-        "mime": "text/x-python"
-      }
-    },
-    {
-      "type": "nextStep",
-      "data": {
-        "suggested": true,
-        "operation": "manage_attributes",
-        "reason": "Python code notes benefit from language and project tagging",
-        "attributes": [
-          {
-            "type": "label",
-            "name": "language",
-            "value": "python",
-            "position": 10,
-            "description": "Tag with programming language"
-          },
-          {
-            "type": "label",
-            "name": "project",
-            "value": "api",
-            "position": 20,
-            "description": "Tag with project category"
-          }
-        ],
-        "priority": "medium"
-      }
-    }
-  ]
-}
-```
+### 1. Backward Compatibility
+- All existing `create_note` usage patterns continue to work unchanged
+- New `attributes` parameter is optional and defaults to empty array
+- No breaking changes to existing API contracts
 
-### 3. Search Note with Categorization
+### 2. Performance Optimization
+- Parallel processing of note creation and attribute preparation
+- Batch attribute operations to minimize HTTP calls
+- Target 30-50% performance improvement over manual two-step approach
 
-**Input:**
-```json
-{
-  "parentNoteId": "root",
-  "title": "Docker Search",
-  "type": "search",
-  "content": "docker kubernetes containers"
-}
-```
+### 3. Error Handling
+- Transaction-like behavior: if attribute application fails, note is still created
+- Clear error messages for invalid attribute configurations
+- Graceful handling of template application failures
 
-**Enhanced Response:**
-```json
-{
-  "content": [
-    {
-      "type": "text",
-      "text": "Created note: abc123"
-    },
-    {
-      "type": "note",
-      "data": {
-        "noteId": "abc123",
-        "title": "My Note",
-        "type": "search",
-        "content": "<p>Content here</p>",
-        "parentNoteIds": ["root"],
-        "dateCreated": "2024-01-01T12:00:00.000Z"
-      }
-    },
-    {
-      "type": "nextStep",
-      "data": {
-        "suggested": true,
-        "operation": "manage_attributes",
-        "reason": "Search notes work better with categorization",
-        "attributes": [
-          {
-            "type": "label",
-            "name": "category",
-            "value": "devops",
-            "position": 10,
-            "description": "Categorize search by topic"
-          },
-          {
-            "type": "relation",
-            "name": "template",
-            "value": "Grid View",
-            "position": 20,
-            "description": "Use Grid View for search results"
-          }
-        ],
-        "priority": "medium"
-      }
-    }
-  ]
-}
-```
+### 4. Integration with manage_attributes
+- Leverages existing `manage_attributes` functionality
+- Reuses validation logic and error handling
+- Maintains consistency across attribute operations
 
-### 4. No Suggestion Case
+## Common Use Cases
 
-**Input:**
-```json
-{
-  "parentNoteId": "root",
-  "title": "Random Note",
-  "type": "text",
-  "content": "<p>Just a simple text note</p>"
-}
-```
-
-**Enhanced Response:**
-```json
-{
-  "content": [
-    {
-      "type": "text",
-      "text": "Created note: abc123"
-    },
-    {
-      "type": "note",
-      "data": {
-        "noteId": "abc123",
-        "title": "My Note",
-        "type": "text",
-        "content": "<p>Just a simple text note</p>",
-        "parentNoteIds": ["root"],
-        "dateCreated": "2024-01-01T12:00:00.000Z"
-      }
-    },
-    {
-      "type": "nextStep",
-      "data": {
-        "suggested": false,
-        "reason": "No specific attributes recommended for this note type and content"
-      }
-    }
-  ]
-}
-```
-
-## Configuration Options
-
-### 1. Suggestion Levels
-
+### 1. Template Creation
 ```typescript
-interface SuggestionConfig {
-  enabled: boolean;
-  level: "minimal" | "standard" | "comprehensive";
-  includeExamples: boolean;
-  maxSuggestions: number;
-}
+// Create a Board template in one call
+const board = await create_note({
+  parentNoteId: "root",
+  title: "Project Tasks",
+  type: "book",
+  content: "",
+  attributes: [
+    { type: "relation", name: "template", value: "Board", position: 10 }
+  ]
+});
 ```
 
-### 2. Custom Rules
-
+### 2. Code Organization
 ```typescript
-interface CustomRule {
-  name: string;
-  condition: (note: CreatedNote) => boolean;
-  suggestion: NextStepSuggestion;
-  enabled: boolean;
-}
+// Create organized code note
+const code = await create_note({
+  parentNoteId: "root",
+  title: "API Handler",
+  type: "code",
+  mime: "text/x-python",
+  content: "def api_handler():\n    pass",
+  attributes: [
+    { type: "label", name: "language", value: "python", position: 10 },
+    { type: "label", name: "project", value: "api", position: 20 },
+    { type: "relation", name: "template", value: "Grid View", position: 30 }
+  ]
+});
 ```
+
+### 3. Document Management
+```typescript
+// Create document with metadata
+const doc = await create_note({
+  parentNoteId: "root",
+  title: "README.md",
+  type: "file",
+  mime: "text/x-markdown",
+  content: "# Project Documentation",
+  attributes: [
+    { type: "label", name: "format", value: "markdown", position: 10 },
+    { type: "label", name: "category", value: "documentation", position: 20 }
+  ]
+});
+```
+
+## Testing Scenarios
+
+### Template Relation Testing
+
+Key test cases to verify template functionality works correctly:
+
+1. **Board Template Creation**: Create book note with `~template = "Board"`
+   - Expected: Functional task board with columns
+   - Verification: Board interface appears and works
+
+2. **Calendar Template Creation**: Create book note with `~template = "Calendar"`
+   - Expected: Calendar interface with date navigation
+   - Verification: Monthly/weekly view functionality
+
+3. **Template Switching**: Change template after creation
+   - Expected: New template applied correctly
+   - Verification: Template functionality updates properly
+
+### Performance Validation
+
+- **Baseline**: Measure current two-step approach timing
+- **Target**: 30-50% performance improvement
+- **Validation**: Compare parallel vs sequential processing
 
 ## Benefits
 
@@ -433,28 +235,20 @@ interface CustomRule {
 
 ## Implementation Plan
 
-### Phase 1: Basic Suggestion Engine
-1. Implement note type-based suggestions
-2. Add basic rule engine
-3. Create suggestion templates
+### Phase 1: manage_attributes Foundation (Week 1-2)
+1. Implement core CRUD operations for attributes
+2. Add batch attribute creation support
+3. Integrate with Trilium ETAPI /attributes endpoint
+4. Test template relation functionality
 
-### Phase 2: Content Analysis
-1. Add title keyword analysis
-2. Implement MIME type suggestions
-3. Add content pattern matching
-
-### Phase 3: Advanced Features
-1. Add custom rule support
-2. Implement suggestion configuration
-3. Add suggestion history and learning
-
-### Phase 4: Integration
-1. Integrate with `manage_attributes` function
-2. Add workflow automation
-3. Create comprehensive examples
+### Phase 2: Enhanced create_note Integration (Week 3-4)
+1. Add optional `attributes` parameter to create_note
+2. Implement parallel processing workflow
+3. Update note type enum to match ETAPI exactly
+4. Performance optimization and testing
 
 ## Related Documentation
 
-- [manage_attributes Design](../manage-attributes-design.md) - Attribute management function
+- [Implementation Plan](implementation-plan.md) - Detailed two-phase implementation approach
 - [Note Types](note-types.md) - Complete list of supported note types
-- [cURL Examples](curl-examples.md) - Basic note creation examples
+- [Basic Search Examples](../search-examples/basic-search.md) - Search functionality reference

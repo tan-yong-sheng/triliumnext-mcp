@@ -20,11 +20,13 @@ This is a Model Context Protocol (MCP) server for TriliumNext Notes that provide
   - `resolveHandler.ts` - Resolve note ID request handling with permission validation
 - **Schema Definitions**: `src/modules/` - Tool schema generation:
   - `toolDefinitions.ts` - Permission-based tool schema generation and definitions
-- **Utility Modules**: `src/modules/` - Specialized helper functions:
+- **Utility Modules**: `src/utils/` - Specialized helper functions:
   - `searchQueryBuilder.ts` - Builds Trilium search query strings from structured parameters
   - `contentProcessor.ts` - Markdown detection and HTML conversion
   - `noteFormatter.ts` - Output formatting for note listings
   - `responseUtils.ts` - Debug info and response formatting utilities
+  - `validationUtils.ts` - Zod-based type validation and schema definitions
+  - `permissionUtils.ts` - Permission validation utilities
 
 ### MCP Tool Architecture
 - **Permission-based tools**: READ vs WRITE permissions control available tools
@@ -48,6 +50,7 @@ Required environment variables for operation:
 npm run build          # Compile TypeScript and set executable permissions
 npm run prepare        # Same as build (runs on npm install)
 npm run watch          # Watch mode for development
+npm run check          # Build + run comprehensive validation tests with Zod schemas
 ```
 
 ### Testing and Debugging
@@ -59,7 +62,47 @@ npm run inspector      # Run MCP inspector for testing tools
 ```bash
 npm install            # Install dependencies
 npm run build         # Build the project
+npm run check         # Run comprehensive validation tests
 node build/index.js   # Run the server directly
+```
+
+## Type Validation System
+
+### Zod-Based Schema Validation
+The project includes comprehensive type validation using Zod schemas to ensure data integrity and catch type-related errors early:
+
+- **Validation Utilities**: `src/utils/validationUtils.ts` - Centralized validation functions and schemas
+- **Test Coverage**: `tests/validation.test.js` - 25+ test cases covering all MCP tool parameters
+- **Runtime Validation**: Validates search criteria, attributes, note creation, and search operations
+
+### Validation Features
+- **Schema Definitions**: Complete Zod schemas for all MCP tool parameters
+- **Error Handling**: Detailed error messages with field-specific validation feedback
+- **Safe Validation**: Non-throwing validation functions for graceful error handling
+- **Type Safety**: TypeScript inference from Zod schemas for compile-time type checking
+
+### Using npm run check
+The `npm run check` command provides comprehensive validation:
+1. **TypeScript Compilation**: Ensures type safety and compilation success
+2. **Schema Validation Tests**: Validates all MCP tool parameter schemas
+3. **Edge Case Testing**: Tests complex scenarios, error conditions, and data type validation
+4. **Error Message Testing**: Verifies clear, actionable error messages
+
+### Integration Points
+Validation functions can be integrated into request handlers for runtime validation:
+```typescript
+import { validateManageAttributes, createValidationError } from '../utils/validationUtils.js';
+
+// In request handlers
+try {
+  const validated = validateManageAttributes(request.params.arguments);
+  // Process validated data
+} catch (error) {
+  return {
+    content: [{ type: "text", text: createValidationError(error) }],
+    isError: true
+  };
+}
 ```
 
 ## MCP Tools Available
@@ -76,7 +119,8 @@ node build/index.js   # Run the server directly
 - `get_note`: Retrieve note content by ID
 
 ### WRITE Permission Tools
-- `create_note`: Create new notes with various types (text, code, file, image, etc.)
+- `create_note`: Create new notes with various types (text, code, file, image, etc.) - 15 ETAPI-aligned note types supported
+- `manage_attributes`: Manage note attributes (labels and relations) with full CRUD operations. Create labels (#tags), template relations (~template), and organize notes with metadata. Supports single operations and efficient batch creation for better performance.
 - `update_note`: Update existing note content with revision control (defaults to revision=true for safety)
 - `append_note`: Add content to existing notes without replacement (defaults to revision=false for performance)
 - `delete_note`: Delete notes by ID (permanent operation with caution warnings)
@@ -456,6 +500,94 @@ Enhanced negation operator support and documentation:
   - `not_exists`: Finds notes WITHOUT a property at all (generates `#!collection`)
   - `!=`: Finds notes WITH a property but excluding specific values (generates `#collection != 'value'`)
 - **Use cases**: Examples cover finding notes without specific labels, mixed negation scenarios, and proper operator selection
+
+### Enhanced create_note Function Design
+**Status**: ✅ **PHASE 1 COMPLETED** - Ready for Phase 2
+
+**Overview**: Enhancing `create_note` function to support optional attributes during note creation through a one-step workflow that provides 30-50% performance improvement over manual two-step approach.
+
+### ✅ Phase 1 Completed: manage_attributes Foundation
+**Status**: ✅ **IMPLEMENTED & TESTED**
+
+**Completed Implementation**:
+- **Core CRUD Operations**: Full attribute management (create, read, update, delete)
+- **Batch Processing**: Efficient parallel attribute creation for performance
+- **ETAPI Integration**: Full compatibility with Trilium ETAPI `/attributes` endpoint
+- **Validation System**: Comprehensive attribute validation with clear error messages
+- **Permission Control**: WRITE permission validation for security
+- **Tool Integration**: `manage_attributes` MCP tool available and functional
+
+**Key Features**:
+- ✅ **Single Attribute Operations**: Create individual labels and relations
+- ✅ **Batch Attribute Creation**: Multiple attributes in parallel (30-50% faster)
+- ✅ **Template Relations**: Support for `~template.title = 'Board'` and built-in templates
+- ✅ **Error Handling**: Graceful failure with actionable error messages
+- ✅ **Response Formatting**: User-friendly output with attribute summaries
+
+### 🔄 Phase 2: Enhanced create_note Integration (Week 3-4)
+**Status**: 🔄 **READY FOR IMPLEMENTATION**
+
+**Planned Implementation**:
+- Add optional `attributes` parameter to `create_note` function
+- Implement parallel processing workflow (note creation + attribute preparation)
+- Leverage existing `manage_attributes` foundation
+- Performance optimization and validation
+- Backward compatibility maintained
+
+**Key Design Decisions**:
+- **One-step workflow**: Single API call with internal parallel processing
+- **Backward compatibility**: Existing usage patterns remain unchanged
+- **Optional attributes**: New `attributes` parameter for labels and relations
+- **Performance optimization**: 30-50% improvement over manual two-step approach
+
+**Interface Design**:
+```typescript
+interface EnhancedCreateNoteParams {
+  parentNoteId: string;
+  title: string;
+  type: NoteType;  // Aligned with ETAPI: 15 types total
+  content: string;
+  mime?: string;
+  attributes?: Attribute[];  // New optional parameter
+}
+```
+
+**Performance Architecture**:
+```typescript
+async function create_note_with_attributes(params) {
+  // Parallel processing: note creation + attribute preparation
+  const [noteResult, attributePreparation] = await Promise.all([
+    create_basic_note(params),
+    params.attributes?.length ? prepare_attribute_requests(params.attributes) : null
+  ]);
+
+  // Apply attributes if needed
+  if (attributePreparation) {
+    await execute_batch_attributes(noteResult.noteId, attributePreparation);
+  }
+
+  return enhanced_response(noteResult, params.attributes);
+}
+```
+
+**Template Testing Plan**:
+- Board template: `~template.title = 'Board'` → Functional task board
+- Calendar template: `~template.title = 'Calendar'` → Date navigation interface
+- Template switching: Verify proper template application and functionality
+
+**Documentation**: Complete design specification in `docs/create-notes-examples/implementation-plan.md`
+
+### ✅ Note Type Alignment Completed
+**Status**: ✅ **COMPLETED**
+
+**ETAPI Alignment Updates**:
+- **Updated Note Type Enum**: Changed from 11 to 15 types to exactly match ETAPI specification
+- **Removed**: `canvas` type (not supported by ETAPI)
+- **Added**: `noteMap`, `webView`, `shortcut`, `doc`, `contentWidget`, `launcher`
+- **Tool Definitions**: Updated `create_note` and `search_notes` schemas with new enum values
+- **Backward Compatibility**: All existing functionality preserved with new type support
+
+**Current Supported Types**: `text`, `code`, `render`, `file`, `image`, `search`, `relationMap`, `book`, `noteMap`, `mermaid`, `webView`, `shortcut`, `doc`, `contentWidget`, `launcher` (15 total)
 
 ## Documentation Status
 

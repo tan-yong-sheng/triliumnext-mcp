@@ -29,8 +29,8 @@ export function createWriteTools(): any[] {
           },
           type: {
             type: "string",
-            enum: ["text", "code", "mermaid", "canvas", "file", "image", "search", "book", "relationMap", "render"],
-            description: "Type of note",
+            enum: ["text", "code", "render", "file", "image", "search", "relationMap", "book", "noteMap", "mermaid", "webView", "shortcut", "doc", "contentWidget", "launcher"],
+            description: "Type of note (aligned with TriliumNext ETAPI specification)",
           },
           content: {
             type: "string",
@@ -103,6 +103,81 @@ export function createWriteTools(): any[] {
         },
         required: ["noteId"],
       },
+    },
+    {
+      name: "manage_attributes",
+      description: "Manage note attributes (labels and relations) with full CRUD operations. Create labels (#tags), template relations (~template), and organize notes with metadata. Supports single operations and efficient batch creation for better performance. Template relations like ~template = 'Board' enable specialized note layouts and functionality.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          noteId: {
+            type: "string",
+            description: "ID of the note to manage attributes for"
+          },
+          operation: {
+            type: "string",
+            enum: ["create", "update", "delete", "batch_create", "read"],
+            description: "Operation type: 'create' (single attribute), 'update' (existing attribute), 'delete' (remove attribute), 'batch_create' (multiple attributes), 'read' (list all attributes)"
+          },
+          attributes: {
+            type: "array",
+            description: "Array of attributes to create/update/delete. Required for create/update/delete/batch_create operations. For read operation, this parameter is ignored.",
+            items: {
+              type: "object",
+              properties: {
+                type: {
+                  type: "string",
+                  enum: ["label", "relation"],
+                  description: "Attribute type: 'label' for #tags (categories, metadata), 'relation' for ~connections (template, author, etc.)"
+                },
+                name: {
+                  type: "string",
+                  description: "Attribute name: for labels (e.g., 'important', 'project'), for relations (e.g., 'template', 'author')"
+                },
+                value: {
+                  type: "string",
+                  description: "Attribute value: required for relations (e.g., 'Board', 'Tolkien'), optional for labels (e.g., 'api', 'python')"
+                },
+                position: {
+                  type: "number",
+                  description: "Display position (lower numbers appear first, default: 10)",
+                  default: 10
+                },
+                isInheritable: {
+                  type: "boolean",
+                  description: "Whether attribute is inherited by child notes (default: false)",
+                  default: false
+                }
+              },
+              required: ["type", "name"]
+            }
+          }
+        },
+        required: ["noteId", "operation"],
+        dependencies: {
+          operation: {
+            oneOf: [
+              {
+                properties: {
+                  operation: { enum: ["create", "update", "delete"] },
+                  attributes: { minItems: 1, maxItems: 1 }
+                }
+              },
+              {
+                properties: {
+                  operation: { enum: ["batch_create"] },
+                  attributes: { minItems: 1 }
+                }
+              },
+              {
+                properties: {
+                  operation: { enum: ["read"] }
+                }
+              }
+            ]
+          }
+        }
+      }
     }
   ];
 }
@@ -166,7 +241,7 @@ export function createReadTools(): any[] {
     },
     {
       name: "search_notes",
-      description: "Unified search with comprehensive filtering capabilities including keyword search, date ranges, field-specific searches, attribute searches, note properties, template-based searches, note type filtering, MIME type filtering, and hierarchy navigation through unified searchCriteria structure. For simple keyword searches, use the 'text' parameter. For complex boolean logic like 'docker OR kubernetes', use searchCriteria with proper OR logic. For template search: use relation type with 'template.title' property and built-in template values like 'Calendar', 'Board', 'Text Snippet', 'Grid View', 'List View', 'Table', 'Geo Map'. For note type search: use noteProperty type with 'type' property and values like 'text', 'code', 'mermaid', 'canvas', 'book', 'image', 'file', 'search', 'relationMap', 'noteMap', 'webView'. For MIME type search: use noteProperty type with 'mime' property and MIME values like 'text/javascript', 'text/x-python', 'text/vnd.mermaid', 'application/json'. Use hierarchy properties like 'parents.noteId', 'children.noteId', or 'ancestors.noteId' for navigation.",
+      description: "Unified search with comprehensive filtering capabilities including keyword search, date ranges, field-specific searches, attribute searches, note properties, template-based searches, note type filtering, MIME type filtering, and hierarchy navigation through unified searchCriteria structure. For simple keyword searches, use the 'text' parameter. For complex boolean logic like 'docker OR kubernetes', use searchCriteria with proper OR logic. For template search: use relation type with 'template.title' property and built-in template values like 'Calendar', 'Board', 'Text Snippet', 'Grid View', 'List View', 'Table', 'Geo Map'. For note type search: use noteProperty type with 'type' property and values from the 15 supported ETAPI types: 'text', 'code', 'render', 'file', 'image', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView', 'shortcut', 'doc', 'contentWidget', 'launcher'. For MIME type search: use noteProperty type with 'mime' property and MIME values like 'text/javascript', 'text/x-python', 'text/vnd.mermaid', 'application/json'. Use hierarchy properties like 'parents.noteId', 'children.noteId', or 'ancestors.noteId' for navigation.",
       inputSchema: {
         type: "object",
         properties: searchProperties,
@@ -207,7 +282,7 @@ function createSearchProperties() {
           },
           value: {
             type: "string",
-            description: "Value to compare against (optional for exists operator). For built-in template relations: use 'Calendar' (calendar notes), 'Board' (task boards), 'Text Snippet' (text snippets), 'Grid View' (grid layouts), 'List View' (list layouts), 'Table' (table views), 'Geo Map' (geography maps). For note type property: use note types like 'text' (rich text), 'code' (code with syntax highlighting), 'mermaid' (Mermaid diagrams), 'canvas' (Excalidraw drawings), 'book' (folders/containers), 'image' (images), 'file' (attachments), 'search' (saved searches), 'relationMap' (relation maps), 'noteMap' (note maps), 'webView' (web view notes). For note MIME property: use MIME types like 'text/javascript', 'text/x-python', 'text/x-java', 'text/css', 'text/html', 'text/x-typescript', 'text/x-sql', 'text/x-yaml', 'text/x-markdown', 'text/vnd.mermaid', 'application/json'. For noteProperty dates (dateCreated, dateModified): MUST use ISO date format - 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:mm:ss.sssZ'. For hierarchy navigation: parent/ancestor note title or 'root' for top-level."
+            description: "Value to compare against (optional for exists operator). For built-in template relations: use 'Calendar' (calendar notes), 'Board' (task boards), 'Text Snippet' (text snippets), 'Grid View' (grid layouts), 'List View' (list layouts), 'Table' (table views), 'Geo Map' (geography maps). For note type property: use ETAPI-aligned note types: 'text' (rich text), 'code' (code with syntax highlighting), 'render' (rendered content), 'file' (attachments), 'image' (images), 'search' (saved searches), 'relationMap' (relation maps), 'book' (folders/containers), 'noteMap' (note relationship maps), 'mermaid' (Mermaid diagrams), 'webView' (web content embedding), 'shortcut' (navigation shortcuts), 'doc' (document containers), 'contentWidget' (interactive widgets), 'launcher' (application launchers). For note MIME property: use MIME types like 'text/javascript', 'text/x-python', 'text/x-java', 'text/css', 'text/html', 'text/x-typescript', 'text/x-sql', 'text/x-yaml', 'text/x-markdown', 'text/vnd.mermaid', 'application/json'. For noteProperty dates (dateCreated, dateModified): MUST use ISO date format - 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:mm:ss.sssZ'. For hierarchy navigation: parent/ancestor note title or 'root' for top-level."
           },
           logic: {
             type: "string",
