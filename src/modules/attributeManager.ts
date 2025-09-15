@@ -5,6 +5,7 @@
 
 import { AxiosInstance } from 'axios';
 import axios from 'axios';
+import { logVerbose, logVerboseApi, logVerboseAxiosError } from "../utils/verboseUtils.js";
 
 export interface Attribute {
   type: "label" | "relation";
@@ -198,10 +199,7 @@ async function update_attribute(
     const noteResponse = await axiosInstance.get(`/notes/${noteId}`);
 
     // Debug: Log available attributes
-    const isVerbose = process.env.VERBOSE === "true";
-    if (isVerbose) {
-      console.error(`[VERBOSE] Available attributes on note ${noteId}:`, JSON.stringify(noteResponse.data.attributes, null, 2));
-    }
+    logVerbose("update_attribute", `Available attributes on note ${noteId}`, noteResponse.data.attributes);
 
     // Find the attribute to update by name and type
     const targetAttribute = noteResponse.data.attributes.find(
@@ -217,9 +215,7 @@ async function update_attribute(
       };
     }
 
-    if (isVerbose) {
-      console.error(`[VERBOSE] Found attribute to update:`, JSON.stringify(targetAttribute, null, 2));
-    }
+    logVerbose("update_attribute", "Found attribute to update", targetAttribute);
 
     const updateData = {
       value: attribute.value || "",
@@ -227,10 +223,8 @@ async function update_attribute(
       isInheritable: attribute.isInheritable || targetAttribute.isInheritable
     };
 
-    if (isVerbose) {
-      console.error(`[VERBOSE] Update data:`, JSON.stringify(updateData, null, 2));
-      console.error(`[VERBOSE] Patching URL: /attributes/${targetAttribute.attributeId}`);
-    }
+    logVerbose("update_attribute", "Update data", updateData);
+    logVerboseApi("PATCH", `/attributes/${targetAttribute.attributeId}`, updateData);
 
     const response = await axiosInstance.patch(
       `/attributes/${targetAttribute.attributeId}`,
@@ -245,14 +239,7 @@ async function update_attribute(
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const errorMessage = `Failed to update attribute: ${error.response?.data?.message || error.message}`;
-      if (process.env.VERBOSE === "true") {
-        console.error(`[VERBOSE] Axios error details:`, {
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data,
-          config: error.config
-        });
-      }
+      logVerboseAxiosError("update_attribute", error);
       return {
         success: false,
         message: errorMessage,

@@ -1,3 +1,5 @@
+import { logVerboseInput, logVerboseOutput, logVerboseTransform } from "../utils/verboseUtils.js";
+
 // Unified SearchCriteria interface for all search types
 interface SearchCriteria {
   property: string;  // Property name (varies by type)
@@ -18,10 +20,7 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
   const queryParts: string[] = [];
 
   // Verbose logging
-  const isVerbose = process.env.VERBOSE === "true";
-  if (isVerbose) {
-    console.error(`[VERBOSE] buildSearchQuery input:`, JSON.stringify(params, null, 2));
-  }
+  logVerboseInput("buildSearchQuery", params);
 
   // Build unified search criteria expressions
   const searchExpressions: string[] = [];
@@ -57,9 +56,7 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
   }
 
   // Verbose logging
-  if (isVerbose) {
-    console.error(`[VERBOSE] buildSearchQuery output: "${query}"`);
-  }
+  logVerboseOutput("buildSearchQuery", query);
 
   return query;
 }
@@ -164,10 +161,7 @@ function buildAttributeQuery(criteria: SearchCriteria): string {
       enhancedName = `${name}.title`;
 
       // Verbose logging for auto-enhancement
-      const isVerbose = process.env.VERBOSE === "true";
-      if (isVerbose) {
-        console.error(`[VERBOSE] Auto-enhanced relation property: "${name}" → "${enhancedName}" (TriliumNext requires property access for relations)`);
-      }
+      logVerboseTransform("relation", name, enhancedName, "TriliumNext requires property access for relations");
     }
   }
 

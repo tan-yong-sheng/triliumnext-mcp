@@ -24,7 +24,7 @@ This is a Model Context Protocol (MCP) server for TriliumNext Notes that provide
   - `searchQueryBuilder.ts` - Builds Trilium search query strings from structured parameters
   - `contentProcessor.ts` - Markdown detection and HTML conversion
   - `noteFormatter.ts` - Output formatting for note listings
-  - `verboseUtils.ts` - Debug info and response formatting utilities
+  - `verboseUtils.ts` - Centralized verbose logging utilities with specialized functions for input/output tracking, API requests, error handling, and data transformation logging
   - `validationUtils.ts` - Zod-based type validation and schema definitions
   - `permissionUtils.ts` - Permission checking interface and utilities
 
@@ -42,6 +42,43 @@ Required environment variables for operation:
 - `TRILIUM_API_URL` (optional): API endpoint, defaults to `http://localhost:8080/etapi`
 - `PERMISSIONS` (optional): Semicolon-separated permissions, defaults to `READ;WRITE`
 - `VERBOSE` (optional): Debug logging, defaults to `false`
+
+## Centralized Verbose Logging System
+
+The project implements a centralized verbose logging system through `src/utils/verboseUtils.ts` that provides consistent debugging output across all modules:
+
+### Verbose Logging Functions
+- `logVerbose(category, message, data?)` - General purpose logging with consistent formatting
+- `logVerboseInput(functionName, params)` - Specialized for function input parameters
+- `logVerboseOutput(functionName, result)` - Specialized for function output/results
+- `logVerboseApi(method, url, data?)` - HTTP request logging with standardized format
+- `logVerboseError(context, error)` - General error logging with context
+- `logVerboseAxiosError(context, error)` - Specialized axios error logging with detailed API response info
+- `logVerboseTransform(category, from, to, reason?)` - Data transformation logging
+
+### Centralization Benefits
+- **Consistent Format**: All verbose output follows `[VERBOSE] category: message` pattern
+- **Code Reduction**: Eliminated 11+ repetitive `process.env.VERBOSE === "true"` checks across modules
+- **Single Source of Truth**: Verbose behavior controlled in one location
+- **Enhanced Debugging**: Specialized functions provide detailed API error information, transformation tracking, and request/response logging
+- **Maintainability**: Easy to modify logging behavior without touching multiple files
+
+### Usage Pattern
+```typescript
+// Instead of repetitive code:
+const isVerbose = process.env.VERBOSE === "true";
+if (isVerbose) {
+  console.error(`[VERBOSE] function_name: message`, data);
+}
+
+// Use centralized functions:
+logVerbose("function_name", "message", data);
+```
+
+### Modules Using Centralized Logging
+- **searchQueryBuilder.ts**: Input/output logging and relation transformation tracking
+- **resolveManager.ts**: Input parameter logging for note resolution
+- **attributeManager.ts**: Comprehensive debugging including available attributes, API requests, and detailed error logging
 
 ## Development Commands
 

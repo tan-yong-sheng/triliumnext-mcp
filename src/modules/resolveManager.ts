@@ -6,6 +6,7 @@
 
 import { buildSearchQuery } from "./searchQueryBuilder.js";
 import { SearchOperation } from "./searchManager.js";
+import { logVerboseInput } from "../utils/verboseUtils.js";
 
 export interface ResolveNoteOperation {
   noteName: string;
@@ -40,10 +41,7 @@ export async function handleResolveNoteId(
   const { noteName, exactMatch = false, maxResults = 3, autoSelect = false } = args;
 
   // Verbose logging
-  const isVerbose = process.env.VERBOSE === "true";
-  if (isVerbose) {
-    console.error(`[VERBOSE] resolve_note_id input:`, JSON.stringify(args, null, 2));
-  }
+  logVerboseInput("resolve_note_id", args);
 
   if (!noteName?.trim()) {
     throw new Error("Note name must be provided");
@@ -62,9 +60,7 @@ export async function handleResolveNoteId(
     searchCriteria
   };
 
-  if (isVerbose) {
-    console.error(`[VERBOSE] resolve_note_id searchParams:`, JSON.stringify(searchParams, null, 2));
-  }
+  logVerboseInput("resolve_note_id", searchParams);
 
   // Search for notes matching the criteria
   const query = buildSearchQuery(searchParams);
