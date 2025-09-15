@@ -9,40 +9,180 @@ This document outlines planned features and enhancements for the TriliumNext MCP
 - Need to have a way to prevent editing when note is modified during the process... Note has been unexpectedly modified. Read it again before attempting to write it.
 
 
-### 2. File Upload Capabilities for create_note Function
+### 2. Multi-Modal Content Support for create_note Function
 
-**Status**: Proposed enhancement for note creation with file attachments
+**Status**: 🔄 **RESEARCH COMPLETED** - Enhanced multi-modal content support with URL and local file handling
 
 **Proposed Implementation**:
-- **File Parameter**: Add optional `filePath` parameter to `create_note` function
-- **Automatic Type Detection**: Auto-detect MIME type based on file extension
-- **Content Encoding**: Handle file content encoding and base64 conversion if needed
-- **Size Validation**: Validate file size limits and provide clear error messages
+- **Multi-Modal Content Parameter**: Transform `content` from string to `ContentItem[]` array
+- **Multiple Content Types**: Support text, local files, remote URLs, and mixed content
+- **Intelligent Processing**: Automatic MIME type detection and content optimization
+- **URL Fetching**: Built-in HTTP client for remote content fetching
+- **Backward Compatibility**: Graceful handling of string content as single-item array
 
-**Key Features**:
-- 📁 **Multiple File Types**: Support images, documents, code files, and other media
-- 🔄 **Automatic Processing**: Handle file reading, encoding, and upload preparation
-- 📋 **Metadata Preservation**: Preserve file metadata and original filenames
-- ⚡ **Performance Optimization**: Efficient file handling for large files
+**Enhanced Content Types**:
+- 📝 **Text Content**: HTML, markdown (pre-processed), plain text
+- 📁 **Local Files**: Images, documents, code files, media (via file path)
+- 🌐 **Remote URLs**: Direct URL support for images and files (HTTP/HTTPS)
+- 🔗 **Data URLs**: Base64 encoded content with MIME type
+- 📦 **Mixed Content**: Combine multiple content types in single note
 
-**Interface Design**:
+**Enhanced Interface Design**:
 ```typescript
-interface CreateNoteWithFileParams {
+interface ContentItem {
+  type: 'text' | 'file' | 'image' | 'url' | 'data-url';
+  content: string;
+  mimeType?: string;
+  filename?: string;
+  encoding?: 'plain' | 'base64' | 'data-url';
+  urlOptions?: {
+    timeout?: number;
+    headers?: Record<string, string>;
+    followRedirects?: boolean;
+  };
+}
+
+interface MultiModalCreateNoteParams {
   parentNoteId: string;
   title: string;
   type: NoteType;
-  content?: string;        // Optional for file notes
-  filePath?: string;      // Path to file for upload
-  mime?: string;          // Auto-detected from file
+  content: ContentItem[] | string;  // Backward compatible
+  mime?: string;
   attributes?: Attribute[];
 }
 ```
 
-**Use Cases**:
-- Image notes with automatic MIME type detection
-- Document attachments with metadata preservation
-- Code files with syntax highlighting
-- Media files with proper content type handling
+**Content Processing Engine**:
+```typescript
+class MultiModalContentProcessor {
+  async processContentItems(items: ContentItem[]): Promise<ProcessResult> {
+    const result: ProcessResult = {
+      textContent: '',
+      attachments: [],
+      primaryMimeType: null
+    };
+
+    for (const item of items) {
+      switch (item.type) {
+        case 'text':
+          result.textContent += await this.processTextContent(item);
+          break;
+        case 'file':
+          const fileAttachment = await this.processLocalFile(item);
+          result.attachments.push(fileAttachment);
+          break;
+        case 'url':
+          const urlAttachment = await this.processRemoteUrl(item);
+          result.attachments.push(urlAttachment);
+          break;
+        case 'image':
+          const imageAttachment = await this.processImageContent(item);
+          result.attachments.push(imageAttachment);
+          break;
+        case 'data-url':
+          const dataAttachment = await this.processDataUrl(item);
+          result.attachments.push(dataAttachment);
+          break;
+      }
+    }
+
+    return result;
+  }
+}
+```
+
+**URL Processing Features**:
+- 🌐 **Protocol Support**: HTTP/HTTPS with configurable timeout
+- 🔒 **Security**: URL validation, content type verification, size limits
+- 🔄 **Redirect Handling**: Optional redirect following for URL shorteners
+- 📋 **Custom Headers**: Support for authentication and custom headers
+- ⚡ **Caching**: Intelligent caching for frequently accessed URLs
+
+**Example Usage Patterns**:
+
+**Mixed Content (Text + Local Image + Remote File)**:
+```typescript
+{
+  content: [
+    { type: 'text', content: '<h1>Project Report</h1>' },
+    { type: 'image', content: '/path/to/local/chart.png', mimeType: 'image/png' },
+    {
+      type: 'url',
+      content: 'https://example.com/data.pdf',
+      mimeType: 'application/pdf',
+      filename: 'external-data.pdf'
+    }
+  ]
+}
+```
+
+**Remote Image with Custom Options**:
+```typescript
+{
+  content: [
+    {
+      type: 'url',
+      content: 'https://example.com/image.jpg',
+      mimeType: 'image/jpeg',
+      urlOptions: {
+        timeout: 10000,
+        headers: { 'Authorization': 'Bearer token' },
+        followRedirects: true
+      }
+    }
+  ]
+}
+```
+
+**Data URL Content**:
+```typescript
+{
+  content: [
+    {
+      type: 'data-url',
+      content: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCI+PC9zdmc+',
+      mimeType: 'image/svg+xml'
+    }
+  ]
+}
+```
+
+**Backward Compatibility**:
+```typescript
+// Still works - auto-converted to ContentItem[]
+{
+  content: '<h1>Simple note</h1>'
+}
+// Automatically becomes:
+{
+  content: [
+    { type: 'text', content: '<h1>Simple note</h1>' }
+  ]
+}
+```
+
+**Key Technical Features**:
+- 🎯 **MIME Type Detection**: Automatic detection from file extensions, URL headers, and content analysis
+- 📊 **Size Validation**: Configurable size limits for each content type with clear error messages
+- 🔐 **Security**: Comprehensive validation including URL allowlists, file type restrictions, and content scanning
+- ⚡ **Performance**: Parallel processing for multiple content items, intelligent caching
+- 🛡️ **Error Handling**: Graceful failure with detailed error context and recovery suggestions
+- 📈 **Progress Tracking**: Real-time progress reporting for large file operations and URL fetches
+
+**Security Considerations**:
+- URL validation and allowlist/denylist support
+- File type restrictions and content validation
+- Size limits to prevent denial of service
+- Secure temporary file handling
+- Authentication support for protected URLs
+- Content scanning for malicious files
+
+**Performance Optimizations**:
+- Parallel content processing
+- Streaming file operations for large files
+- Intelligent URL caching with TTL
+- Memory-efficient base64 encoding
+- Connection pooling for HTTP requests
 
 ### 3. Response Formatter for Standardized Output Formats
 
@@ -462,7 +602,7 @@ function isTemplateRelation(property: string): boolean {
 
 
 **Implementation Strategy**:
-1. **File Upload Implementation**: Add file handling capabilities to `create_note` function
+1. **Multi-Modal Content Support**: Enhanced `create_note` with text, file, URL, and mixed content support
 2. **Response Formatter**: Standardize output formats across all tools with multiple format support
 3. **Intent Resolution**: Develop semantic analysis for intelligent tool selection
 4. **Search Enhancements**: Implement offset parameters, search/replace functionality, and relation search by noteId
@@ -518,8 +658,8 @@ function isTemplateRelation(property: string): boolean {
 
 ## Timeline
 
-**Phase 1** (Near-term): Enhanced create_note function with attribute integration
-**Phase 2** (Mid-term): File upload capabilities and response formatting
+**Phase 1** (Near-term): Multi-modal content support for create_note function with text, file, URL, and mixed content handling
+**Phase 2** (Mid-term): Enhanced create_note function with attribute integration and response formatting
 **Phase 3** (Future): Intent resolution and search enhancements
 
 ## Implementation Status
@@ -533,10 +673,9 @@ function isTemplateRelation(property: string): boolean {
 - ✅ Enhanced note ID resolution
 
 **In Progress**:
-- 🔄 Enhanced create_note function with integrated attribute support (Phase 2)
+- 🔄 Multi-modal content support for create_note function (research completed, documentation updated)
 
 **Proposed**:
-- 📋 File upload capabilities for create_note function
 - 📊 Response formatter for standardized output formats
 - 🎯 Intent resolution function for semantic routing
 - 📄 Offset parameters for search_notes function
