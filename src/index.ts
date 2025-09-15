@@ -142,3 +142,9 @@ server.run().catch((error) => {
   console.error("Server error:", error);
   process.exit(1);
 });
+
+// Export helper functions for external use
+export {
+  buildNoteParams,
+  buildContentItem
+} from './utils/noteBuilder.js';

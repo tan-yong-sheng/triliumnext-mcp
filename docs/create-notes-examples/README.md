@@ -42,12 +42,44 @@ The TriliumNext MCP server provides powerful tools for note creation and managem
 
 ### Content Format Guidelines
 
-#### HTML Content (text, render, webView)
+#### Smart Format Detection (New!)
+
+The system now automatically detects content format for text notes:
+
+- **HTML content**: Detected by HTML tags (`<h1>`, `<p>`, `<strong>`, etc.) - passed through as-is
+- **Markdown content**: Detected by Markdown patterns (`#`, `**bold**`, `- lists`, `[links]()`) - converted to HTML
+- **Plain text**: No special formatting detected - wrapped in `<p>` tags with HTML escaping
+
+**No format specification needed!** Just provide content and the system handles the rest.
+
+#### Examples:
+
+**Markdown content (automatically detected):**
+```typescript
+content: [
+  {
+    type: 'text',
+    content: '# Note Title\n\nThis is **markdown** content with:\n- Lists\n- **Bold text**\n- *Italic text*\n- [Links](https://example.com)'
+  }
+]
+```
+
+**HTML content (automatically detected):**
 ```typescript
 content: [
   {
     type: 'text',
     content: '<h1>Note Title</h1><p>This is <strong>HTML</strong> content.</p>'
+  }
+]
+```
+
+**Plain text (automatically detected):**
+```typescript
+content: [
+  {
+    type: 'text',
+    content: 'This is plain text content.\n\nLine breaks are preserved.'
   }
 ]
 ```
@@ -150,9 +182,109 @@ interface EnhancedCreateNoteParams {
 }
 ```
 
+### 🆕 Simplified Interface (New!)
+
+**The `buildNoteParams` helper function eliminates ContentItem complexity:**
+
+```typescript
+import { buildNoteParams, buildCodeNote, buildImageNote } from 'triliumnext-mcp';
+
+// Simple text note - auto-detected format
+const simpleNote = buildNoteParams({
+  parentNoteId: "root",
+  title: "My Note",
+  noteType: "text",
+  content: "# Hello World\n\nThis is **markdown** content!"
+});
+
+// Code note - automatic plain text handling
+const codeNote = buildCodeNote({
+  parentNoteId: "root",
+  title: "Fibonacci",
+  content: `def fibonacci(n):
+    if n <= 0:
+        return []
+    elif n == 1:
+        return [0]
+    else:
+        fib = [0, 1]
+        while len(fib) < n:
+            fib.append(fib[-1] + fib[-2])
+        return fib`,
+  mime: "text/x-python"
+});
+
+// Image upload - direct file handling
+const imageNote = buildImageNote({
+  parentNoteId: "root",
+  title: "Chart",
+  content: "base64-image-data...",
+  filename: "chart.png",
+  mime: "image/png"
+});
+
+// Mixed content - text + image
+const mixedNote = buildNoteParams({
+  parentNoteId: "root",
+  title: "Report",
+  noteType: "text",
+  content: [
+    { type: "text", content: "# Quarterly Report\n\nHere are the results:" },
+    { type: "image", content: "base64-data...", filename: "chart.png" }
+  ]
+});
+```
+
 ## Usage Examples
 
-### Basic Text Content (Array Required)
+### 🚀 Simplified Usage (Recommended)
+
+**For most cases, use the simplified interface with `buildNoteParams`:**
+
+#### Simple Text Note
+```javascript
+// Text with automatic format detection
+const params = buildNoteParams({
+  parentNoteId: "root",
+  title: "Meeting Notes",
+  noteType: "text",
+  content: "# Meeting Summary\n\n- Discussed Q4 goals\n- **Action items** identified\n- [Follow-up required](https://example.com)"
+});
+```
+
+#### Code Note (Perfect for your Fibonacci example!)
+```javascript
+// Code notes are handled automatically - no HTML detection
+const params = buildCodeNote({
+  parentNoteId: "root",
+  title: "Fibonacci Function",
+  content: `def fibonacci(n):
+    if n <= 0:
+        return []
+    elif n == 1:
+        return [0]
+    else:
+        fib = [0, 1]
+        while len(fib) < n:
+            fib.append(fib[-1] + fib[-2])
+        return fib`,
+  mime: "text/x-python"
+});
+```
+
+#### Image Upload
+```javascript
+// Easy image uploads
+const params = buildImageNote({
+  parentNoteId: "root",
+  title: "Project Chart",
+  content: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+  filename: "chart.png",
+  mime: "image/png"
+});
+```
+
+### Advanced Usage (Direct ContentItem Array)
 
 ```typescript
 // Text content must be wrapped in ContentItem array

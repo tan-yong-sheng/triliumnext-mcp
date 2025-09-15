@@ -3,19 +3,8 @@
  * Handles CRUD operations for TriliumNext notes
  */
 
-
-export interface ContentItem {
-  type: 'text' | 'file' | 'image' | 'url' | 'data-url';
-  content: string;
-  mimeType?: string;
-  filename?: string;
-  encoding?: 'plain' | 'base64' | 'data-url';
-  urlOptions?: {
-    timeout?: number;
-    headers?: Record<string, string>;
-    followRedirects?: boolean;
-  };
-}
+import { ContentItem } from '../types/contentTypes.js';
+import { processContentArray, processContentItem, stringToContentItem } from '../utils/contentProcessor.js';
 
 export interface Attribute {
   type: 'label' | 'relation';
@@ -24,6 +13,8 @@ export interface Attribute {
   position?: number;
   isInheritable?: boolean;
 }
+
+export type NoteType = 'text' | 'code' | 'render' | 'file' | 'image' | 'search' | 'relationMap' | 'book' | 'noteMap' | 'mermaid' | 'webView' | 'shortcut' | 'doc' | 'contentWidget' | 'launcher';
 
 export interface NoteOperation {
   parentNoteId?: string;
@@ -65,26 +56,82 @@ export async function handleCreateNote(
   args: NoteOperation,
   axiosInstance: any
 ): Promise<NoteCreateResponse> {
-  const { parentNoteId, title, type, content: rawContent, mime } = args;
+  const { parentNoteId, title, type, content: rawContent, mime, attributes } = args;
 
   if (!parentNoteId || !title || !type || !rawContent) {
     throw new Error("parentNoteId, title, type, and content are required for create operation.");
   }
 
-  // Use content directly (HTML input required)
+  // Process content array to ETAPI format
+  let processedContent: string;
+  let finalMime = mime;
 
-  const response = await axiosInstance.post("/create-note", {
+  if (Array.isArray(rawContent)) {
+    // ContentItem[] array format
+    const processed = await processContentArray(rawContent, type);
+    if (processed.error) {
+      throw new Error(`Content processing error: ${processed.error}`);
+    }
+    processedContent = processed.content;
+    finalMime = processed.mimeType || mime;
+  } else if (typeof rawContent === 'string') {
+    // Backward compatibility: string content
+    processedContent = rawContent;
+  } else {
+    throw new Error("Content must be a string or ContentItem array");
+  }
+
+  // Create note with processed content
+  const noteData: any = {
     parentNoteId,
     title,
     type,
-    content: rawContent,
-    mime,
-  });
+    content: processedContent
+  };
+
+  // Add MIME type if specified
+  if (finalMime) {
+    noteData.mime = finalMime;
+  }
+
+  const response = await axiosInstance.post("/create-note", noteData);
+
+  // Handle attributes if provided
+  if (attributes && attributes.length > 0) {
+    try {
+      await createNoteAttributes(response.data.note.noteId, attributes, axiosInstance);
+    } catch (attributeError) {
+      console.warn(`Note created but attributes failed to apply: ${attributeError}`);
+    }
+  }
 
   return {
     noteId: response.data.note.noteId,
     message: `Created note: ${response.data.note.noteId}`
   };
+}
+
+/**
+ * Create attributes for a note (helper function)
+ */
+async function createNoteAttributes(
+  noteId: string,
+  attributes: Attribute[],
+  axiosInstance: any
+): Promise<void> {
+  const attributePromises = attributes.map(async (attr) => {
+    const attributeData = {
+      type: attr.type,
+      name: attr.name,
+      value: attr.value || '',
+      position: attr.position || 10,
+      isInheritable: attr.isInheritable || false
+    };
+
+    return axiosInstance.post(`/notes/${noteId}/attributes`, attributeData);
+  });
+
+  await Promise.all(attributePromises);
 }
 
 /**
@@ -113,9 +160,24 @@ export async function handleUpdateNote(
     }
   }
 
-  // Use content directly (HTML input required)
+  // Process content array to ETAPI format
+  let processedContent: string;
 
-  const response = await axiosInstance.put(`/notes/${noteId}/content`, rawContent, {
+  if (Array.isArray(rawContent)) {
+    // ContentItem[] array format - process first item only for update
+    const processed = await processContentArray(rawContent);
+    if (processed.error) {
+      throw new Error(`Content processing error: ${processed.error}`);
+    }
+    processedContent = processed.content;
+  } else if (typeof rawContent === 'string') {
+    // Backward compatibility: string content
+    processedContent = rawContent;
+  } else {
+    throw new Error("Content must be a string or ContentItem array");
+  }
+
+  const response = await axiosInstance.put(`/notes/${noteId}/content`, processedContent, {
     headers: {
       "Content-Type": "text/plain"
     }
@@ -159,15 +221,30 @@ export async function handleAppendNote(
     }
   }
 
+  // Process content array to ETAPI format
+  let processedContentToAppend: string;
+
+  if (Array.isArray(contentToAppend)) {
+    // ContentItem[] array format - process first item only for append
+    const processed = await processContentArray(contentToAppend);
+    if (processed.error) {
+      throw new Error(`Content processing error: ${processed.error}`);
+    }
+    processedContentToAppend = processed.content;
+  } else if (typeof contentToAppend === 'string') {
+    // Backward compatibility: string content
+    processedContentToAppend = contentToAppend;
+  } else {
+    throw new Error("Content must be a string or ContentItem array");
+  }
+
   // Get current content
   const { data: currentContent } = await axiosInstance.get(`/notes/${noteId}/content`, {
     responseType: 'text'
   });
 
-  // Use content to append directly (HTML input required)
-
   // Concatenate current content with new content
-  const newContent = currentContent + contentToAppend;
+  const newContent = currentContent + processedContentToAppend;
 
   // Update note content
   const response = await axiosInstance.put(`/notes/${noteId}/content`, newContent, {

@@ -12,7 +12,7 @@ export function createWriteTools(): any[] {
   return [
     {
       name: "create_note",
-      description: "Create a new note in TriliumNext. ONLY use this tool when the user explicitly requests note creation (e.g., 'create a note', 'make a new note'). DO NOT use this tool proactively or when the user is only asking questions about their notes.",
+      description: "Create a new note in TriliumNext. ONLY use this tool when the user explicitly requests note creation (e.g., 'create a note', 'make a new note'). DO NOT use this tool proactively or when the user is only asking questions about their notes. TIP: For code notes, content is plain text (no HTML processing). For mixed content (text+images), use content array with proper types.",
       inputSchema: {
         type: "object",
         properties: {
@@ -32,18 +32,18 @@ export function createWriteTools(): any[] {
           },
           content: {
             type: "array",
-            description: "Content of the note as ContentItem array. Content requirements vary by note type: text/render/webView require HTML content (e.g., '<h1>Title</h1>'), code/mermaid require plain text (no HTML), file/image require base64 encoded data, book/search/etc can be empty or optional.",
+            description: "Content of the note as ContentItem array. Content requirements vary by note type: text/render/webView use smart format detection (HTML/Markdown/plain), code/mermaid require plain text, file/image require base64 encoded data, book/search/etc can be empty or optional.",
             items: {
               type: "object",
               properties: {
                 type: {
                   type: "string",
                   enum: ["text", "file", "image", "url", "data-url"],
-                  description: "Content type: 'text' for HTML/plain text, 'file' for base64 files, 'image' for base64 images, 'url' for remote URLs, 'data-url' for embedded data"
+                  description: "Content type: 'text' for smart format detection (HTML/Markdown/plain), 'file' for base64 files, 'image' for base64 images, 'url' for remote URLs, 'data-url' for embedded data"
                 },
                 content: {
                   type: "string",
-                  description: "Content data - format varies by type: HTML for text, base64 for file/image, URL for remote, data URL for embedded"
+                  description: "Content data - for text type: automatically detected as HTML/Markdown/plain; for file/image: base64 encoded; for url/data-url: URL string"
                 },
                 mimeType: {
                   type: "string",
@@ -110,18 +110,18 @@ export function createWriteTools(): any[] {
           },
           content: {
             type: "array",
-            description: "New content as ContentItem array. Content requirements vary by note type: text/render/webView require HTML content, code/mermaid require plain text, file/image require base64 encoded data.",
+            description: "New content as ContentItem array. Content requirements vary by note type: text/render/webView use smart format detection (HTML/Markdown/plain), code/mermaid require plain text, file/image require base64 encoded data.",
             items: {
               type: "object",
               properties: {
                 type: {
                   type: "string",
                   enum: ["text", "file", "image", "url", "data-url"],
-                  description: "Content type: 'text' for HTML/plain text, 'file' for base64 files, 'image' for base64 images, 'url' for remote URLs, 'data-url' for embedded data"
+                  description: "Content type: 'text' for smart format detection (HTML/Markdown/plain), 'file' for base64 files, 'image' for base64 images, 'url' for remote URLs, 'data-url' for embedded data"
                 },
                 content: {
                   type: "string",
-                  description: "Content data - format varies by type: HTML for text, base64 for file/image, URL for remote, data URL for embedded"
+                  description: "Content data - for text type: automatically detected as HTML/Markdown/plain; for file/image: base64 encoded; for url/data-url: URL string"
                 },
                 mimeType: {
                   type: "string",
@@ -156,18 +156,18 @@ export function createWriteTools(): any[] {
           },
           content: {
             type: "array",
-            description: "Content to append as ContentItem array. Content requirements vary by note type: text/render/webView require HTML content, code/mermaid require plain text, file/image require base64 encoded data.",
+            description: "Content to append as ContentItem array. Content requirements vary by note type: text/render/webView use smart format detection (HTML/Markdown/plain), code/mermaid require plain text, file/image require base64 encoded data.",
             items: {
               type: "object",
               properties: {
                 type: {
                   type: "string",
                   enum: ["text", "file", "image", "url", "data-url"],
-                  description: "Content type: 'text' for HTML/plain text, 'file' for base64 files, 'image' for base64 images, 'url' for remote URLs, 'data-url' for embedded data"
+                  description: "Content type: 'text' for smart format detection (HTML/Markdown/plain), 'file' for base64 files, 'image' for base64 images, 'url' for remote URLs, 'data-url' for embedded data"
                 },
                 content: {
                   type: "string",
-                  description: "Content data - format varies by type: HTML for text, base64 for file/image, URL for remote, data URL for embedded"
+                  description: "Content data - for text type: automatically detected as HTML/Markdown/plain; for file/image: base64 encoded; for url/data-url: URL string"
                 },
                 mimeType: {
                   type: "string",
