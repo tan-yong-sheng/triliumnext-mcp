@@ -17,6 +17,109 @@ The TriliumNext MCP server provides powerful tools for note creation and managem
 
 **⚠️ IMPORTANT**: The `content` parameter in `create_note`, `update_note`, and `append_note` now accepts **only arrays of ContentItem objects**, not strings. This is a breaking change that requires migration of existing code.
 
+## 🚨 CRITICAL: Content Requirements by Note Type
+
+**⚠️ ACTION REQUIRED**: Tool descriptions must be updated to reflect these content requirements. The content format and necessity varies significantly by note type.
+
+### Content Requirements Matrix
+
+| Note Type | Content Required | Content Format | Examples |
+|-----------|------------------|----------------|----------|
+| **`text`** | ✅ Required | HTML content | `<h1>Title</h1><p>Content</p>` |
+| **`code`** | ✅ Required | Plain text code | `function test() { return true; }` |
+| **`file`** | ✅ Required | Base64 encoded file data | `JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXM...` |
+| **`image`** | ✅ Required | Base64 encoded image data | `iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==` |
+| **`render`** | ✅ Required | HTML or template content | `<div>{{content}}</div>` |
+| **`search`** | ⚠️ Optional | Search query string | `note.type = 'text' AND #important` |
+| **`book`** | ⚠️ Optional | Description HTML | `<p>Project folder</p>` (can be empty) |
+| **`relationMap`** | ⚠️ Optional | Configuration data | JSON configuration |
+| **`mermaid`** | ✅ Required | Mermaid diagram syntax | `graph TD; A-->B; B-->C;` |
+| **`webView`** | ✅ Required | HTML content | `<iframe src="..."></iframe>` |
+| **`shortcut`** | ⚠️ Optional | Target reference | `targetNoteId` or empty |
+| **`doc`** | ⚠️ Optional | Document content | HTML or structured data |
+| **`contentWidget`** | ⚠️ Optional | Widget configuration | JSON configuration |
+| **`launcher`** | ⚠️ Optional | Launch parameters | Command or URL |
+
+### Content Format Guidelines
+
+#### HTML Content (text, render, webView)
+```typescript
+content: [
+  {
+    type: 'text',
+    content: '<h1>Note Title</h1><p>This is <strong>HTML</strong> content.</p>'
+  }
+]
+```
+
+#### Code Content (code)
+```typescript
+content: [
+  {
+    type: 'code',
+    content: `function helloWorld() {
+  console.log('Hello, World!');
+  return true;
+}`
+  }
+]
+```
+
+#### File Content (file)
+```typescript
+content: [
+  {
+    type: 'file',
+    content: 'JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXM...', // Base64
+    mimeType: 'application/pdf',
+    filename: 'document.pdf'
+  }
+]
+```
+
+#### Image Content (image)
+```typescript
+content: [
+  {
+    type: 'image',
+    content: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', // Base64
+    mimeType: 'image/png',
+    filename: 'diagram.png'
+  }
+]
+```
+
+#### Mermaid Content (mermaid)
+```typescript
+content: [
+  {
+    type: 'text',
+    content: `graph TD
+    A[Start] --> B{Process}
+    B -->|Yes| C[End]
+    B -->|No| D[Continue]
+    D --> B`
+  }
+]
+```
+
+#### Empty Content (book, search, etc.)
+```typescript
+content: [
+  {
+    type: 'text',
+    content: ''  // Empty string for container notes
+  }
+]
+```
+
+### Common Mistakes to Avoid
+
+1. **Wrong Content Type**: Using HTML content for `code` notes
+2. **Missing Content**: Leaving content empty for required types
+3. **Wrong Encoding**: Not using base64 for file/image content
+4. **HTML in Code**: Putting HTML tags in code note content
+
 ### ContentItem Interface
 
 ```typescript

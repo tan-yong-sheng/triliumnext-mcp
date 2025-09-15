@@ -4,15 +4,37 @@
  */
 
 
+export interface ContentItem {
+  type: 'text' | 'file' | 'image' | 'url' | 'data-url';
+  content: string;
+  mimeType?: string;
+  filename?: string;
+  encoding?: 'plain' | 'base64' | 'data-url';
+  urlOptions?: {
+    timeout?: number;
+    headers?: Record<string, string>;
+    followRedirects?: boolean;
+  };
+}
+
+export interface Attribute {
+  type: 'label' | 'relation';
+  name: string;
+  value?: string;
+  position?: number;
+  isInheritable?: boolean;
+}
+
 export interface NoteOperation {
   parentNoteId?: string;
   title?: string;
   type?: string;
-  content?: string;
+  content?: string | ContentItem[];
   mime?: string;
   noteId?: string;
   revision?: boolean;
   includeContent?: boolean;
+  attributes?: Attribute[];
 }
 
 export interface NoteCreateResponse {
@@ -33,7 +55,7 @@ export interface NoteDeleteResponse {
 
 export interface NoteGetResponse {
   note: any;
-  content?: string;
+  content?: string | ContentItem[];
 }
 
 /**

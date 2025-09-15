@@ -31,12 +31,68 @@ export function createWriteTools(): any[] {
             description: "Type of note (aligned with TriliumNext ETAPI specification)",
           },
           content: {
-            type: "string",
-            description: "HTML content of the note",
+            type: "array",
+            description: "Content of the note as ContentItem array. Content requirements vary by note type: text/render/webView require HTML content (e.g., '<h1>Title</h1>'), code/mermaid require plain text (no HTML), file/image require base64 encoded data, book/search/etc can be empty or optional.",
+            items: {
+              type: "object",
+              properties: {
+                type: {
+                  type: "string",
+                  enum: ["text", "file", "image", "url", "data-url"],
+                  description: "Content type: 'text' for HTML/plain text, 'file' for base64 files, 'image' for base64 images, 'url' for remote URLs, 'data-url' for embedded data"
+                },
+                content: {
+                  type: "string",
+                  description: "Content data - format varies by type: HTML for text, base64 for file/image, URL for remote, data URL for embedded"
+                },
+                mimeType: {
+                  type: "string",
+                  description: "MIME type for file/image content (e.g., 'image/png', 'application/pdf')"
+                },
+                filename: {
+                  type: "string",
+                  description: "Filename for file/image content"
+                }
+              },
+              required: ["type", "content"]
+            }
           },
           mime: {
             type: "string",
             description: "MIME type for code/file/image notes",
+          },
+          attributes: {
+            type: "array",
+            description: "Optional attributes to create with the note (labels and relations). Enables one-step note creation with metadata. Labels use #tag format (e.g., 'important', 'project'), relations connect to other notes (e.g., template relations use 'Board', 'Calendar', 'Text Snippet').",
+            items: {
+              type: "object",
+              properties: {
+                type: {
+                  type: "string",
+                  enum: ["label", "relation"],
+                  description: "Attribute type: 'label' for #tags, 'relation' for ~connections"
+                },
+                name: {
+                  type: "string",
+                  description: "Attribute name: for labels use descriptive tags, for relations use connection types (e.g., 'template', 'author')"
+                },
+                value: {
+                  type: "string",
+                  description: "Attribute value: optional for labels (e.g., 'In Progress'), required for relations (e.g., 'Board', 'Calendar', target note IDs/titles)"
+                },
+                position: {
+                  type: "number",
+                  description: "Display position (lower numbers appear first, default: 10)",
+                  default: 10
+                },
+                isInheritable: {
+                  type: "boolean",
+                  description: "Whether attribute is inherited by child notes (default: false)",
+                  default: false
+                }
+              },
+              required: ["type", "name"]
+            }
           },
         },
         required: ["parentNoteId", "title", "type", "content"],
@@ -53,8 +109,31 @@ export function createWriteTools(): any[] {
             description: "ID of the note to update"
           },
           content: {
-            type: "string",
-            description: "New HTML content for the note"
+            type: "array",
+            description: "New content as ContentItem array. Content requirements vary by note type: text/render/webView require HTML content, code/mermaid require plain text, file/image require base64 encoded data.",
+            items: {
+              type: "object",
+              properties: {
+                type: {
+                  type: "string",
+                  enum: ["text", "file", "image", "url", "data-url"],
+                  description: "Content type: 'text' for HTML/plain text, 'file' for base64 files, 'image' for base64 images, 'url' for remote URLs, 'data-url' for embedded data"
+                },
+                content: {
+                  type: "string",
+                  description: "Content data - format varies by type: HTML for text, base64 for file/image, URL for remote, data URL for embedded"
+                },
+                mimeType: {
+                  type: "string",
+                  description: "MIME type for file/image content (e.g., 'image/png', 'application/pdf')"
+                },
+                filename: {
+                  type: "string",
+                  description: "Filename for file/image content"
+                }
+              },
+              required: ["type", "content"]
+            }
           },
           revision: {
             type: "boolean",
@@ -76,8 +155,31 @@ export function createWriteTools(): any[] {
             description: "ID of the note to append content to"
           },
           content: {
-            type: "string",
-            description: "HTML content to append to the existing note"
+            type: "array",
+            description: "Content to append as ContentItem array. Content requirements vary by note type: text/render/webView require HTML content, code/mermaid require plain text, file/image require base64 encoded data.",
+            items: {
+              type: "object",
+              properties: {
+                type: {
+                  type: "string",
+                  enum: ["text", "file", "image", "url", "data-url"],
+                  description: "Content type: 'text' for HTML/plain text, 'file' for base64 files, 'image' for base64 images, 'url' for remote URLs, 'data-url' for embedded data"
+                },
+                content: {
+                  type: "string",
+                  description: "Content data - format varies by type: HTML for text, base64 for file/image, URL for remote, data URL for embedded"
+                },
+                mimeType: {
+                  type: "string",
+                  description: "MIME type for file/image content (e.g., 'image/png', 'application/pdf')"
+                },
+                filename: {
+                  type: "string",
+                  description: "Filename for file/image content"
+                }
+              },
+              required: ["type", "content"]
+            }
           },
           revision: {
             type: "boolean",
@@ -184,7 +286,7 @@ function createSearchProperties() {
     },
     searchCriteria: {
       type: "array",
-      description: "Unified search criteria array that supports all search types with complete boolean logic. Enables cross-type OR operations (e.g., 'relation OR dateCreated' searches). Supports labels, relations, note properties (including hierarchy navigation: parents.title, children.title, ancestors.title), note type filtering, MIME type filtering, and keyword searches with per-item logic control. Operators include existence checks (exists, not_exists), comparisons (=, !=, >=, <=, >, <), and text matching (contains, starts_with, ends_with, regex). Use OR logic between items for 'either/or' searches across ANY criteria types. Examples: Find mermaid diagrams by setting type property to 'mermaid'. Find JavaScript code by combining type 'code' with mime 'text/javascript'. Find canvas OR mermaid notes by using OR logic between type criteria. Logic parameter connects current item to next item.",
+      description: "Unified search criteria array that supports all search types with complete boolean logic. Enables cross-type OR operations (e.g., 'relation OR dateCreated' searches). Supports labels, relations, note properties (including hierarchy navigation: parents.title, children.title, ancestors.title), note type filtering, MIME type filtering, and keyword searches. For keyword searches: use noteProperty type with 'title' or 'content' properties. Operators include existence checks (exists, not_exists), comparisons (=, !=, >=, <=, >, <), and text matching (contains, starts_with, ends_with, regex). Use OR logic between items for 'either/or' searches across ANY criteria types. Examples: Find mermaid diagrams by setting type property to 'mermaid'. Find JavaScript code by combining type 'code' with mime 'text/javascript'. Find canvas OR mermaid notes by using OR logic between type criteria. Logic parameter connects current item to next item.",
       items: {
         type: "object",
         properties: {

@@ -15,9 +15,19 @@ AUTH_HEADER="Authorization: Bearer $TRILIUM_TOKEN"
 CONTENT_HEADER="Content-Type: application/json"
 ```
 
+## 🚨 CRITICAL: Content Requirements by Note Type
+
+**⚠️ IMPORTANT**: Content requirements vary significantly by note type. This affects both format and necessity.
+
+### Content Requirements Summary
+- **HTML Required**: `text`, `render`, `webView`
+- **Plain Text Required**: `code`, `mermaid`
+- **Base64 Required**: `file`, `image`
+- **Optional/Empty**: `book`, `search`, `relationMap`, `shortcut`, `doc`, `contentWidget`, `launcher`
+
 ## Basic Text Note Creation (New Array Format)
 
-### Simple Text Note
+### Simple Text Note (HTML Content Required)
 ```bash
 curl -X POST "$TRILIUM_URL/create-note" \
   -H "$AUTH_HEADER" \
@@ -130,7 +140,7 @@ curl -X POST "$TRILIUM_URL/create-note" \
   }'
 ```
 
-### JavaScript Code Note
+### JavaScript Code Note (Plain Text Required)
 ```bash
 curl -X POST "$TRILIUM_URL/create-note" \
   -H "$AUTH_HEADER" \
@@ -143,10 +153,93 @@ curl -X POST "$TRILIUM_URL/create-note" \
     "content": [
       {
         "type": "code",
-        "content": "// Utility functions for data processing\nfunction formatDate(date) {\n    return new Date(date).toISOString().split('T')[0];\n}\n\nfunction debounce(func, wait) {\n    let timeout;\n    return function executedFunction(...args) {\n        const later = () => {\n            clearTimeout(timeout);\n            func(...args);\n        };\n        clearTimeout(timeout);\n        timeout = setTimeout(later, wait);\n    };\n}"
+        "content": "// Utility functions for data processing\nfunction formatDate(date) {\n    return new Date(date).toISOString().split(\"T\")[0];\n}\n\nfunction debounce(func, wait) {\n    let timeout;\n    return function executedFunction(...args) {\n        const later = () => {\n            clearTimeout(timeout);\n            func(...args);\n        };\n        clearTimeout(timeout);\n        timeout = setTimeout(later, wait);\n    };\n}"
       }
     ]
   }'
+```
+
+### Book Note (Optional Content - Can be Empty)
+```bash
+curl -X POST "$TRILIUM_URL/create-note" \
+  -H "$AUTH_HEADER" \
+  -H "$CONTENT_HEADER" \
+  -d '{
+    "parentNoteId": "root",
+    "title": "Project Folder",
+    "type": "book",
+    "content": [
+      {
+        "type": "text",
+        "content": ""  // Empty content for container notes
+      }
+    ]
+  }'
+```
+
+### Mermaid Diagram Note (Plain Text Diagram Syntax)
+```bash
+curl -X POST "$TRILIUM_URL/create-note" \
+  -H "$AUTH_HEADER" \
+  -H "$CONTENT_HEADER" \
+  -d '{
+    "parentNoteId": "root",
+    "title": "System Architecture",
+    "type": "mermaid",
+    "mime": "text/vnd.mermaid",
+    "content": [
+      {
+        "type": "text",
+        "content": "graph TD\n    A[Client] --> B[Load Balancer]\n    B --> C[Server1]\n    B --> D[Server2]\n    C --> E[Database]\n    D --> E[Database]"
+      }
+    ]
+  }'
+```
+
+### File Note (Base64 Encoded Content Required)
+```bash
+# First, encode a file to base64
+FILE_BASE64=$(base64 -w 0 /path/to/document.pdf)
+
+curl -X POST "$TRILIUM_URL/create-note" \
+  -H "$AUTH_HEADER" \
+  -H "$CONTENT_HEADER" \
+  -d "{
+    \"parentNoteId\": \"root\",
+    \"title\": \"PDF Document\",
+    \"type\": \"file\",
+    \"mime\": \"application/pdf\",
+    \"content\": [
+      {
+        \"type\": \"file\",
+        \"content\": \"$FILE_BASE64\",
+        \"filename\": \"document.pdf\"
+      }
+    ]
+  }"
+```
+
+### Image Note (Base64 Encoded Content Required)
+```bash
+# First, encode an image to base64
+IMAGE_BASE64=$(base64 -w 0 /path/to/image.png)
+
+curl -X POST "$TRILIUM_URL/create-note" \
+  -H "$AUTH_HEADER" \
+  -H "$CONTENT_HEADER" \
+  -d "{
+    \"parentNoteId\": \"root\",
+    \"title\": \"Diagram Image\",
+    \"type\": \"image\",
+    \"mime\": \"image/png\",
+    \"content\": [
+      {
+        \"type\": \"image\",
+        \"content\": \"$IMAGE_BASE64\",
+        \"filename\": \"diagram.png\"
+      }
+    ]
+  }"
 ```
 
 ## Template-Based Note Creation
@@ -330,7 +423,7 @@ curl -X POST "$TRILIUM_URL/attributes" \
   }'
 ```
 
-## Error Testing Examples
+## Common Content Mistakes to Test
 
 ### Invalid Content Format (Old String Format - Should Fail)
 ```bash
@@ -343,6 +436,64 @@ curl -X POST "$TRILIUM_URL/create-note" \
     "title": "Invalid Format",
     "type": "text",
     "content": "<h1>This should fail</h1>"
+  }'
+```
+
+### Wrong Content Type for Note Type (HTML in Code Note)
+```bash
+# This should fail or produce unexpected results
+curl -X POST "$TRILIUM_URL/create-note" \
+  -H "$AUTH_HEADER" \
+  -H "$CONTENT_HEADER" \
+  -d '{
+    "parentNoteId": "root",
+    "title": "Wrong Content Type",
+    "type": "code",
+    "mime": "text/x-javascript",
+    "content": [
+      {
+        "type": "code",
+        "content": "<h1>This should be plain code, not HTML</h1><p>function test() {}</p>"
+      }
+    ]
+  }'
+```
+
+### Missing Content for Required Note Type
+```bash
+# This should fail for note types that require content
+curl -X POST "$TRILIUM_URL/create-note" \
+  -H "$AUTH_HEADER" \
+  -H "$CONTENT_HEADER" \
+  -d '{
+    "parentNoteId": "root",
+    "title": "Missing Content",
+    "type": "text",
+    "content": [
+      {
+        "type": "text",
+        "content": ""  # Empty content for note type that requires it
+      }
+    ]
+  }'
+```
+
+### Plain Text in HTML Note Type
+```bash
+# This should work but may not display as expected
+curl -X POST "$TRILIUM_URL/create-note" \
+  -H "$AUTH_HEADER" \
+  -H "$CONTENT_HEADER" \
+  -d '{
+    "parentNoteId": "root",
+    "title": "Plain Text in HTML Note",
+    "type": "text",
+    "content": [
+      {
+        "type": "text",
+        "content": "This is plain text, not HTML. Line breaks\nand special characters < > & may need escaping."
+      }
+    ]
   }'
 ```
 
@@ -415,6 +566,82 @@ echo "Batch creation completed in $DURATION seconds"
 echo "Average time per note: $(echo "scale=2; $DURATION / 5" | bc) seconds"
 ```
 
+## 🚨 ACTION REQUIRED: Tool Description Updates
+
+### Critical Tool Description Changes Needed
+
+**⚠️ IMPORTANT**: The MCP tool descriptions must be updated to reflect the content requirements by note type. This is critical for proper LLM usage.
+
+### Required Tool Description Updates
+
+#### create_note Tool Description
+```markdown
+# Current (Insufficient)
+"Create a new note with content"
+
+# Required Update
+"Create a new note with content. Content requirements vary by note type:
+- text/render/webView: HTML content required (e.g., '<h1>Title</h1>')
+- code/mermaid: Plain text content required (no HTML)
+- file/image: Base64 encoded content required
+- book/search/etc: Optional content (can be empty)
+Content parameter accepts only arrays of ContentItem objects, not strings."
+```
+
+#### update_note Tool Description
+```markdown
+# Required Update
+"Update existing note content. Content requirements vary by note type:
+- text/render/webView: HTML content required
+- code/mermaid: Plain text content required
+- file/image: Base64 encoded content required
+- book/search/etc: Optional content
+Content parameter accepts only arrays of ContentItem objects, not strings."
+```
+
+#### append_note Tool Description
+```markdown
+# Required Update
+"Append content to existing note. Content requirements vary by note type:
+- text/render/webView: HTML content required
+- code/mermaid: Plain text content required
+- file/image: Base64 encoded content required
+- book/search/etc: Optional content
+Content parameter accepts only arrays of ContentItem objects, not strings."
+```
+
+### Content Type Guidelines for Tool Descriptions
+
+#### HTML Content Types
+```
+text: HTML content required - <h1>Title</h1><p>Content</p>
+render: HTML content required - <div>{{template}}</div>
+webView: HTML content required - <iframe src="..."></iframe>
+```
+
+#### Plain Text Content Types
+```
+code: Plain text code required - function test() { return true; }
+mermaid: Plain text diagram required - graph TD; A-->B;
+```
+
+#### Base64 Content Types
+```
+file: Base64 encoded file data required
+image: Base64 encoded image data required
+```
+
+#### Optional Content Types
+```
+book: Content optional - can be empty string
+search: Content optional - search query string
+relationMap: Content optional - JSON configuration
+shortcut: Content optional - target reference
+doc: Content optional - document content
+contentWidget: Content optional - widget configuration
+launcher: Content optional - launch parameters
+```
+
 ## Current Limitations
 
 ### ETAPI Limitations
@@ -428,10 +655,11 @@ The examples above showing mixed content (text + images, data URLs) are for **fu
 
 ### Validation Strategy
 1. **Basic Note Creation**: Validate current array-format text content works
-2. **Attribute Management**: Test individual and batch attribute operations
-3. **Template Relations**: Verify template functionality works correctly
-4. **Error Handling**: Confirm proper error messages for invalid requests
-5. **Performance**: Measure timing for various operations
+2. **Content Type Testing**: Verify different content formats work correctly
+3. **Attribute Management**: Test individual and batch attribute operations
+4. **Template Relations**: Verify template functionality works correctly
+5. **Error Handling**: Confirm proper error messages for invalid requests
+6. **Performance**: Measure timing for various operations
 
 ## Migration Validation
 
