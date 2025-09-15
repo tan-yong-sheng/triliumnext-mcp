@@ -9,7 +9,7 @@ import {
   SearchOperation,
   handleSearchNotes
 } from "./searchManager.js";
-import { formatNotesForListing } from "./noteFormatter.js";
+import { formatNotesForListing } from "../utils/noteFormatter.js";
 
 /**
  * Handle search_notes tool requests

@@ -102,82 +102,7 @@ export function createWriteTools(): any[] {
         required: ["noteId"],
       },
     },
-    {
-      name: "manage_attributes",
-      description: "Manage note attributes (labels and relations) with full CRUD operations. Create labels (#tags), template relations (~template), and organize notes with metadata. Supports single operations and efficient batch creation for better performance. Template relations like ~template = 'Board' enable specialized note layouts and functionality.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          noteId: {
-            type: "string",
-            description: "ID of the note to manage attributes for"
-          },
-          operation: {
-            type: "string",
-            enum: ["create", "update", "delete", "batch_create", "read"],
-            description: "Operation type: 'create' (single attribute), 'update' (existing attribute), 'delete' (remove attribute), 'batch_create' (multiple attributes), 'read' (list all attributes)"
-          },
-          attributes: {
-            type: "array",
-            description: "Array of attributes to create/update/delete. Required for create/update/delete/batch_create operations. For read operation, this parameter is ignored.",
-            items: {
-              type: "object",
-              properties: {
-                type: {
-                  type: "string",
-                  enum: ["label", "relation"],
-                  description: "Attribute type: 'label' for #tags (categories, metadata), 'relation' for ~connections (template, author, etc.)"
-                },
-                name: {
-                  type: "string",
-                  description: "Attribute name: for labels (e.g., 'important', 'project'), for relations (e.g., 'template', 'author')"
-                },
-                value: {
-                  type: "string",
-                  description: "Attribute value: required for relations (e.g., 'Board', 'Tolkien'), optional for labels (e.g., 'api', 'python')"
-                },
-                position: {
-                  type: "number",
-                  description: "Display position (lower numbers appear first, default: 10)",
-                  default: 10
-                },
-                isInheritable: {
-                  type: "boolean",
-                  description: "Whether attribute is inherited by child notes (default: false)",
-                  default: false
-                }
-              },
-              required: ["type", "name"]
-            }
-          }
-        },
-        required: ["noteId", "operation"],
-        dependencies: {
-          operation: {
-            oneOf: [
-              {
-                properties: {
-                  operation: { enum: ["create", "update", "delete"] },
-                  attributes: { minItems: 1, maxItems: 1 }
-                }
-              },
-              {
-                properties: {
-                  operation: { enum: ["batch_create"] },
-                  attributes: { minItems: 1 }
-                }
-              },
-              {
-                properties: {
-                  operation: { enum: ["read"] }
-                }
-              }
-            ]
-          }
-        }
-      }
-    }
-  ];
+    ];
 }
 
 /**
@@ -300,6 +225,111 @@ function createSearchProperties() {
 }
 
 /**
+ * Generate read-only attribute tools (READ permission only)
+ */
+export function createReadAttributeTools(): any[] {
+  return [
+    {
+      name: "manage_attributes",
+      description: "Read note attributes (labels and relations). View existing labels (#tags), template relations (~template), and note metadata. This tool allows you to inspect the current attributes assigned to any note.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          noteId: {
+            type: "string",
+            description: "ID of the note to read attributes from"
+          },
+          operation: {
+            type: "string",
+            enum: ["read"],
+            description: "Operation type: 'read' (list all attributes)"
+          }
+        },
+        required: ["noteId", "operation"]
+      }
+    }
+  ];
+}
+
+/**
+ * Generate write-only attribute tools (WRITE permission only)
+ */
+export function createWriteAttributeTools(): any[] {
+  return [
+    {
+      name: "manage_attributes",
+      description: "Manage note attributes (labels and relations) with write operations. Create labels (#tags), template relations (~template), update existing attributes, and organize notes with metadata. Supports single operations and efficient batch creation for better performance. Template relations like ~template = 'Board' enable specialized note layouts and functionality.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          noteId: {
+            type: "string",
+            description: "ID of the note to manage attributes for"
+          },
+          operation: {
+            type: "string",
+            enum: ["create", "update", "delete", "batch_create"],
+            description: "Operation type: 'create' (single attribute), 'update' (existing attribute), 'delete' (remove attribute), 'batch_create' (multiple attributes)"
+          },
+          attributes: {
+            type: "array",
+            description: "Array of attributes to create/update/delete. Required for all write operations.",
+            items: {
+              type: "object",
+              properties: {
+                type: {
+                  type: "string",
+                  enum: ["label", "relation"],
+                  description: "Attribute type: 'label' for #tags (categories, metadata), 'relation' for ~connections (template, author, etc.)"
+                },
+                name: {
+                  type: "string",
+                  description: "Attribute name: for labels (e.g., 'important', 'project'), for relations (e.g., 'template', 'author')"
+                },
+                value: {
+                  type: "string",
+                  description: "Attribute value: required for relations (e.g., 'Board', 'Tolkien'), optional for labels (e.g., 'api', 'python')"
+                },
+                position: {
+                  type: "number",
+                  description: "Display position (lower numbers appear first, default: 10)",
+                  default: 10
+                },
+                isInheritable: {
+                  type: "boolean",
+                  description: "Whether attribute is inherited by child notes (default: false)",
+                  default: false
+                }
+              },
+              required: ["type", "name"]
+            }
+          }
+        },
+        required: ["noteId", "operation"],
+        dependencies: {
+          operation: {
+            oneOf: [
+              {
+                properties: {
+                  operation: { enum: ["create", "update", "delete"] },
+                  attributes: { minItems: 1, maxItems: 1 }
+                }
+              },
+              {
+                properties: {
+                  operation: { enum: ["batch_create"] },
+                  attributes: { minItems: 1 }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ];
+}
+
+/**
  * Generate all tools based on permissions
  */
 export function generateTools(permissionChecker: PermissionChecker): any[] {
@@ -310,9 +340,19 @@ export function generateTools(permissionChecker: PermissionChecker): any[] {
     tools.push(...createWriteTools());
   }
 
-  // Add read tools if READ permission  
+  // Add read tools if READ permission
   if (permissionChecker.hasPermission("READ")) {
     tools.push(...createReadTools());
+  }
+
+  // Add read attribute tools if READ permission
+  if (permissionChecker.hasPermission("READ")) {
+    tools.push(...createReadAttributeTools());
+  }
+
+  // Add write attribute tools if WRITE permission
+  if (permissionChecker.hasPermission("WRITE")) {
+    tools.push(...createWriteAttributeTools());
   }
 
   return tools;

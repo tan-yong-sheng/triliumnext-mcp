@@ -4,6 +4,7 @@
  */
 
 import { AxiosInstance } from 'axios';
+import axios from 'axios';
 
 export interface Attribute {
   type: "label" | "relation";
@@ -84,6 +85,7 @@ async function create_single_attribute(
 
     // Prepare attribute data for ETAPI
     const attributeData = {
+      noteId: noteId,
       type: attribute.type,
       name: attribute.name,
       value: attribute.value || "",
@@ -93,7 +95,7 @@ async function create_single_attribute(
 
     // Make API call to create attribute
     const response = await axiosInstance.post(
-      `/notes/${noteId}/attributes`,
+      `/attributes`,
       attributeData
     );
 
@@ -140,6 +142,7 @@ async function create_batch_attributes(
       }
 
       const attributeData = {
+        noteId: noteId,
         type: attribute.type,
         name: attribute.name,
         value: attribute.value || "",
@@ -148,7 +151,7 @@ async function create_batch_attributes(
       };
 
       const response = await axiosInstance.post(
-        `/notes/${noteId}/attributes`,
+        `/attributes`,
         attributeData
       );
 
@@ -192,19 +195,30 @@ async function update_attribute(
 ): Promise<AttributeOperationResult> {
   try {
     // For update, we need the attribute ID, which requires finding it first
-    const existingAttributes = await axiosInstance.get(`/notes/${noteId}/attributes`);
+    const noteResponse = await axiosInstance.get(`/notes/${noteId}`);
+
+    // Debug: Log available attributes
+    const isVerbose = process.env.VERBOSE === "true";
+    if (isVerbose) {
+      console.error(`[VERBOSE] Available attributes on note ${noteId}:`, JSON.stringify(noteResponse.data.attributes, null, 2));
+    }
 
     // Find the attribute to update by name and type
-    const targetAttribute = existingAttributes.data.find(
+    const targetAttribute = noteResponse.data.attributes.find(
       (attr: any) => attr.name === attribute.name && attr.type === attribute.type
     );
 
     if (!targetAttribute) {
+      const availableAttrs = noteResponse.data.attributes.map((attr: any) => `${attr.type}:${attr.name}`).join(', ');
       return {
         success: false,
-        message: `Attribute '${attribute.name}' of type '${attribute.type}' not found on note ${noteId}`,
+        message: `Attribute '${attribute.name}' of type '${attribute.type}' not found on note ${noteId}. Available attributes: ${availableAttrs || 'none'}`,
         errors: ["Attribute not found"]
       };
+    }
+
+    if (isVerbose) {
+      console.error(`[VERBOSE] Found attribute to update:`, JSON.stringify(targetAttribute, null, 2));
     }
 
     const updateData = {
@@ -212,6 +226,11 @@ async function update_attribute(
       position: attribute.position || targetAttribute.position,
       isInheritable: attribute.isInheritable || targetAttribute.isInheritable
     };
+
+    if (isVerbose) {
+      console.error(`[VERBOSE] Update data:`, JSON.stringify(updateData, null, 2));
+      console.error(`[VERBOSE] Patching URL: /attributes/${targetAttribute.attributeId}`);
+    }
 
     const response = await axiosInstance.patch(
       `/attributes/${targetAttribute.attributeId}`,
@@ -224,6 +243,22 @@ async function update_attribute(
       attributes: [response.data]
     };
   } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const errorMessage = `Failed to update attribute: ${error.response?.data?.message || error.message}`;
+      if (process.env.VERBOSE === "true") {
+        console.error(`[VERBOSE] Axios error details:`, {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          config: error.config
+        });
+      }
+      return {
+        success: false,
+        message: errorMessage,
+        errors: [errorMessage]
+      };
+    }
     return {
       success: false,
       message: `Failed to update attribute: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -242,10 +277,10 @@ async function delete_attribute(
 ): Promise<AttributeOperationResult> {
   try {
     // For delete, we need the attribute ID, which requires finding it first
-    const existingAttributes = await axiosInstance.get(`/notes/${noteId}/attributes`);
+    const noteResponse = await axiosInstance.get(`/notes/${noteId}`);
 
     // Find the attribute to delete by name and type
-    const targetAttribute = existingAttributes.data.find(
+    const targetAttribute = noteResponse.data.attributes.find(
       (attr: any) => attr.name === attribute.name && attr.type === attribute.type
     );
 
@@ -317,9 +352,9 @@ export async function get_note_attributes(
   axiosInstance: AxiosInstance
 ): Promise<AttributeOperationResult> {
   try {
-    const response = await axiosInstance.get(`/notes/${noteId}/attributes`);
+    const response = await axiosInstance.get(`/notes/${noteId}`);
 
-    const attributes: Attribute[] = response.data.map((attr: any) => ({
+    const attributes: Attribute[] = response.data.attributes.map((attr: any) => ({
       type: attr.type,
       name: attr.name,
       value: attr.value,

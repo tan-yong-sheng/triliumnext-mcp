@@ -3,7 +3,7 @@
  * Handles CRUD operations for TriliumNext notes
  */
 
-import { processContent } from "./contentProcessor.js";
+import { processContent } from "../utils/contentProcessor.js";
 
 export interface NoteOperation {
   parentNoteId?: string;

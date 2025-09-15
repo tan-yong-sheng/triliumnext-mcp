@@ -28,11 +28,6 @@ export async function handleManageAttributes(
   axiosInstance: AxiosInstance,
   permissionChecker: PermissionChecker
 ): Promise<any> {
-  // Check permissions
-  if (!permissionChecker.hasPermission("WRITE")) {
-    throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to manage attributes.");
-  }
-
   try {
     // Validate required parameters
     if (!args.noteId) {
@@ -59,14 +54,24 @@ export async function handleManageAttributes(
       };
     }
 
-    // Validate operation
-    const validOperations = ["create", "update", "delete", "batch_create", "read"];
-    if (!validOperations.includes(args.operation)) {
+    // Check permissions based on operation type
+    const readOperations = ["read"];
+    const writeOperations = ["create", "update", "delete", "batch_create"];
+
+    if (readOperations.includes(args.operation)) {
+      if (!permissionChecker.hasPermission("READ")) {
+        throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to read attributes.");
+      }
+    } else if (writeOperations.includes(args.operation)) {
+      if (!permissionChecker.hasPermission("WRITE")) {
+        throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to manage attributes.");
+      }
+    } else {
       return {
         content: [
           {
             type: "text",
-            text: `❌ Invalid operation: ${args.operation}. Valid operations are: ${validOperations.join(", ")}`
+            text: `❌ Invalid operation: ${args.operation}. Valid operations are: ${[...readOperations, ...writeOperations].join(", ")}`
           }
         ],
         isError: true

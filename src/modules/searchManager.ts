@@ -4,8 +4,8 @@
  */
 
 import { buildSearchQuery } from "./searchQueryBuilder.js";
-import { trimNoteResults, formatNotesForListing } from "./noteFormatter.js";
-import { createSearchDebugInfo, createListSummary } from "../utils/responseUtils.js";
+import { trimNoteResults, formatNotesForListing } from "../utils/noteFormatter.js";
+import { createSearchDebugInfo, createListSummary } from "../utils/verboseUtils.js";
 
 // Interface for SearchOperation - unified searchCriteria structure
 export interface SearchOperation {
