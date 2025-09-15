@@ -258,7 +258,7 @@ export function createWriteAttributeTools(): any[] {
   return [
     {
       name: "manage_attributes",
-      description: "Manage note attributes (labels and relations) with write operations. Create labels (#tags), template relations (~template), update existing attributes, and organize notes with metadata. Supports single operations and efficient batch creation for better performance. Template relations like ~template = 'Board' enable specialized note layouts and functionality.",
+      description: "Manage note attributes (labels and relations) with write operations. Create labels (#tags), template relations (~template), update existing attributes, and organize notes with metadata. UPDATE LIMITATIONS: For labels, only value and position can be updated. For relations, only position can be updated. The isInheritable property cannot be changed via update - delete and recreate to modify inheritability. Supports single operations and efficient batch creation for better performance. Template relations like ~template.title = 'Board' enable specialized note layouts and functionality.",
       inputSchema: {
         type: "object",
         properties: {
@@ -269,11 +269,11 @@ export function createWriteAttributeTools(): any[] {
           operation: {
             type: "string",
             enum: ["create", "update", "delete", "batch_create"],
-            description: "Operation type: 'create' (single attribute), 'update' (existing attribute), 'delete' (remove attribute), 'batch_create' (multiple attributes)"
+            description: "Operation type: 'create' (new attribute), 'update' (modify existing - limited to label value/position and relation position only), 'delete' (remove attribute), 'batch_create' (multiple new attributes efficiently)"
           },
           attributes: {
             type: "array",
-            description: "Array of attributes to create/update/delete. Required for all write operations.",
+            description: "Array of attributes to create/update/delete. Required for all write operations. IMPORTANT: Update operations have limitations - only label values/positions and relation positions can be updated. To change isInheritable or other properties, delete and recreate the attribute.",
             items: {
               type: "object",
               properties: {
@@ -284,11 +284,11 @@ export function createWriteAttributeTools(): any[] {
                 },
                 name: {
                   type: "string",
-                  description: "Attribute name: for labels (e.g., 'important', 'project'), for relations (e.g., 'template', 'author')"
+                  description: "Attribute name: for labels use descriptive tags like 'status', 'priority', 'project'; for relations use connection types like 'template', 'author', 'publisher'. Template relations should use 'template' for built-in Trilium templates."
                 },
                 value: {
                   type: "string",
-                  description: "Attribute value: required for relations (e.g., 'Board', 'Tolkien'), optional for labels (e.g., 'api', 'python')"
+                  description: "Attribute value: required for relations (e.g., template relations use built-in names like 'Board', 'Calendar', 'Text Snippet'), optional for labels (e.g., status labels like 'In Progress', priority labels like 'High'). For relations pointing to specific notes, use the target note's ID."
                 },
                 position: {
                   type: "number",
@@ -297,7 +297,7 @@ export function createWriteAttributeTools(): any[] {
                 },
                 isInheritable: {
                   type: "boolean",
-                  description: "Whether attribute is inherited by child notes (default: false)",
+                  description: "Whether attribute is inherited by child notes (default: false). NOTE: This property cannot be changed via update operations. To modify inheritability, delete and recreate the attribute.",
                   default: false
                 }
               },

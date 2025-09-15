@@ -217,11 +217,35 @@ async function update_attribute(
 
     logVerbose("update_attribute", "Found attribute to update", targetAttribute);
 
-    const updateData = {
-      value: attribute.value || "",
-      position: attribute.position || targetAttribute.position,
-      isInheritable: attribute.isInheritable || targetAttribute.isInheritable
-    };
+    // According to Trilium ETAPI spec:
+    // - For labels: only value and position can be updated
+    // - For relations: only position can be updated
+    // - isInheritable cannot be updated via PATCH, requires delete+recreate
+    const updateData: any = {};
+
+    if (attribute.type === "label") {
+      updateData.value = attribute.value !== undefined ? attribute.value : targetAttribute.value;
+    }
+
+    if (attribute.position !== undefined) {
+      updateData.position = attribute.position;
+    } else if (targetAttribute.position !== undefined) {
+      updateData.position = targetAttribute.position;
+    }
+
+    // Check if isInheritable is being changed (not allowed via PATCH)
+    if (attribute.isInheritable !== undefined && attribute.isInheritable !== targetAttribute.isInheritable) {
+      logVerbose("update_attribute", "isInheritable change detected, requires delete+recreate", {
+        current: targetAttribute.isInheritable,
+        requested: attribute.isInheritable
+      });
+
+      return {
+        success: false,
+        message: `Cannot update 'isInheritable' property via PATCH operation. To change inheritability, delete the attribute and create a new one.`,
+        errors: ["isInheritable property cannot be updated via PATCH"]
+      };
+    }
 
     logVerbose("update_attribute", "Update data", updateData);
     logVerboseApi("PATCH", `/attributes/${targetAttribute.attributeId}`, updateData);
