@@ -267,15 +267,11 @@ TriliumNext supports specialized note types through templates:
 The server now includes intelligent content processing:
 - **Text notes**: Auto-detects Markdown vs HTML vs plain text, converts Markdown to HTML
 - **Code notes**: Content passes through exactly as written (no processing)
-- **File/Image notes**: Support both base64 content AND direct URLs (automatically downloaded)
-- **Mixed content**: Text notes can combine text, images, and files
+- **Mixed content**: Text notes can combine multiple text sections
 
 ### URL-based Content Support
-- **Automatic downloading**: File and image notes can use URLs instead of base64 strings
-- **Smart detection**: URLs are automatically detected and downloaded in memory
-- **MIME type detection**: Content types and filenames auto-extracted from URLs
-- **Size limits**: 50MB maximum file size with proper error handling
-- **Memory-only**: No temporary files written to disk
+- **Currently disabled**: File and image URL downloading has been temporarily disabled due to API implementation challenges
+- **Future plans**: URL downloading will be reimplemented with proper ETAPI attachment handling
 
 
 ### Simplified Helper Functions
@@ -703,7 +699,9 @@ async function create_note_with_attributes(params) {
 - **Tool Definitions**: Updated `create_note` and `search_notes` schemas with new enum values
 - **Backward Compatibility**: All existing functionality preserved with new type support
 
-**Current Supported Types**: `text`, `code`, `render`, `file`, `image`, `search`, `relationMap`, `book`, `noteMap`, `mermaid`, `webView`, `shortcut`, `doc`, `contentWidget`, `launcher` (15 total)
+**Current Supported Types**: `text`, `code`, `render`, `search`, `relationMap`, `book`, `noteMap`, `mermaid`, `webView`, `shortcut`, `doc`, `contentWidget`, `launcher` (13 total)
+
+**Note**: File and image note creation has been temporarily disabled due to API implementation challenges. These note types can still be searched and accessed but cannot be created through the MCP server at this time.
 
 ## Documentation Status
 

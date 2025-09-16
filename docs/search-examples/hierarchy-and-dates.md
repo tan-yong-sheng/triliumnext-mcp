@@ -123,7 +123,7 @@ note.ancestors.title = 'Workspace' note.dateModified >= '2024-12-01'
 ### MCP Date Properties Reference
 - **Date properties**: `dateCreated`, `dateModified` - note creation and modification timestamps
 - **Supported operators**: `>=`, `<=`, `>`, `<`, `=`, `!=` for comparison operations
-- **Required date format**: ISO date strings only - `'YYYY-MM-DD'` (e.g., '2024-01-01') or `'YYYY-MM-DDTHH:mm:ss.sssZ'` (e.g., '2024-01-01T00:00:00.000Z')
+- **Required date format**: ISO date strings only - `'YYYY-MM-DDTHH:mm:ss.sssZ'` (e.g., '2024-01-01T00:00:00.000Z')
 - **Smart date expressions**: NOT allowed in MCP interface (TriliumNext supports them natively, but MCP enforces ISO format for consistency)
 
 ### 55) Created in last 7 days (ISO date approach)
@@ -135,7 +135,7 @@ note.dateCreated >= '2024-12-13'
 ```json
 {
   "searchCriteria": [
-    {"property": "dateCreated", "type": "noteProperty", "op": ">=", "value": "2024-12-13"}
+    {"property": "dateCreated", "type": "noteProperty", "op": ">=", "value": "2024-12-13T00:00:00.000Z"}
   ]
 }
 ```
@@ -150,8 +150,8 @@ note.dateCreated >= '2024-01-01' AND note.dateCreated < '2024-12-31'
 ```json
 {
   "searchCriteria": [
-    {"property": "dateCreated", "type": "noteProperty", "op": ">=", "value": "2024-01-01", "logic": "AND"},
-    {"property": "dateCreated", "type": "noteProperty", "op": "<", "value": "2024-12-31"}
+    {"property": "dateCreated", "type": "noteProperty", "op": ">=", "value": "2024-01-01T00:00:00.000Z", "logic": "AND"},
+    {"property": "dateCreated", "type": "noteProperty", "op": "<", "value": "2024-12-31T00:00:00.000Z"}
   ]
 }
 ```
@@ -166,7 +166,7 @@ note.dateModified >= '2024-11-20'
 ```json
 {
   "searchCriteria": [
-    {"property": "dateModified", "type": "noteProperty", "op": ">=", "value": "2024-11-20"}
+    {"property": "dateModified", "type": "noteProperty", "op": ">=", "value": "2024-11-20T00:00:00.000Z"}
   ]
 }
 ```
@@ -181,8 +181,8 @@ note.dateModified >= '2024-11-20'
 ```json
 {
   "searchCriteria": [
-    {"property": "dateCreated", "type": "noteProperty", "op": ">=", "value": "2024-12-13", "logic": "OR"},
-    {"property": "dateModified", "type": "noteProperty", "op": ">=", "value": "2024-12-13"}
+    {"property": "dateCreated", "type": "noteProperty", "op": ">=", "value": "2024-12-13T00:00:00.000Z", "logic": "OR"},
+    {"property": "dateModified", "type": "noteProperty", "op": ">=", "value": "2024-12-13T00:00:00.000Z"}
   ]
 }
 ```
@@ -198,7 +198,7 @@ note.type = 'text' AND note.dateCreated >= '2024-11-20' AND note.labelCount > 0
 {
   "searchCriteria": [
     {"property": "type", "type": "noteProperty", "op": "=", "value": "text", "logic": "AND"},
-    {"property": "dateCreated", "type": "noteProperty", "op": ">=", "value": "2024-11-20", "logic": "AND"},
+    {"property": "dateCreated", "type": "noteProperty", "op": ">=", "value": "2024-11-20T00:00:00.000Z", "logic": "AND"},
     {"property": "labelCount", "type": "noteProperty", "op": ">", "value": "0"}
   ]
 }
@@ -232,9 +232,9 @@ note.dateCreated >= '2024-01-01' AND note.dateCreated < '2024-12-31' AND note.da
 ```json
 {
   "searchCriteria": [
-    {"property": "dateCreated", "type": "noteProperty", "op": ">=", "value": "2024-01-01", "logic": "AND"},
-    {"property": "dateCreated", "type": "noteProperty", "op": "<", "value": "2024-12-31", "logic": "AND"},
-    {"property": "dateModified", "type": "noteProperty", "op": "!=", "value": "2024-06-15"}
+    {"property": "dateCreated", "type": "noteProperty", "op": ">=", "value": "2024-01-01T00:00:00.000Z", "logic": "AND"},
+    {"property": "dateCreated", "type": "noteProperty", "op": "<", "value": "2024-12-31T00:00:00.000Z", "logic": "AND"},
+    {"property": "dateModified", "type": "noteProperty", "op": "!=", "value": "2024-06-15T00:00:00.000Z"}
   ]
 }
 ```

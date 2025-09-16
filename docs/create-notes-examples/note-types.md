@@ -4,7 +4,7 @@ This document provides comprehensive information about the note types supported 
 
 ## Overview
 
-The TriliumNext MCP server supports **15 note types** that can be used in search operations and note creation. Each note type has specific characteristics, MIME types, and use cases. The note type enumeration is aligned exactly with the TriliumNext ETAPI specification.
+The TriliumNext MCP server supports **13 note types** for search operations that align with the TriliumNext ETAPI specification. However, note creation is currently limited to **text and code note types only** to ensure reliability and eliminate file upload issues. Each note type has specific characteristics, MIME types, and use cases.
 
 ## Supported Note Types
 
@@ -58,52 +58,9 @@ The TriliumNext MCP server supports **15 note types** that can be used in search
   }
   ```
 
-### 4. Canvas Notes (`canvas`)
-- **Description**: Excalidraw drawings and sketches
-- **MIME Type**: `application/json`
-- **Use Cases**: Diagrams, sketches, mind maps, whiteboard drawings
-- **Search Example**:
-  ```json
-  {
-    "searchCriteria": [
-      {"property": "type", "type": "noteProperty", "op": "=", "value": "canvas"}
-    ]
-  }
-  ```
-
-### 5. Book Notes (`book`)
-- **Description**: Folders/containers for organizing other notes
-- **MIME Type**: None (container type)
-- **Use Cases**: Project folders, category containers, organizational structure
-- **Search Example**:
-  ```json
-  {
-    "searchCriteria": [
-      {"property": "type", "type": "noteProperty", "op": "=", "value": "book"}
-    ]
-  }
-  ```
-
-### 6. Image Notes (`image`)
-- **Description**: Image files and attachments
-- **MIME Types**: 
-  - `image/jpeg` (JPEG)
-  - `image/png` (PNG)
-  - `image/gif` (GIF)
-  - `image/svg+xml` (SVG)
-- **Use Cases**: Screenshots, diagrams, photos, illustrations
-- **Search Example**:
-  ```json
-  {
-    "searchCriteria": [
-      {"property": "type", "type": "noteProperty", "op": "=", "value": "image"}
-    ]
-  }
-  ```
-
-### 7. File Notes (`file`)
-- **Description**: File attachments and documents
-- **MIME Types**: 
+### 4. File Notes (`file`) - Search Only
+- **Description**: File attachments and documents (searchable only, creation disabled)
+- **MIME Types**:
   - `application/pdf` (PDF)
   - `application/msword` (Word)
   - `application/vnd.openxmlformats-officedocument.wordprocessingml.document` (Word DOCX)
@@ -121,8 +78,38 @@ The TriliumNext MCP server supports **15 note types** that can be used in search
   }
   ```
 
-### 8. Search Notes (`search`)
-- **Description**: Saved search queries
+### 5. Book Notes (`book`) - Search Only
+- **Description**: Folders/containers for organizing other notes (searchable only, creation disabled)
+- **MIME Type**: None (container type)
+- **Use Cases**: Project folders, category containers, organizational structure
+- **Search Example**:
+  ```json
+  {
+    "searchCriteria": [
+      {"property": "type", "type": "noteProperty", "op": "=", "value": "book"}
+    ]
+  }
+  ```
+
+### 6. Image Notes (`image`) - Search Only
+- **Description**: Image files and attachments (searchable only, creation disabled)
+- **MIME Types**:
+  - `image/jpeg` (JPEG)
+  - `image/png` (PNG)
+  - `image/gif` (GIF)
+  - `image/svg+xml` (SVG)
+- **Use Cases**: Screenshots, diagrams, photos, illustrations
+- **Search Example**:
+  ```json
+  {
+    "searchCriteria": [
+      {"property": "type", "type": "noteProperty", "op": "=", "value": "image"}
+    ]
+  }
+  ```
+
+### 7. Search Notes (`search`) - Search Only
+- **Description**: Saved search queries (searchable only, creation disabled)
 - **MIME Type**: None (special type)
 - **Use Cases**: Saved searches, search templates, reusable queries
 - **Search Example**:
@@ -134,8 +121,8 @@ The TriliumNext MCP server supports **15 note types** that can be used in search
   }
   ```
 
-### 9. Web View Notes (`webView`)
-- **Description**: Web content and embedded web pages
+### 8. Web View Notes (`webView`) - Search Only
+- **Description**: Web content and embedded web pages (searchable only, creation disabled)
 - **MIME Type**: `text/html`
 - **Use Cases**: Web articles, embedded content, web-based tools
 - **Search Example**:
@@ -147,8 +134,8 @@ The TriliumNext MCP server supports **15 note types** that can be used in search
   }
   ```
 
-### 10. Render Notes (`render`)
-- **Description**: Rendered content notes
+### 9. Render Notes (`render`) - Search Only
+- **Description**: Rendered content notes (searchable only, creation disabled)
 - **MIME Type**: Varies by content type
 - **Use Cases**: Dynamic content rendering, templates
 - **Search Example**:
@@ -160,8 +147,8 @@ The TriliumNext MCP server supports **15 note types** that can be used in search
   }
   ```
 
-### 11. Note Map Notes (`noteMap`)
-- **Description**: Visual note relationship maps
+### 10. Note Map Notes (`noteMap`) - Search Only
+- **Description**: Visual note relationship maps (searchable only, creation disabled)
 - **MIME Type**: `application/json`
 - **Use Cases**: Mind mapping, relationship visualization
 - **Search Example**:
@@ -173,8 +160,8 @@ The TriliumNext MCP server supports **15 note types** that can be used in search
   }
   ```
 
-### 12. Shortcut Notes (`shortcut`)
-- **Description**: Shortcuts to other notes or content
+### 11. Shortcut Notes (`shortcut`) - Search Only
+- **Description**: Shortcuts to other notes or content (searchable only, creation disabled)
 - **MIME Type**: None
 - **Use Cases**: Quick access, navigation aids
 - **Search Example**:
@@ -186,8 +173,8 @@ The TriliumNext MCP server supports **15 note types** that can be used in search
   }
   ```
 
-### 13. Document Notes (`doc`)
-- **Description**: Document container notes
+### 12. Document Notes (`doc`) - Search Only
+- **Description**: Document container notes (searchable only, creation disabled)
 - **MIME Type**: Varies by document type
 - **Use Cases**: Document organization, structured content
 - **Search Example**:
@@ -199,8 +186,8 @@ The TriliumNext MCP server supports **15 note types** that can be used in search
   }
   ```
 
-### 14. Content Widget Notes (`contentWidget`)
-- **Description**: Interactive widget containers
+### 13. Content Widget Notes (`contentWidget`) - Search Only
+- **Description**: Interactive widget containers (searchable only, creation disabled)
 - **MIME Type**: `application/json`
 - **Use Cases**: Interactive content, custom widgets
 - **Search Example**:
@@ -212,8 +199,8 @@ The TriliumNext MCP server supports **15 note types** that can be used in search
   }
   ```
 
-### 15. Launcher Notes (`launcher`)
-- **Description**: Application and script launchers
+### 14. Launcher Notes (`launcher`) - Search Only
+- **Description**: Application and script launchers (searchable only, creation disabled)
 - **MIME Type**: None
 - **Use Cases**: External application integration, automation
 - **Search Example**:
@@ -281,32 +268,29 @@ Some note types can be associated with built-in templates using the `~template.t
 
 ## ETAPI Alignment
 
-All note types from the TriliumNext ETAPI are now supported by the MCP server. The enumeration exactly matches the ETAPI specification:
+The MCP server supports **13 note types** that align with the TriliumNext ETAPI specification:
 
 ```
-text, code, render, file, image, search, relationMap, book, noteMap, mermaid, webView, shortcut, doc, contentWidget, launcher
+text, code, render, search, relationMap, book, noteMap, mermaid, webView, shortcut, doc, contentWidget, launcher
 ```
 
-**Removed from MCP Support:**
-- `canvas` - Was previously included but not supported by ETAPI
+**Creation Support:**
+- **Text and Code notes**: Full creation support with smart content processing
+- **All other note types**: Search-only (can be found and queried but not created through MCP)
 
-**Added to MCP Support:**
-- `noteMap` - Note relationship maps
-- `webView` - Web content embedding
-- `shortcut` - Navigation shortcuts
-- `doc` - Document containers
-- `contentWidget` - Interactive widgets
-- `launcher` - Application launchers
+**Search Support:**
+- **All 13 note types**: Full search capabilities with filters, boolean logic, and template relations
 
-This ensures complete compatibility between MCP functionality and ETAPI capabilities.
+**Note**: File and image note creation has been temporarily disabled due to API implementation challenges. These can be searched and accessed but cannot be created through the MCP server at this time.
 
 ## Best Practices
 
-1. **Use specific MIME types** when searching for code or file notes
+1. **Use specific MIME types** when searching for code notes
 2. **Combine type and MIME filters** for precise results
 3. **Use template relations** for finding notes with specific layouts
 4. **Leverage boolean logic** to search across multiple note types
 5. **Consider hierarchy navigation** for finding notes in specific contexts
+6. **Remember**: Only text and code notes can be created; other types must be created directly in TriliumNext
 
 ## Related Documentation
 

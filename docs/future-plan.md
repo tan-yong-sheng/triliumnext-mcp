@@ -4,26 +4,94 @@ This document outlines planned features and enhancements for the TriliumNext MCP
 
 ## High Priority Features
 
-### 1. Note must be read first before performing update operation... (applies to update attributes as well)
+### 1. File and Image Note Creation System
+
+**Status**: ⏸️ **TEMPORARILY DISABLED** - Removed due to API implementation challenges with PDF corruption and attachment handling
+
+**Background**: File and image note creation features were previously implemented but caused persistent errors due to incorrect Trilium ETAPI attachment handling. The system has been temporarily disabled to focus on stable text and code note creation.
+
+**Current State**:
+- **Removed**: File/image creation logic from `contentProcessor.ts` and `noteManager.ts`
+- **Disabled**: URL content retrieval system (`urlContentRetriever.ts` removed)
+- **Limited**: Only text and code note creation currently supported
+- **Searchable**: File and image notes can still be searched and accessed if created directly in TriliumNext
+
+**Challenges Addressed**:
+- **PDF Corruption**: Binary files were being corrupted during upload due to incorrect attachment process
+- **API Complexity**: Trilium ETAPI attachment system requires specific handling that wasn't properly implemented
+- **Error Reduction**: Removing unstable features eliminated persistent errors and improved system reliability
+
+**Future Implementation Requirements**:
+- **Correct Attachment Process**: Research and implement proper Trilium ETAPI attachment creation
+- **Binary File Handling**: Ensure proper base64 encoding and file preservation
+- **URL Content Retrieval**: Rebuild secure and efficient URL downloading system
+- **MIME Type Detection**: Robust file type identification and validation
+- **Size Limits**: Configurable file size restrictions with proper error handling
+- **Security**: File validation, virus scanning, and secure temporary file handling
+
+**Technical Implementation Plan**:
+```typescript
+// Future enhanced file attachment system
+interface FileAttachmentSystem {
+  // Step 1: Proper attachment creation using correct ETAPI process
+  createAttachment(noteId: string, fileData: FileData): Promise<AttachmentResult>
+
+  // Step 2: URL content retrieval with proper error handling
+  downloadUrlContent(url: string): Promise<DownloadedContent>
+
+  // Step 3: File validation and MIME type detection
+  validateFile(content: Buffer, filename: string): ValidationResult
+
+  // Step 4: Integration with existing content processing
+  processFileContent(item: ContentItem): Promise<ProcessedContent>
+}
+```
+
+**Key Features to Reimplement**:
+- 📁 **Local File Upload**: Support for various file types (PDF, images, documents)
+- 🌐 **URL Content Retrieval**: Automatic downloading from remote URLs
+- 🔗 **Data URL Support**: Base64 encoded embedded content
+- 📊 **File Validation**: Type detection, size limits, and security scanning
+- ⚡ **Performance**: Streaming uploads and memory-efficient processing
+- 🛡️ **Error Handling**: Graceful failure with detailed error messages
+
+**Reimplementation Priority**: High (core functionality that was removed for stability)
+
+**Success Criteria**:
+- PDF files upload without corruption and can be viewed in TriliumNext
+- Image files are properly attached and displayed
+- URL content is downloaded and attached with correct metadata
+- System maintains stability and doesn't introduce new errors
+- Comprehensive error handling for edge cases
+
+### 2. Note must be read first before performing update operation... (applies to update attributes as well)
 - so, we should explicitly suggest people to define 'READ' as well, when people only define 'WRITE' -> because of this case? -> this rule can directly write src/index.js server...
 - Need to have a way to prevent editing when note is modified during the process... Note has been unexpectedly modified. Read it again before attempting to write it.
 
 
 ### 2. Multi-Modal Content Support for create_note Function
 
-**Status**: 🔄 **RESEARCH COMPLETED** - Enhanced multi-modal content support with URL and local file handling
+**Status**: ⏸️ **PARTIALLY IMPLEMENTED** - Text and code content processing working, file/image features temporarily disabled
 
-**Proposed Implementation**:
+**Current Implementation**:
+- **✅ Text Content**: Smart format detection (HTML/Markdown/plain) with automatic conversion
+- **✅ Code Content**: Syntax highlighting with MIME type support
+- **✅ Data URLs**: Base64 encoded embedded content (images, other data)
+- **⏸️ Local Files**: Temporarily disabled due to API implementation challenges
+- **⏸️ Remote URLs**: Temporarily disabled due to API implementation challenges
+- **✅ Mixed Content**: Text notes can combine multiple text sections
+
+**Future Enhancement Plan**:
 - **Multi-Modal Content Parameter**: Transform `content` from string to `ContentItem[]` array
 - **Multiple Content Types**: Support text, local files, remote URLs, and mixed content
 - **Intelligent Processing**: Automatic MIME type detection and content optimization
 - **URL Fetching**: Built-in HTTP client for remote content fetching
 - **Backward Compatibility**: Graceful handling of string content as single-item array
 
-**Enhanced Content Types**:
+**Enhanced Content Types (Future)**:
 - 📝 **Text Content**: HTML, markdown (pre-processed), plain text
-- 📁 **Local Files**: Images, documents, code files, media (via file path)
-- 🌐 **Remote URLs**: Direct URL support for images and files (HTTP/HTTPS)
+- 📁 **Local Files**: Images, documents, code files, media (via file path) - *TO REIMPLEMENT*
+- 🌐 **Remote URLs**: Direct URL support for images and files (HTTP/HTTPS) - *TO REIMPLEMENT*
 - 🔗 **Data URLs**: Base64 encoded content with MIME type
 - 📦 **Mixed Content**: Combine multiple content types in single note
 
@@ -658,9 +726,9 @@ function isTemplateRelation(property: string): boolean {
 
 ## Timeline
 
-**Phase 1** (Near-term): Multi-modal content support for create_note function with text, file, URL, and mixed content handling
-**Phase 2** (Mid-term): Enhanced create_note function with attribute integration and response formatting
-**Phase 3** (Future): Intent resolution and search enhancements
+**Phase 1** (Near-term): **File and Image Note Creation System** - Reimplement with proper ETAPI attachment handling and fix PDF corruption issues
+**Phase 2** (Mid-term): Complete multi-modal content support and enhanced create_note function with attribute integration
+**Phase 3** (Future): Response formatting, intent resolution, and search enhancements
 
 ## Implementation Status
 
@@ -673,9 +741,10 @@ function isTemplateRelation(property: string): boolean {
 - ✅ Enhanced note ID resolution
 
 **In Progress**:
-- 🔄 Multi-modal content support for create_note function (research completed, documentation updated)
+- 🔄 Multi-modal content support for create_note function (partially implemented - text/code working, file/image temporarily disabled)
 
 **Proposed**:
+- 📁 **File and Image Note Creation System** - Reimplement with proper ETAPI attachment handling (high priority)
 - 📊 Response formatter for standardized output formats
 - 🎯 Intent resolution function for semantic routing
 - 📄 Offset parameters for search_notes function

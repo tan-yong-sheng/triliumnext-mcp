@@ -19,7 +19,9 @@ triliumnext-mcp/
 │       ├── permissionUtils.ts    # Permission management
 │       ├── validationUtils.ts    # Zod schema validation
 │       ├── verboseUtils.ts      # Verbose formatting
-│       └── noteFormatter.ts      # Output formatting
+│       ├── noteFormatter.ts      # Output formatting
+│       ├── contentProcessor.ts   # Content processing utilities
+│       └── noteBuilder.ts        # Note creation helper utilities
 ├── tests/                        # Test files
 │   └── validation.test.js        # Zod validation tests
 ├── docs/                         # Documentation

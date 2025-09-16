@@ -55,14 +55,6 @@ const textNote = buildNoteParams({
   content: "# Meeting Summary\n\n- Discussed Q4 goals"
 });
 
-const imageNote = buildNoteParams({
-  parentNoteId: "root",
-  title: "Screenshot",
-  noteType: "image",  // ← Another note type, same function
-  content: "base64-image-data...",
-  filename: "screenshot.png",
-  mime: "image/png"
-});
 ```
 
 ### Key Benefits
@@ -70,9 +62,8 @@ const imageNote = buildNoteParams({
 1. **🎯 Single Function**: LLMs always use the same function - no confusion
 2. **🧠 Smart Content Processing**: Automatic format detection and type mapping
 3. **🔧 Clear Intent**: `noteType` parameter makes purpose explicit
-4. **📁 Universal File Support**: Simple string content for base64 files OR direct URLs
-5. **🌐 URL Download Support**: Automatic URL downloading and conversion for files/images
-6. **🎨 Mixed Content Ready**: Text notes can combine text, images, files
+4. **🎨 Mixed Content Ready**: Text notes can combine multiple text sections
+5. **📝 Markdown Support**: Automatic conversion to HTML for text notes
 
 ## 📋 Usage Examples
 
@@ -103,51 +94,6 @@ print(df.head())`,
 });
 ```
 
-### Image Notes
-
-```javascript
-// Using base64 data (traditional way)
-const imageNote = buildNoteParams({
-  parentNoteId: "root",
-  title: "Screenshot",
-  noteType: "image",
-  content: "base64-image-data...",
-  filename: "screenshot.png",
-  mime: "image/png"
-});
-
-// Using URL (NEW - automatically downloads and converts)
-const imageNoteFromUrl = buildNoteParams({
-  parentNoteId: "root",
-  title: "Logo",
-  noteType: "image",
-  content: "https://example.com/logo.png"  // URL automatically downloaded
-  // filename and mime auto-detected from URL
-});
-```
-
-### File Notes
-
-```javascript
-// Using base64 data (traditional way)
-const fileNote = buildNoteParams({
-  parentNoteId: "root",
-  title: "Document",
-  noteType: "file",
-  content: "base64-file-data...",
-  filename: "report.pdf",
-  mime: "application/pdf"
-});
-
-// Using URL (NEW - automatically downloads and converts)
-const fileNoteFromUrl = buildNoteParams({
-  parentNoteId: "root",
-  title: "Presentation",
-  noteType: "file",
-  content: "https://example.com/presentation.pptx"  // URL automatically downloaded
-  // filename and mime auto-detected from URL
-});
-```
 
 ### Mixed Content (Text Notes Only)
 
@@ -158,7 +104,6 @@ const reportNote = buildNoteParams({
   noteType: "text",  // Only text notes support mixed content
   content: [
     { type: "text", content: "# Quarterly Report" },
-    { type: "image", content: "base64-data...", filename: "chart.png" },
     { type: "text", content: "## Analysis\n\nThe results show..." }
   ]
 });
@@ -211,11 +156,9 @@ LLMs choose parameters based on:
 |-----------|-------------|----------------|
 | `noteType: "text"` | Rich text, documents, mixed content | Meeting notes, documentation |
 | `noteType: "code"` | Code snippets, scripts | Python, JavaScript, SQL |
-| `noteType: "image"` | Image files | PNG, JPEG, SVG |
-| `noteType: "file"` | Document attachments | PDF, Word, Excel |
 | `content: "string"` | Single content item | Plain text, Markdown, code |
-| `content: [array]` | Multiple content items (text notes only) | Text + images in one note |
-| `mime: "..."` | Required for code notes, optional for others | `text/x-python`, `image/png` |
+| `content: [array]` | Multiple content items (text notes only) | Multiple text sections |
+| `mime: "..."` | Required for code notes | `text/x-python`, `text/x-javascript` |
 
 ## ✅ Working Examples
 
@@ -254,63 +197,5 @@ LLMs choose parameters based on:
 
 **✅ Result**: Markdown automatically converted to HTML for text notes only.
 
-### Mixed Content (Text + Image)
-```json
-{
-  "parentNoteId": "root",
-  "title": "Project Report",
-  "type": "text",
-  "content": [
-    {
-      "type": "text",
-      "content": "# Quarterly Report\n\nHere are the results:"
-    },
-    {
-      "type": "image",
-      "content": "base64-image-data...",
-      "filename": "chart.png",
-      "mime": "image/png"
-    }
-  ]
-}
-```
 
-**✅ Result**: Text converted to HTML, image embedded properly.
-
-### URL-based File Upload (NEW!)
-
-```json
-{
-  "parentNoteId": "root",
-  "title": "Company Logo",
-  "type": "image",
-  "content": [
-    {
-      "type": "image",
-      "content": "https://example.com/company-logo.png"
-    }
-  ]
-}
-```
-
-**✅ Result**: Image automatically downloaded from URL and embedded in the note.
-
-### URL-based Document Upload (NEW!)
-
-```json
-{
-  "parentNoteId": "root",
-  "title": "Annual Report",
-  "type": "file",
-  "content": [
-    {
-      "type": "file",
-      "content": "https://example.com/reports/annual-2024.pdf"
-    }
-  ]
-}
-```
-
-**✅ Result**: PDF automatically downloaded from URL and attached to the note.
-
-This simplified interface eliminates the ContentItem complexity while maintaining full power for advanced use cases, including seamless URL-based content downloading.
+This simplified interface eliminates the ContentItem complexity while maintaining full power for text and code note creation.
