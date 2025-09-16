@@ -728,6 +728,20 @@ Template relations enable specialized note layouts and functionality by connecti
 
 **Current Supported Types**: `text`, `code`, `render`, `search`, `relationMap`, `book`, `noteMap`, `mermaid`, `webView`, `shortcut`, `doc`, `contentWidget`, `launcher` (13 total)
 
+### ⚠️ File and Image Note Type Limitation
+**Status**: **TEMPORARILY DISABLED**
+
+**Issue**: The `file` and `image` note types have been temporarily removed from supported note types due to broken API support for attachment uploads in the current TriliumNext ETAPI implementation.
+
+**Impact**:
+- `file` and `image` note types are not available for creation or search
+- Content validation for these types has been disabled
+- The note creation function will reject attempts to create file/image notes
+
+**Future Implementation**:
+- Will be re-enabled once the TriliumNext ETAPI attachment upload functionality is stabilized
+- Hash validation and content type safety features are ready for these types when API support is restored
+
 
 ## Documentation Status
 

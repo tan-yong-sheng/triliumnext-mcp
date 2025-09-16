@@ -6,6 +6,7 @@
 import { ContentItem } from '../types/contentTypes.js';
 import { processContentArray, processContentItem } from '../utils/contentProcessor.js';
 import { logVerbose, logVerboseError, logVerboseApi } from '../utils/verboseUtils.js';
+import { generateContentHash, getContentRequirements, validateContentForNoteType } from '../utils/hashUtils.js';
 
 export interface Attribute {
   type: 'label' | 'relation';
@@ -27,6 +28,8 @@ export interface NoteOperation {
   revision?: boolean;
   includeContent?: boolean;
   attributes?: Attribute[];
+  expectedHash?: string;
+  validateType?: boolean;
 }
 
 export interface NoteCreateResponse {
@@ -38,6 +41,7 @@ export interface NoteUpdateResponse {
   noteId: string;
   message: string;
   revisionCreated: boolean;
+  conflict?: boolean;
 }
 
 export interface NoteDeleteResponse {
@@ -48,6 +52,12 @@ export interface NoteDeleteResponse {
 export interface NoteGetResponse {
   note: any;
   content?: string | ContentItem[];
+  contentHash?: string;
+  contentRequirements?: {
+    requiresHtml: boolean;
+    description: string;
+    examples: string[];
+  };
 }
 
 /**
@@ -153,7 +163,13 @@ export async function handleUpdateNote(
   args: NoteOperation,
   axiosInstance: any
 ): Promise<NoteUpdateResponse> {
-  const { noteId, content: rawContent, revision = true } = args;
+  const {
+    noteId,
+    content: rawContent,
+    revision = true,
+    expectedHash,
+    validateType = true
+  } = args;
 
   if (!noteId || !rawContent) {
     throw new Error("noteId and content are required for update operation.");
@@ -161,47 +177,97 @@ export async function handleUpdateNote(
 
   let revisionCreated = false;
 
-  // Create revision if requested (defaults to true for safety)
-  if (revision) {
-    try {
-      await axiosInstance.post(`/notes/${noteId}/revision`);
-      revisionCreated = true;
-    } catch (error) {
-      console.error(`Warning: Failed to create revision for note ${noteId}:`, error);
-      // Continue with update even if revision creation fails
+  // Step 1: Get current note state for validation
+  try {
+    const currentNote = await axiosInstance.get(`/notes/${noteId}`);
+    const currentContent = await axiosInstance.get(`/notes/${noteId}/content`, {
+      responseType: 'text'
+    });
+
+    // Step 2: Hash validation if provided
+    if (expectedHash) {
+      const currentBlobId = currentNote.data.blobId;
+      if (currentBlobId !== expectedHash) {
+        return {
+          noteId,
+          message: `CONFLICT: Note has been modified by another user. ` +
+                   `Current blobId: ${currentBlobId}, expected: ${expectedHash}. ` +
+                   `Please get the latest note content and retry.`,
+          revisionCreated: false,
+          conflict: true
+        };
+      }
     }
-  }
 
-  // Process content array to ETAPI format
-  let processedContent: string;
+    // Step 3: Content type validation if enabled
+    let finalContent = rawContent;
+    if (validateType) {
+      const validationResult = await validateContentForNoteType(
+        rawContent as ContentItem[],
+        currentNote.data.type,
+        currentContent.data
+      );
 
-  if (!Array.isArray(rawContent)) {
-    throw new Error("Content must be a ContentItem array");
-  }
+      if (!validationResult.valid) {
+        return {
+          noteId,
+          message: `CONTENT_TYPE_MISMATCH: ${validationResult.error}`,
+          revisionCreated: false,
+          conflict: false
+        };
+      }
 
-  // ContentItem[] array format - process first item only for update
-  const processed = await processContentArray(rawContent);
-  if (processed.error) {
-    throw new Error(`Content processing error: ${processed.error}`);
-  }
-  processedContent = processed.content;
-
-  const response = await axiosInstance.put(`/notes/${noteId}/content`, processedContent, {
-    headers: {
-      "Content-Type": "text/plain"
+      // Use validated/corrected content
+      finalContent = validationResult.content;
     }
-  });
 
-  if (response.status !== 204) {
-    throw new Error(`Unexpected response status: ${response.status}`);
+    // Step 4: Create revision if requested
+    if (revision) {
+      try {
+        await axiosInstance.post(`/notes/${noteId}/revision`);
+        revisionCreated = true;
+      } catch (error) {
+        console.error(`Warning: Failed to create revision for note ${noteId}:`, error);
+        // Continue with update even if revision creation fails
+      }
+    }
+
+    // Step 5: Process and update content
+    if (!Array.isArray(finalContent)) {
+      throw new Error("Content must be a ContentItem array");
+    }
+
+    const processed = await processContentArray(finalContent, currentNote.data.type);
+    if (processed.error) {
+      throw new Error(`Content processing error: ${processed.error}`);
+    }
+
+    const response = await axiosInstance.put(`/notes/${noteId}/content`, processed.content, {
+      headers: {
+        "Content-Type": "text/plain"
+      }
+    });
+
+    if (response.status !== 204) {
+      throw new Error(`Unexpected response status: ${response.status}`);
+    }
+
+    const revisionMsg = revisionCreated ? " (revision created)" : " (no revision)";
+    const correctionMsg = (finalContent !== rawContent) ? " (content auto-corrected)" : "";
+
+    return {
+      noteId,
+      message: `Note ${noteId} updated successfully${revisionMsg}${correctionMsg}`,
+      revisionCreated,
+      conflict: false
+    };
+
+  } catch (error) {
+    if ((error as any).response?.status === 404) {
+      throw new Error(`Note ${noteId} not found`);
+    }
+    throw error;
   }
-
-  const revisionMsg = revisionCreated ? " (revision created)" : " (no revision)";
-  return {
-    noteId,
-    message: `Note ${noteId} updated successfully${revisionMsg}`,
-    revisionCreated
-  };
 }
 
 /**
@@ -320,8 +386,14 @@ export async function handleGetNote(
     responseType: 'text'
   });
 
+  // Get blobId (Trilium's built-in content hash) and content requirements
+  const blobId = noteData.blobId;
+  const contentRequirements = getContentRequirements(noteData.type);
+
   return {
     note: noteData,
-    content: noteContent
+    content: noteContent,
+    contentHash: blobId, // Use blobId as content hash
+    contentRequirements
   };
 }

@@ -96,7 +96,7 @@ export function createWriteTools(): any[] {
     },
     {
       name: "update_note",
-      description: "Complete content replacement with automatic backup. ONLY use this tool when the user explicitly requests note update (e.g., 'update the note', 'replace the content', 'rewrite this note'). TRY NOT to use this tool proactively or for automated content modification unless part of a clear workflow. Ideal for major restructuring, complete rewrites, or final document organization after iterative building with append_note. SAFE: Creates revision backup by default (revision=true). WORKFLOW: Often used after building content with append_note when restructuring is needed.",
+      description: "Complete content replacement with hash-based concurrency control and content type validation. ⚠️ REQUIRED: ALWAYS call get_note first to obtain current hash and note type. The system will reject updates without a valid hash to ensure data integrity. Prevents overwriting changes made by other users (hash mismatch) or content that doesn't match note type requirements. ONLY use this tool when the user explicitly requests note update (e.g., 'update the note', 'replace the content', 'rewrite this note'). IDEAL FOR: Major restructuring, complete rewrites, or final document organization after iterative building with append_note. SAFE: Creates revision backup by default (revision=true). WORKFLOW: get_note → review content → update_note with returned hash",
       inputSchema: {
         type: "object",
         properties: {
@@ -106,7 +106,7 @@ export function createWriteTools(): any[] {
           },
           content: {
             type: "array",
-            description: "New content as ContentItem array. Content requirements vary by note type: text/render/webView use smart format detection (HTML/Markdown/plain), code/mermaid require plain text, file/image require base64 encoded data.",
+            description: "Content of the note as ContentItem array. Content requirements by note type: TEXT NOTES - require HTML content (wrap plain text in <p> tags, e.g., '<p>hello world</p>'); CODE/MERMAID NOTES - require plain text (no HTML tags); BOOK/SEARCH NOTES - can be empty string. Use HTML formatting for text notes: <p> for paragraphs, <strong> for bold, <em> for italic, etc.",
             items: {
               type: "object",
               properties: {
@@ -131,13 +131,22 @@ export function createWriteTools(): any[] {
               required: ["type", "content"]
             }
           },
+          expectedHash: {
+            type: "string",
+            description: "⚠️ REQUIRED: Blob ID (content hash) from get_note response. This is Trilium's built-in content identifier that ensures data integrity by verifying the note hasn't been modified since you retrieved it. If you see an error about missing blobId, you MUST call get_note first to get the current blobId."
+          },
+          validateType: {
+            type: "boolean",
+            description: "Whether to validate content matches note type requirements (default: true). Set to false only if you're certain about content format.",
+            default: true
+          },
           revision: {
             type: "boolean",
             description: "Whether to create a revision before updating (default: true for safety)",
             default: true
           }
         },
-        required: ["noteId", "content"]
+        required: ["noteId", "content", "expectedHash"]
       }
     },
     {

@@ -64,11 +64,21 @@ export async function handleUpdateNoteRequest(
     throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to update notes.");
   }
 
+  // Validate that expectedHash is provided (required for data integrity)
+  if (!args.expectedHash) {
+    throw new McpError(
+      ErrorCode.InvalidParams,
+      "Missing required parameter 'expectedHash'. You must call get_note first to retrieve the current blobId (content hash) before updating. This ensures data integrity by preventing overwriting changes made by other users."
+    );
+  }
+
   try {
     const noteOperation: NoteOperation = {
       noteId: args.noteId,
       content: args.content,
-      revision: args.revision !== false // Default to true (safe behavior)
+      revision: args.revision !== false, // Default to true (safe behavior)
+      expectedHash: args.expectedHash,
+      validateType: args.validateType !== false // Default to true
     };
 
     const result = await handleUpdateNote(noteOperation, axiosInstance);
