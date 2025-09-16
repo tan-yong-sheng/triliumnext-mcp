@@ -8,16 +8,17 @@ import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { PermissionChecker } from '../utils/permissionUtils.js';
 import {
   manage_attributes,
-  get_note_attributes,
+  read_attributes,
   ManageAttributesParams,
+  ReadAttributesParams,
   Attribute,
   AttributeOperationResult
 } from './attributeManager.js';
 
 export interface ManageAttributesRequest {
   noteId: string;
-  operation: "create" | "update" | "delete" | "batch_create" | "read";
-  attributes?: Attribute[];
+  operation: "create" | "update" | "delete" | "batch_create";
+  attributes: Attribute[];
 }
 
 /**
@@ -54,34 +55,23 @@ export async function handleManageAttributes(
       };
     }
 
-    // Check permissions based on operation type
-    const readOperations = ["read"];
-    const writeOperations = ["create", "update", "delete", "batch_create"];
+    // Check WRITE permission for all manage_attributes operations
+    if (!permissionChecker.hasPermission("WRITE")) {
+      throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to manage attributes.");
+    }
 
-    if (readOperations.includes(args.operation)) {
-      if (!permissionChecker.hasPermission("READ")) {
-        throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to read attributes.");
-      }
-    } else if (writeOperations.includes(args.operation)) {
-      if (!permissionChecker.hasPermission("WRITE")) {
-        throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to manage attributes.");
-      }
-    } else {
+    // Validate operation
+    const validOperations = ["create", "update", "delete", "batch_create"];
+    if (!validOperations.includes(args.operation)) {
       return {
         content: [
           {
             type: "text",
-            text: `❌ Invalid operation: ${args.operation}. Valid operations are: ${[...readOperations, ...writeOperations].join(", ")}`
+            text: `❌ Invalid operation: ${args.operation}. Valid operations are: ${validOperations.join(", ")}`
           }
         ],
         isError: true
       };
-    }
-
-    // Handle read operation
-    if (args.operation === "read") {
-      const result = await get_note_attributes(args.noteId, axiosInstance);
-      return format_attribute_response(result, args.noteId, "read");
     }
 
     // Validate attributes for write operations
@@ -131,6 +121,126 @@ export async function handleManageAttributes(
       isError: true
     };
   }
+}
+
+/**
+ * Handle read_attributes MCP request
+ */
+export async function handleReadAttributes(
+  args: ReadAttributesParams,
+  axiosInstance: AxiosInstance,
+  permissionChecker: PermissionChecker
+): Promise<any> {
+  try {
+    // Validate required parameters
+    if (!args.noteId) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: "❌ Missing required parameter: noteId"
+          }
+        ],
+        isError: true
+      };
+    }
+
+    // Check READ permission
+    if (!permissionChecker.hasPermission("READ")) {
+      throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to read attributes.");
+    }
+
+    // Execute the read operation
+    const result = await read_attributes(args, axiosInstance);
+    return format_read_attribute_response(result, args.noteId);
+
+  } catch (error) {
+    return {
+      content: [
+        {
+          type: "text",
+          text: `❌ Attribute read operation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        }
+      ],
+      isError: true
+    };
+  }
+}
+
+/**
+ * Format read attribute operation result for MCP response
+ */
+function format_read_attribute_response(
+  result: AttributeOperationResult,
+  noteId: string
+): any {
+  const content: any[] = [];
+
+  // Add status message
+  if (result.success) {
+    content.push({
+      type: "text",
+      text: `✅ ${result.message}`
+    });
+  } else {
+    content.push({
+      type: "text",
+      text: `❌ ${result.message}`
+    });
+
+    // Add error details if available
+    if (result.errors && result.errors.length > 0) {
+      content.push({
+        type: "text",
+        text: `📋 Error details:\n${result.errors.map((err: string, i: number) => `${i + 1}. ${err}`).join('\n')}`
+      });
+    }
+  }
+
+  // Add attribute data for successful operations
+  if (result.success && result.attributes && result.attributes.length > 0) {
+    // Separate labels and relations for better organization
+    const labels = result.attributes.filter(attr => attr.type === 'label');
+    const relations = result.attributes.filter(attr => attr.type === 'relation');
+
+    content.push({
+      type: "text",
+      text: format_attributes_for_display(result.attributes)
+    });
+
+    // Add structured summary if available
+    if (result.summary) {
+      content.push({
+        type: "text",
+        text: `📊 Summary: ${result.summary.total} total attributes (${result.summary.labels} labels, ${result.summary.relations} relations)`
+      });
+    }
+
+    // Add detailed breakdown
+    if (labels.length > 0) {
+      content.push({
+        type: "text",
+        text: `🏷️  Labels (${labels.length}):\n${labels.map(attr => {
+          const value = attr.value ? ` = "${attr.value}"` : "";
+          return `  #${attr.name}${value}`;
+        }).join('\n')}`
+      });
+    }
+
+    if (relations.length > 0) {
+      content.push({
+        type: "text",
+        text: `🔗 Relations (${relations.length}):\n${relations.map(attr => `  ~${attr.name} = "${attr.value}"`).join('\n')}`
+      });
+    }
+  } else if (result.success) {
+    content.push({
+      type: "text",
+      text: "📋 No attributes found for this note"
+    });
+  }
+
+  return { content };
 }
 
 /**
@@ -222,23 +332,27 @@ function format_attributes_for_display(attributes: Attribute[]): string {
  */
 export function get_attributes_help(): string {
   return `
-🔧 Attribute Management Tool (manage_attributes)
+🔧 Attribute Management Tools
 
-This tool manages note attributes (labels and relations) in TriliumNext.
+📖 read_attributes: Read all attributes (labels and relations) for a note
+🔧 manage_attributes: Create, update, delete attributes (write operations)
 
 📝 Usage Examples:
 
-1. Create a single label:
+📖 Read Attributes:
+   - noteId: "abc123"
+
+🔧 Create a single label:
    - noteId: "abc123"
    - operation: "create"
    - attributes: [{type: "label", name: "important", position: 10}]
 
-2. Create a template relation:
+🔧 Create a template relation:
    - noteId: "abc123"
    - operation: "create"
    - attributes: [{type: "relation", name: "template", value: "Board", position: 10}]
 
-3. Create multiple attributes (batch):
+🔧 Create multiple attributes (batch):
    - noteId: "abc123"
    - operation: "batch_create"
    - attributes: [
@@ -247,16 +361,12 @@ This tool manages note attributes (labels and relations) in TriliumNext.
        {type: "relation", name: "template", value: "Grid View", position: 30}
      ]
 
-4. Read all attributes:
-   - noteId: "abc123"
-   - operation: "read"
-
-5. Update an attribute:
+🔧 Update an attribute:
    - noteId: "abc123"
    - operation: "update"
    - attributes: [{type: "label", name: "important", position: 15}]
 
-6. Delete an attribute:
+🔧 Delete an attribute:
    - noteId: "abc123"
    - operation: "delete"
    - attributes: [{type: "label", name: "important"}]
@@ -268,5 +378,6 @@ This tool manages note attributes (labels and relations) in TriliumNext.
 - Use "batch_create" for multiple attributes (faster than individual calls)
 - Template relations require the target note to exist in your Trilium instance
 - Position values control display order (lower numbers appear first)
+- Use read_attributes to view existing attributes before making changes
 `;
 }

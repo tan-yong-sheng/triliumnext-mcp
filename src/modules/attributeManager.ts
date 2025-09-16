@@ -15,6 +15,10 @@ export interface Attribute {
   isInheritable?: boolean;
 }
 
+export interface ReadAttributesParams {
+  noteId: string;
+}
+
 export interface ManageAttributesParams {
   noteId: string;
   operation: "create" | "update" | "delete" | "batch_create";
@@ -26,10 +30,17 @@ export interface AttributeOperationResult {
   message: string;
   attributes?: Attribute[];
   errors?: string[];
+  summary?: {
+    total: number;
+    labels: number;
+    relations: number;
+    noteId: string;
+  };
 }
 
 /**
- * Main attribute management function that orchestrates different operations
+ * Manage note attributes with write operations (create, update, delete)
+ * This function provides write-only access to note attributes
  */
 export async function manage_attributes(
   params: ManageAttributesParams,
@@ -356,14 +367,15 @@ function validate_attribute(attribute: Attribute): { valid: boolean; errors: str
 }
 
 /**
- * Get all attributes for a note
+ * Read all attributes for a note (labels and relations)
+ * This function provides read-only access to note attributes
  */
-export async function get_note_attributes(
-  noteId: string,
+export async function read_attributes(
+  params: ReadAttributesParams,
   axiosInstance: AxiosInstance
 ): Promise<AttributeOperationResult> {
   try {
-    const response = await axiosInstance.get(`/notes/${noteId}`);
+    const response = await axiosInstance.get(`/notes/${params.noteId}`);
 
     const attributes: Attribute[] = response.data.attributes.map((attr: any) => ({
       type: attr.type,
@@ -373,10 +385,21 @@ export async function get_note_attributes(
       isInheritable: attr.isInheritable
     }));
 
+    // Separate labels and relations for better organization
+    const labels = attributes.filter(attr => attr.type === 'label');
+    const relations = attributes.filter(attr => attr.type === 'relation');
+
     return {
       success: true,
-      message: `Retrieved ${attributes.length} attributes for note ${noteId}`,
-      attributes
+      message: `Retrieved ${attributes.length} attributes for note ${params.noteId} (${labels.length} labels, ${relations.length} relations)`,
+      attributes,
+      // Add structured summary for easier parsing
+      summary: {
+        total: attributes.length,
+        labels: labels.length,
+        relations: relations.length,
+        noteId: params.noteId
+      }
     };
   } catch (error) {
     return {

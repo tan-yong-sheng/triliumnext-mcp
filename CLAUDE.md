@@ -153,22 +153,22 @@ try {
   - **JSON response format**: Returns structured data with selectedNote, totalMatches, topMatches array, and nextSteps guidance
   - **Multiple match handling**: When `totalMatches > 1` and `autoSelect=false`, presents numbered list of options and asks user to choose
 - `get_note`: Retrieve note content by ID
-- `manage_attributes` (READ-only): Read note attributes (labels and relations). View existing labels (#tags), template relations (~template), and note metadata. This tool allows you to inspect the current attributes assigned to any note. Only supports "read" operation.
+- `read_attributes`: Read all attributes (labels and relations) for a note. View existing labels (#tags), template relations (~template), and note metadata. This tool provides read-only access to inspect current attributes assigned to any note with structured output including labels/relations breakdown and summary information.
 
 ### WRITE Permission Tools
 - `create_note`: Create new notes with various types (text, code, mermaid, canvas, book, etc.) - 13 ETAPI-aligned note types supported
-- `manage_attributes` (WRITE-only): Manage note attributes (labels and relations) with write operations. Create labels (#tags), template relations (~template), update existing attributes, and organize notes with metadata. Supports single operations and efficient batch creation for better performance. Template relations like ~template = 'Board' enable specialized note layouts and functionality. Supports "create", "update", "delete", and "batch_create" operations.
+- `manage_attributes`: Manage note attributes (labels and relations) with write operations. Create labels (#tags), template relations (~template), update existing attributes, and organize notes with metadata. Supports single operations and efficient batch creation for better performance. Template relations like ~template = 'Board' enable specialized note layouts and functionality. Supports "create", "update", "delete", and "batch_create" operations.
 - `update_note`: Update existing note content with revision control (defaults to revision=true for safety)
 - `append_note`: Add content to existing notes without replacement (defaults to revision=false for performance)
 - `delete_note`: Delete notes by ID (permanent operation with caution warnings)
 
 ### Permission-Based Tool Behavior
-The `manage_attributes` tool has different capabilities based on permissions:
-- **READ permission only**: Shows manage_attributes tool with "read" operation only
-- **WRITE permission only**: Shows manage_attributes tool with "create", "update", "delete", "batch_create" operations only
-- **READ + WRITE permissions**: Shows both manage_attributes tool variants (read-only + write-only)
+The attribute management tools have clear permission separation:
+- **READ permission only**: Shows `read_attributes` tool for viewing note attributes
+- **WRITE permission only**: Shows `manage_attributes` tool for creating, updating, deleting attributes
+- **READ + WRITE permissions**: Shows both `read_attributes` and `manage_attributes` tools for complete attribute management
 
-This follows the principle of least privilege and maintains consistency with other tools in the system.
+This follows the principle of least privilege and provides clean separation between read and write operations.
 
 ## Search Query Architecture
 

@@ -23,7 +23,7 @@ import {
   handleSearchNotesRequest
 } from "./modules/searchHandler.js";
 import { handleResolveNoteRequest } from "./modules/resolveHandler.js";
-import { handleManageAttributes } from "./modules/attributeHandler.js";
+import { handleManageAttributes, handleReadAttributes } from "./modules/attributeHandler.js";
 
 const TRILIUM_API_URL = process.env.TRILIUM_API_URL;
 const TRILIUM_API_TOKEN = process.env.TRILIUM_API_TOKEN;
@@ -111,6 +111,9 @@ class TriliumServer {
 
           case "resolve_note_id":
             return await handleResolveNoteRequest(request.params.arguments, this, this.axiosInstance);
+
+          case "read_attributes":
+            return await handleReadAttributes(request.params.arguments as any, this.axiosInstance, this);
 
           case "manage_attributes":
             return await handleManageAttributes(request.params.arguments as any, this.axiosInstance, this);

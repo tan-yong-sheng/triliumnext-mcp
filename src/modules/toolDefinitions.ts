@@ -328,22 +328,17 @@ function createSearchProperties() {
 export function createReadAttributeTools(): any[] {
   return [
     {
-      name: "manage_attributes",
-      description: "Read note attributes (labels and relations). View existing labels (#tags), template relations (~template), and note metadata. This tool allows you to inspect the current attributes assigned to any note.",
+      name: "read_attributes",
+      description: "Read all attributes (labels and relations) for a note. View existing labels (#tags), template relations (~template), and note metadata. This tool provides read-only access to inspect current attributes assigned to any note. Returns structured data with labels, relations, and summary information.",
       inputSchema: {
         type: "object",
         properties: {
           noteId: {
             type: "string",
             description: "ID of the note to read attributes from"
-          },
-          operation: {
-            type: "string",
-            enum: ["read"],
-            description: "Operation type: 'read' (list all attributes)"
           }
         },
-        required: ["noteId", "operation"]
+        required: ["noteId"]
       }
     }
   ];
@@ -356,7 +351,7 @@ export function createWriteAttributeTools(): any[] {
   return [
     {
       name: "manage_attributes",
-      description: "Manage note attributes (labels and relations) with write operations. ONLY use this tool when the user explicitly requests attribute management (e.g., 'add a tag', 'create a relation', 'manage attributes'). TRY NOT to use this tool proactively unless for automated metadata tagging as part of a clear workflow. Create labels (#tags), template relations (~template), update existing attributes, and organize notes with metadata. IMPORTANT: Relations require values pointing to existing notes (e.g., template relations use 'Board', 'Calendar'; author relations use target note titles or IDs). UPDATE LIMITATIONS: For labels, only value and position can be updated. For relations, only position can be updated. The isInheritable property cannot be changed via update - delete and recreate to modify inheritability. Supports single operations and efficient batch creation for better performance. Template relations like ~template.title = 'Board' enable specialized note layouts and functionality.",
+      description: "Manage note attributes with write operations (create, update, delete). Create labels (#tags), template relations (~template), update existing attributes, and organize notes with metadata. IMPORTANT: This tool only provides write access - use read_attributes to view existing attributes. Relations require values pointing to existing notes (e.g., template relations use 'Board', 'Calendar'; author relations use target note titles or IDs). UPDATE LIMITATIONS: For labels, only value and position can be updated. For relations, only position can be updated. The isInheritable property cannot be changed via update - delete and recreate to modify inheritability. Supports single operations and efficient batch creation for better performance.",
       inputSchema: {
         type: "object",
         properties: {
