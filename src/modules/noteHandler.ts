@@ -75,10 +75,10 @@ export async function handleUpdateNoteRequest(
   try {
     const noteOperation: NoteOperation = {
       noteId: args.noteId,
+      type: args.type,
       content: args.content,
       revision: args.revision !== false, // Default to true (safe behavior)
-      expectedHash: args.expectedHash,
-      validateType: args.validateType !== false // Default to true
+      expectedHash: args.expectedHash
     };
 
     const result = await handleUpdateNote(noteOperation, axiosInstance);

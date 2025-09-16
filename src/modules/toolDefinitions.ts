@@ -104,6 +104,11 @@ export function createWriteTools(): any[] {
             type: "string",
             description: "ID of the note to update"
           },
+          type: {
+            type: "string",
+            enum: ["text", "code", "render", "search", "relationMap", "book", "noteMap", "mermaid", "webView", "shortcut", "doc", "contentWidget", "launcher"],
+            description: "Type of note (aligned with TriliumNext ETAPI specification). This determines content validation requirements."
+          },
           content: {
             type: "array",
             description: "Content of the note as ContentItem array. Content requirements by note type: TEXT NOTES - require HTML content (wrap plain text in <p> tags, e.g., '<p>hello world</p>'); CODE/MERMAID NOTES - require plain text (no HTML tags); BOOK/SEARCH NOTES - can be empty string. Use HTML formatting for text notes: <p> for paragraphs, <strong> for bold, <em> for italic, etc.",
@@ -135,18 +140,13 @@ export function createWriteTools(): any[] {
             type: "string",
             description: "⚠️ REQUIRED: Blob ID (content hash) from get_note response. This is Trilium's built-in content identifier that ensures data integrity by verifying the note hasn't been modified since you retrieved it. If you see an error about missing blobId, you MUST call get_note first to get the current blobId."
           },
-          validateType: {
-            type: "boolean",
-            description: "Whether to validate content matches note type requirements (default: true). Set to false only if you're certain about content format.",
-            default: true
-          },
           revision: {
             type: "boolean",
             description: "Whether to create a revision before updating (default: true for safety)",
             default: true
           }
         },
-        required: ["noteId", "content", "expectedHash"]
+        required: ["noteId", "type", "content", "expectedHash"]
       }
     },
     {

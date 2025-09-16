@@ -29,7 +29,6 @@ export interface NoteOperation {
   includeContent?: boolean;
   attributes?: Attribute[];
   expectedHash?: string;
-  validateType?: boolean;
 }
 
 export interface NoteCreateResponse {
@@ -165,14 +164,14 @@ export async function handleUpdateNote(
 ): Promise<NoteUpdateResponse> {
   const {
     noteId,
+    type,
     content: rawContent,
     revision = true,
-    expectedHash,
-    validateType = true
+    expectedHash
   } = args;
 
-  if (!noteId || !rawContent) {
-    throw new Error("noteId and content are required for update operation.");
+  if (!noteId || !type || !rawContent) {
+    throw new Error("noteId, type, and content are required for update operation.");
   }
 
   let revisionCreated = false;
@@ -199,27 +198,25 @@ export async function handleUpdateNote(
       }
     }
 
-    // Step 3: Content type validation if enabled
+    // Step 3: Content type validation (always enabled)
     let finalContent = rawContent;
-    if (validateType) {
-      const validationResult = await validateContentForNoteType(
-        rawContent as ContentItem[],
-        currentNote.data.type,
-        currentContent.data
-      );
+    const validationResult = await validateContentForNoteType(
+      rawContent as ContentItem[],
+      type as NoteType,
+      currentContent.data
+    );
 
-      if (!validationResult.valid) {
-        return {
-          noteId,
-          message: `CONTENT_TYPE_MISMATCH: ${validationResult.error}`,
-          revisionCreated: false,
-          conflict: false
-        };
-      }
-
-      // Use validated/corrected content
-      finalContent = validationResult.content;
+    if (!validationResult.valid) {
+      return {
+        noteId,
+        message: `CONTENT_TYPE_MISMATCH: ${validationResult.error}`,
+        revisionCreated: false,
+        conflict: false
+      };
     }
+
+    // Use validated/corrected content
+    finalContent = validationResult.content;
 
     // Step 4: Create revision if requested
     if (revision) {
