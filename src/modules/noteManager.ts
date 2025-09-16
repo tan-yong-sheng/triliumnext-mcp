@@ -14,7 +14,7 @@ export interface Attribute {
   isInheritable?: boolean;
 }
 
-export type NoteType = 'text' | 'code' | 'render' | 'file' | 'image' | 'search' | 'relationMap' | 'book' | 'noteMap' | 'mermaid' | 'webView' | 'shortcut' | 'doc' | 'contentWidget' | 'launcher';
+export type NoteType = 'text' | 'code' | 'render' | 'search' | 'relationMap' | 'book' | 'noteMap' | 'mermaid' | 'webView' | 'shortcut' | 'doc' | 'contentWidget' | 'launcher';
 
 export interface NoteOperation {
   parentNoteId?: string;
@@ -67,7 +67,13 @@ export async function handleCreateNote(
   let finalMime = mime;
 
   if (Array.isArray(rawContent)) {
-    // ContentItem[] array format
+    // Check for file/image items and reject them
+    const fileItems = rawContent.filter(item => item.type === 'file' || item.type === 'image');
+    if (fileItems.length > 0) {
+      throw new Error('File and image note creation is currently disabled');
+    }
+
+    // Process text content only
     const processed = await processContentArray(rawContent, type);
     if (processed.error) {
       throw new Error(`Content processing error: ${processed.error}`);
@@ -81,7 +87,7 @@ export async function handleCreateNote(
     throw new Error("Content must be a string or ContentItem array");
   }
 
-  // Create note with processed content
+  // Create note with processed content (empty for file/image-only notes)
   const noteData: any = {
     parentNoteId,
     title,
@@ -95,19 +101,20 @@ export async function handleCreateNote(
   }
 
   const response = await axiosInstance.post("/create-note", noteData);
+  const noteId = response.data.note.noteId;
 
   // Handle attributes if provided
   if (attributes && attributes.length > 0) {
     try {
-      await createNoteAttributes(response.data.note.noteId, attributes, axiosInstance);
+      await createNoteAttributes(noteId, attributes, axiosInstance);
     } catch (attributeError) {
       console.warn(`Note created but attributes failed to apply: ${attributeError}`);
     }
   }
 
   return {
-    noteId: response.data.note.noteId,
-    message: `Created note: ${response.data.note.noteId}`
+    noteId: noteId,
+    message: `Created note: ${noteId}`
   };
 }
 
@@ -307,12 +314,15 @@ export async function handleGetNote(
     };
   }
 
+  const noteData = noteResponse.data;
+
+  // Get note content (works for all note types including file/image)
   const { data: noteContent } = await axiosInstance.get(`/notes/${noteId}/content`, {
     responseType: 'text'
   });
 
   return {
-    note: noteResponse.data,
+    note: noteData,
     content: noteContent
   };
 }

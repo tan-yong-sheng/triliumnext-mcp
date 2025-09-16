@@ -156,7 +156,7 @@ try {
 - `manage_attributes` (READ-only): Read note attributes (labels and relations). View existing labels (#tags), template relations (~template), and note metadata. This tool allows you to inspect the current attributes assigned to any note. Only supports "read" operation.
 
 ### WRITE Permission Tools
-- `create_note`: Create new notes with various types (text, code, file, image, etc.) - 15 ETAPI-aligned note types supported
+- `create_note`: Create new notes with various types (text, code, mermaid, canvas, book, etc.) - 13 ETAPI-aligned note types supported
 - `manage_attributes` (WRITE-only): Manage note attributes (labels and relations) with write operations. Create labels (#tags), template relations (~template), update existing attributes, and organize notes with metadata. Supports single operations and efficient batch creation for better performance. Template relations like ~template = 'Board' enable specialized note layouts and functionality. Supports "create", "update", "delete", and "batch_create" operations.
 - `update_note`: Update existing note content with revision control (defaults to revision=true for safety)
 - `append_note`: Add content to existing notes without replacement (defaults to revision=false for performance)
@@ -240,15 +240,16 @@ This ensures backward compatibility and prevents breaking changes to the core se
 
 - `text`: Regular text notes
 - `code`: Code notes with syntax highlighting
-- `file`: File attachments
-- `image`: Image notes
 - `search`: Search notes
 - `book`: Book/folder notes
 - `relationMap`: Relation map notes
 - `render`: Render notes
-- `canvas`: Canvas notes (application/json)
 - `mermaid`: Mermaid diagram notes (text/vnd.mermaid)
-- `mindMap`: Mind map notes (application/json)
+- `webView`: WebView notes
+- `shortcut`: Shortcut notes
+- `doc`: Document notes
+- `contentWidget`: Content widget notes
+- `launcher`: Launcher notes
 
 ### Template-Based Note Types
 
@@ -260,12 +261,65 @@ TriliumNext supports specialized note types through templates:
 
 **Note**: For template-based searches, use the `search_notes` function with template criteria rather than `resolve_note_id`.
 
-## Content Input
+## Content Input & Simplified Interface
 
-The server expects HTML content for all note operations:
-- Content parameters should be provided as HTML
-- Users should convert Markdown to HTML before submission
-- Direct HTML input ensures compatibility with all TriliumNext note types
+### Smart Content Processing
+The server now includes intelligent content processing:
+- **Text notes**: Auto-detects Markdown vs HTML vs plain text, converts Markdown to HTML
+- **Code notes**: Content passes through exactly as written (no processing)
+- **File/Image notes**: Support both base64 content AND direct URLs (automatically downloaded)
+- **Mixed content**: Text notes can combine text, images, and files
+
+### URL-based Content Support
+- **Automatic downloading**: File and image notes can use URLs instead of base64 strings
+- **Smart detection**: URLs are automatically detected and downloaded in memory
+- **MIME type detection**: Content types and filenames auto-extracted from URLs
+- **Size limits**: 50MB maximum file size with proper error handling
+- **Memory-only**: No temporary files written to disk
+
+
+### Simplified Helper Functions
+Exported helper functions for easier note creation:
+- `buildNoteParams()` - Universal function for text and code note types with automatic content mapping
+- `buildContentItem()` - Utility for creating individual ContentItems (advanced use)
+
+**Usage Example:**
+```typescript
+import { buildNoteParams } from 'triliumnext-mcp';
+
+// Code note - content passes through unchanged
+const codeNote = buildNoteParams({
+  parentNoteId: "root",
+  title: "Fibonacci Function",
+  noteType: "code",
+  content: `def fibonacci(n):
+    if n <= 0:
+        return []
+    elif n == 1:
+        return [0]
+    else:
+        fib = [0, 1]
+        while len(fib) < n:
+            fib.append(fib[-1] + fib[-2])
+        return fib`,
+  mime: "text/x-python"
+});
+
+// Text note with auto Markdown conversion
+const textNote = buildNoteParams({
+  parentNoteId: "root",
+  title: "Meeting Notes",
+  noteType: "text",
+  content: "# Meeting Summary\n\n- Discussed Q4 goals\n- **Action items** identified"
+});
+```
+
+### Content Requirements by Note Type
+- **Text notes**: Support smart format detection (HTML/Markdown/plain)
+- **Code notes**: Plain text only, no processing applied
+- **Book/Search/etc**: Optional content, can be empty
+
+**Documentation**: See `docs/create-notes-examples/simplified-interface-guide.md` for comprehensive examples and usage patterns.
 
 ## API Integration
 

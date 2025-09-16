@@ -27,31 +27,27 @@ export function createWriteTools(): any[] {
           },
           type: {
             type: "string",
-            enum: ["text", "code", "render", "file", "image", "search", "relationMap", "book", "noteMap", "mermaid", "webView", "shortcut", "doc", "contentWidget", "launcher"],
+            enum: ["text", "code", "render", "search", "relationMap", "book", "noteMap", "mermaid", "webView", "shortcut", "doc", "contentWidget", "launcher"],
             description: "Type of note (aligned with TriliumNext ETAPI specification)",
           },
           content: {
             type: "array",
-            description: "Content of the note as ContentItem array. Content requirements vary by note type: text/render/webView use smart format detection (HTML/Markdown/plain), code/mermaid require plain text, file/image require base64 encoded data, book/search/etc can be empty or optional.",
+            description: "Content of the note as ContentItem array. Content requirements vary by note type: text/render/webView use smart format detection (HTML/Markdown/plain), code/mermaid require plain text, book/search/etc can be empty or optional.",
             items: {
               type: "object",
               properties: {
                 type: {
                   type: "string",
-                  enum: ["text", "file", "image", "url", "data-url"],
-                  description: "Content type: 'text' for smart format detection (HTML/Markdown/plain), 'file' for base64 files, 'image' for base64 images, 'url' for remote URLs, 'data-url' for embedded data"
+                  enum: ["text", "url", "data-url"],
+                  description: "Content type: 'text' for smart format detection (HTML/Markdown/plain), 'url' for remote URLs, 'data-url' for embedded data"
                 },
                 content: {
                   type: "string",
-                  description: "Content data - for text type: automatically detected as HTML/Markdown/plain; for file/image: base64 encoded; for url/data-url: URL string"
+                  description: "Content data - for text type: automatically detected as HTML/Markdown/plain; for url/data-url: URL string."
                 },
                 mimeType: {
                   type: "string",
-                  description: "MIME type for file/image content (e.g., 'image/png', 'application/pdf')"
-                },
-                filename: {
-                  type: "string",
-                  description: "Filename for file/image content"
+                  description: "MIME type for code notes (e.g., 'text/x-javascript', 'text/x-python', 'text/x-typescript'). Helps with syntax highlighting."
                 }
               },
               required: ["type", "content"]

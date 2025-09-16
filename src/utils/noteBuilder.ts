@@ -12,17 +12,25 @@ import type { NoteType } from '../modules/noteManager.js';
  */
 function getContentTypeForNoteType(noteType: NoteType): ContentItem['type'] {
   switch (noteType) {
-    case 'file':
-      return 'file';
-    case 'image':
-      return 'image';
     case 'code':
     case 'mermaid':
     case 'text':
     case 'render':
     case 'webView':
     default:
-      return 'text'; // Most note types use text content
+      return 'text'; // All note types use text content
+  }
+}
+
+/**
+ * Check if content is a URL
+ */
+function isUrlContent(content: string): boolean {
+  try {
+    const urlObj = new URL(content);
+    return ['http:', 'https:'].includes(urlObj.protocol);
+  } catch {
+    return false;
   }
 }
 
@@ -33,6 +41,8 @@ function normalizeContent(content: ContentInput, noteType: NoteType): ContentIte
   // String content: auto-wrap based on note type
   if (typeof content === 'string') {
     const contentType = getContentTypeForNoteType(noteType);
+
+    
     return [{
       type: contentType,
       content: content

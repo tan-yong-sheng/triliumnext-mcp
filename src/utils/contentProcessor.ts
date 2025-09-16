@@ -26,13 +26,22 @@ export async function processContentItem(item: ContentItem, noteType?: string): 
         return await processTextContent(item, noteType);
 
       case 'file':
-        return processFileContent(item);
+        return {
+          content: '',
+          error: 'File note creation is currently disabled'
+        };
 
       case 'image':
-        return processImageContent(item);
+        return {
+          content: '',
+          error: 'Image note creation is currently disabled'
+        };
 
       case 'url':
-        return processUrlContent(item);
+        return {
+          content: '',
+          error: 'URL content processing is currently disabled'
+        };
 
       case 'data-url':
         return processDataUrlContent(item);
@@ -139,80 +148,15 @@ function isLikelyMarkdown(content: string): boolean {
 }
 
 /**
- * Process file content (base64 encoded)
+ * Validate URL format
  */
-function processFileContent(item: ContentItem): ProcessedContent {
-  if (!item.content) {
-    return {
-      content: '',
-      error: 'File content is required'
-    };
+function isValidUrl(url: string): boolean {
+  try {
+    const urlObj = new URL(url);
+    return ['http:', 'https:'].includes(urlObj.protocol);
+  } catch {
+    return false;
   }
-
-  // Validate base64 format
-  if (!isValidBase64(item.content)) {
-    return {
-      content: '',
-      error: 'File content must be base64 encoded'
-    };
-  }
-
-  // Determine MIME type if not provided
-  const mimeType = item.mimeType || detectMimeTypeFromFilename(item.filename);
-
-  return {
-    content: item.content,
-    mimeType,
-    filename: item.filename || 'file'
-  };
-}
-
-/**
- * Process image content (base64 encoded)
- */
-function processImageContent(item: ContentItem): ProcessedContent {
-  if (!item.content) {
-    return {
-      content: '',
-      error: 'Image content is required'
-    };
-  }
-
-  // Validate base64 format
-  if (!isValidBase64(item.content)) {
-    return {
-      content: '',
-      error: 'Image content must be base64 encoded'
-    };
-  }
-
-  // Determine MIME type if not provided
-  const mimeType = item.mimeType || detectMimeTypeFromFilename(item.filename) || 'image/png';
-
-  // Validate it's an image MIME type
-  if (!mimeType.startsWith('image/')) {
-    return {
-      content: '',
-      error: `Invalid image MIME type: ${mimeType}`
-    };
-  }
-
-  return {
-    content: item.content,
-    mimeType,
-    filename: item.filename || 'image'
-  };
-}
-
-/**
- * Process URL content (placeholder for future implementation)
- */
-function processUrlContent(item: ContentItem): ProcessedContent {
-  // For now, return URL as text content
-  // Future implementation would fetch the URL content
-  return {
-    content: `<p>Remote URL: <a href="${item.content}">${item.content}</a></p>`
-  };
 }
 
 /**
@@ -266,20 +210,34 @@ export async function processContentArray(contentItems: ContentItem[], noteType?
     };
   }
 
-  // For now, process only the first item (ETAPI limitation)
-  // Future enhancement would support mixed content
-  const firstItem = contentItems[0];
-  const processed = await processContentItem(firstItem, noteType);
+  // Separate text content from file/image content
+  const textItems = contentItems.filter(item => item.type === 'text');
+  const fileItems = contentItems.filter(item => item.type === 'file' || item.type === 'image');
 
-  // Validate content type requirements by note type
-  if (noteType) {
-    const validation = validateContentForNoteType(processed, noteType, firstItem.type);
-    if (validation.error) {
-      return validation;
-    }
+  // For file/image notes, we'll handle attachments in the noteManager
+  if (fileItems.length > 0 && textItems.length === 0) {
+    // Pure file/image note - return empty content, attachments will be handled separately
+    return { content: '' };
   }
 
-  return processed;
+  // Process text content only
+  if (textItems.length > 0) {
+    const firstTextItem = textItems[0];
+    const processed = await processContentItem(firstTextItem, noteType);
+
+    // Validate content type requirements by note type
+    if (noteType) {
+      const validation = validateContentForNoteType(processed, noteType, firstTextItem.type);
+      if (validation.error) {
+        return validation;
+      }
+    }
+
+    return processed;
+  }
+
+  // Mixed content (text + files) - return text content only, files handled as attachments
+  return { content: '' };
 }
 
 /**
@@ -350,14 +308,29 @@ function getContentRequirementsByNoteType(noteType: string): { format: 'html' | 
 }
 
 /**
- * Validate base64 string format
+ * Validate base64 string format with actual decode test
  */
 function isValidBase64(str: string): boolean {
   try {
-    // Basic validation - should be base64 encoded
+    // Check basic base64 format
     const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
-    return base64Regex.test(str) && str.length > 0;
-  } catch {
+    if (!base64Regex.test(str) || str.length === 0) {
+      return false;
+    }
+
+    // Test actual decoding
+    const buffer = Buffer.from(str, 'base64');
+    
+    // Verify the decoded content can be re-encoded to the same string
+    const reencoded = buffer.toString('base64');
+    
+    // Allow for slight differences in padding
+    const normalizedOriginal = str.replace(/=+$/, '');
+    const normalizedReencoded = reencoded.replace(/=+$/, '');
+    
+    return normalizedOriginal === normalizedReencoded;
+  } catch (error) {
+    console.error('Base64 validation failed:', error);
     return false;
   }
 }
