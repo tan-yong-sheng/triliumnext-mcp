@@ -23,9 +23,9 @@ The original interface required understanding ContentItem types:
 
 ### Single Function Design
 
-The simplified interface uses **one function** for all note types:
+The simplified interface uses **one function** for supported note types:
 
-- **`buildNoteParams()`** - Universal function that handles all note types and content formats
+- **`buildNoteParams()`** - Universal function that handles text and code note types with automatic content mapping
 
 ```javascript
 import { buildNoteParams, buildContentItem } from 'triliumnext-mcp';
@@ -138,7 +138,7 @@ const note = buildNoteParams({
 
 ## 🛠 Available Helper Functions
 
-- `buildNoteParams()` - Universal function for all note types
+- `buildNoteParams()` - Universal function for text and code note types
 - `buildContentItem()` - Utility for creating individual ContentItems (advanced use)
 
 ## 🎯 LLM Decision Strategy
@@ -146,18 +146,17 @@ const note = buildNoteParams({
 LLMs choose parameters based on:
 
 1. **User Intent**: What type of content the user wants to create
-2. **Available Data**: Text content, files, images, or mixed content
+2. **Available Data**: Text content for notes
 3. **Tool Descriptions**: Clear guidance on note types and content formats
-4. **Parameter Requirements**: When to use arrays vs strings, when to specify mime types
+4. **Parameter Requirements**: Content arrays and mime types for code notes
 
 ## 📝 Parameter Decision Guide
 
 | Parameter | When to Use | Example Values |
 |-----------|-------------|----------------|
-| `noteType: "text"` | Rich text, documents, mixed content | Meeting notes, documentation |
+| `noteType: "text"` | Rich text, documents | Meeting notes, documentation |
 | `noteType: "code"` | Code snippets, scripts | Python, JavaScript, SQL |
-| `content: "string"` | Single content item | Plain text, Markdown, code |
-| `content: [array]` | Multiple content items (text notes only) | Multiple text sections |
+| `content: array` | ContentItem array (required) | Formatted text content |
 | `mime: "..."` | Required for code notes | `text/x-python`, `text/x-javascript` |
 
 ## ✅ Working Examples

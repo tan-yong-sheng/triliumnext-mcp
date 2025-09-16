@@ -86,7 +86,6 @@ interface FileAttachmentSystem {
 - **Multiple Content Types**: Support text, local files, remote URLs, and mixed content
 - **Intelligent Processing**: Automatic MIME type detection and content optimization
 - **URL Fetching**: Built-in HTTP client for remote content fetching
-- **Backward Compatibility**: Graceful handling of string content as single-item array
 
 **Enhanced Content Types (Future)**:
 - 📝 **Text Content**: HTML, markdown (pre-processed), plain text
@@ -114,7 +113,7 @@ interface MultiModalCreateNoteParams {
   parentNoteId: string;
   title: string;
   type: NoteType;
-  content: ContentItem[] | string;  // Backward compatible
+  content: ContentItem[]
   mime?: string;
   attributes?: Attribute[];
 }
@@ -211,20 +210,6 @@ class MultiModalContentProcessor {
       content: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCI+PC9zdmc+',
       mimeType: 'image/svg+xml'
     }
-  ]
-}
-```
-
-**Backward Compatibility**:
-```typescript
-// Still works - auto-converted to ContentItem[]
-{
-  content: '<h1>Simple note</h1>'
-}
-// Automatically becomes:
-{
-  content: [
-    { type: 'text', content: '<h1>Simple note</h1>' }
   ]
 }
 ```
@@ -493,7 +478,6 @@ interface EnhancedAppendParams {
 **Key Features**:
 - ⚡ **Performance**: 30-50% faster than manual create + attributes workflow
 - 🎯 **One-Step**: Single function call for complete note creation with metadata
-- 🔄 **Backward Compatible**: Existing usage patterns remain unchanged
 - 📋 **Template Support**: Direct template application during creation
 
 **Interface Design**:
@@ -534,14 +518,12 @@ async function create_note_with_attributes(params) {
 - **Dual Search Approach**: Support both string-based and noteId-based relation searches
 - **NoteId Precision**: Enable precise relation targeting for specific relation types
 - **Auto-Enhancement**: Intelligent detection and conversion of noteId values in relation searches
-- **Backward Compatibility**: Maintain existing string-based search functionality
 
 **Key Features**:
 - 🎯 **NoteId Precision**: Direct targeting of relations by noteId for exact matches
 - 🔍 **Smart Detection**: Automatically identify noteId patterns in search values
 - 📝 **Dual Syntax Support**: Support both `~template.noteId = '_template_grid_view'` and `~template.title = 'Grid View'`
 - ⚡ **Performance Optimization**: Faster searches when using noteId for template and system relations
-- 🔄 **Backward Compatible**: Existing string-based searches continue to work unchanged
 
 **Technical Analysis**:
 Based on research of TriliumNext relation patterns, different relation types have different requirements:
@@ -658,7 +640,6 @@ function isTemplateRelation(property: string): boolean {
 - ✅ **Performance**: Faster search execution when targeting specific known notes
 - ✅ **Flexibility**: Users can choose between precision (noteId) and flexibility (string)
 - ✅ **Intelligent**: Auto-detection reduces user cognitive load for common patterns
-- ✅ **Backward Compatible**: Existing search patterns continue to work unchanged
 
 **User Experience Improvements**:
 - Clear documentation on when to use noteId vs string searches
@@ -679,7 +660,6 @@ function isTemplateRelation(property: string): boolean {
 7. **create_note Enhancement**: Complete Phase 2 with integrated attribute support
 
 ## Future Architecture Considerations
-- Maintain backward compatibility with existing tools
 - Design APIs for extensibility and performance
 - Consider security implications of file uploads and batch operations
 - Ensure robust error handling and user feedback

@@ -12,7 +12,7 @@ export function createWriteTools(): any[] {
   return [
     {
       name: "create_note",
-      description: "Create a new note in TriliumNext. ONLY use this tool when the user explicitly requests note creation (e.g., 'create a note', 'make a new note'). DO NOT use this tool proactively or when the user is only asking questions about their notes. TIP: For code notes, content is plain text (no HTML processing). For mixed content (text+images), use content array with proper types.",
+      description: "Create a new note in TriliumNext. ONLY use this tool when the user explicitly requests note creation (e.g., 'create a note', 'make a new note'). DO NOT use this tool proactively or when the user is only asking questions about their notes. TIP: For code notes, content is plain text (no HTML processing).",
       inputSchema: {
         type: "object",
         properties: {
@@ -38,12 +38,12 @@ export function createWriteTools(): any[] {
               properties: {
                 type: {
                   type: "string",
-                  enum: ["text", "url", "data-url"],
-                  description: "Content type: 'text' for smart format detection (HTML/Markdown/plain), 'url' for remote URLs, 'data-url' for embedded data"
+                  enum: ["text", "data-url"],
+                  description: "Content type: 'text' for smart format detection (HTML/Markdown/plain), 'data-url' for embedded data"
                 },
                 content: {
                   type: "string",
-                  description: "Content data - for text type: automatically detected as HTML/Markdown/plain; for url/data-url: URL string."
+                  description: "Content data - for text type: automatically detected as HTML/Markdown/plain; for data-url: URL string."
                 },
                 mimeType: {
                   type: "string",
@@ -112,8 +112,8 @@ export function createWriteTools(): any[] {
               properties: {
                 type: {
                   type: "string",
-                  enum: ["text", "file", "image", "url", "data-url"],
-                  description: "Content type: 'text' for smart format detection (HTML/Markdown/plain), 'file' for base64 files, 'image' for base64 images, 'url' for remote URLs, 'data-url' for embedded data"
+                  enum: ["text", "data-url"],
+                  description: "Content type: 'text' for smart format detection (HTML/Markdown/plain), 'data-url' for embedded data"
                 },
                 content: {
                   type: "string",
@@ -158,8 +158,8 @@ export function createWriteTools(): any[] {
               properties: {
                 type: {
                   type: "string",
-                  enum: ["text", "file", "image", "url", "data-url"],
-                  description: "Content type: 'text' for smart format detection (HTML/Markdown/plain), 'file' for base64 files, 'image' for base64 images, 'url' for remote URLs, 'data-url' for embedded data"
+                  enum: ["text", "data-url"],
+                  description: "Content type: 'text' for smart format detection (HTML/Markdown/plain), 'data-url' for embedded data"
                 },
                 content: {
                   type: "string",

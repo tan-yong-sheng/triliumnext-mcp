@@ -6,8 +6,7 @@ This guide provides detailed instructions for migrating to the new enhanced note
 
 ### ⚠️ Critical Changes
 
-1. **Content Parameter Change**: `content` parameter now accepts **only `ContentItem[]` arrays**, not strings
-2. **No Backward Compatibility**: Existing string-based content will no longer work
+1. **Content Parameter**: `content` parameter now accepts **only `ContentItem[]` arrays**
 3. **Required Migration**: All existing code using `create_note`, `update_note`, or `append_note` must be updated
 
 ## Content Parameter Migration

@@ -228,7 +228,7 @@ interface SearchOperation {
 }
 ```
 
-This ensures backward compatibility and prevents breaking changes to the core search functionality.
+This prevents breaking changes to the core search functionality.
 
 ### Trilium Search DSL Integration
 - **Parent-child queries**: Uses `note.parents.title = 'parentName'` for direct children
@@ -268,10 +268,6 @@ The server now includes intelligent content processing:
 - **Text notes**: Auto-detects Markdown vs HTML vs plain text, converts Markdown to HTML
 - **Code notes**: Content passes through exactly as written (no processing)
 - **Mixed content**: Text notes can combine multiple text sections
-
-### URL-based Content Support
-- **Currently disabled**: File and image URL downloading has been temporarily disabled due to API implementation challenges
-- **Future plans**: URL downloading will be reimplemented with proper ETAPI attachment handling
 
 
 ### Simplified Helper Functions
@@ -422,7 +418,7 @@ Corrected built-in TriliumNext template names for proper template searches:
 
 ### Note Type and MIME Type Search
 Added comprehensive search support for TriliumNext note types and MIME types:
-- **Note types**: Support for all types (text, code, mermaid, canvas, book, image, file, search, relationMap, render)
+- **Note types**: Support for searchable types (text, code, mermaid, book, image, file, search, relationMap, render, webView, etc.)
 - **MIME types**: Filtering for code languages (JavaScript, Python, TypeScript, CSS, HTML, SQL, YAML, etc.)
 - **Validation**: Added type/MIME validation functions to prevent invalid searches
 - **Integration**: Works with unified `searchCriteria` structure and boolean logic
@@ -507,7 +503,6 @@ Aligned default logic with TriliumNext:
 - **Change**: Default from OR to AND for attributes and noteProperties
 - **TriliumNext evidence**: `#book #publicationYear = 1954` demonstrates AND behavior
 - **Benefits**: Multiple labels/relations use AND by default, explicit OR available
-- **Backward compatibility**: All functionality preserved
 
 ### Relation Search
 Comprehensive relation search support:
@@ -535,7 +530,6 @@ Streamlined field-specific searches into `noteProperties`:
 User choice capability for multiple matches:
 - **autoSelect parameter**: Control behavior when multiple matches found (default: false)
 - **User-friendly**: Numbered list with note details (title, type, ID, date)
-- **Backward compatibility**: Existing usage patterns preserved
 - **Usage**: Default shows choice list, `autoSelect=true` uses intelligent selection
 
 ### resolve_note_id Function
@@ -644,11 +638,9 @@ Enhanced negation operator support and documentation:
 - Implement parallel processing workflow (note creation + attribute preparation)
 - Leverage existing `manage_attributes` foundation
 - Performance optimization and validation
-- Backward compatibility maintained
 
 **Key Design Decisions**:
 - **One-step workflow**: Single API call with internal parallel processing
-- **Backward compatibility**: Existing usage patterns remain unchanged
 - **Optional attributes**: New `attributes` parameter for labels and relations
 - **Performance optimization**: 30-50% improvement over manual two-step approach
 
@@ -701,7 +693,6 @@ async function create_note_with_attributes(params) {
 
 **Current Supported Types**: `text`, `code`, `render`, `search`, `relationMap`, `book`, `noteMap`, `mermaid`, `webView`, `shortcut`, `doc`, `contentWidget`, `launcher` (13 total)
 
-**Note**: File and image note creation has been temporarily disabled due to API implementation challenges. These note types can still be searched and accessed but cannot be created through the MCP server at this time.
 
 ## Documentation Status
 

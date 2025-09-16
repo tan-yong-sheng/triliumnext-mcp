@@ -4,7 +4,7 @@
  */
 
 import { ContentItem } from '../types/contentTypes.js';
-import { processContentArray, processContentItem, stringToContentItem } from '../utils/contentProcessor.js';
+import { processContentArray, processContentItem } from '../utils/contentProcessor.js';
 
 export interface Attribute {
   type: 'label' | 'relation';
@@ -63,29 +63,24 @@ export async function handleCreateNote(
   }
 
   // Process content array to ETAPI format
-  let processedContent: string;
-  let finalMime = mime;
-
-  if (Array.isArray(rawContent)) {
-    // Check for file/image items and reject them
-    const fileItems = rawContent.filter(item => item.type === 'file' || item.type === 'image');
-    if (fileItems.length > 0) {
-      throw new Error('File and image note creation is currently disabled');
-    }
-
-    // Process text content only
-    const processed = await processContentArray(rawContent, type);
-    if (processed.error) {
-      throw new Error(`Content processing error: ${processed.error}`);
-    }
-    processedContent = processed.content;
-    finalMime = processed.mimeType || mime;
-  } else if (typeof rawContent === 'string') {
-    // Backward compatibility: string content
-    processedContent = rawContent;
-  } else {
-    throw new Error("Content must be a string or ContentItem array");
+  if (!Array.isArray(rawContent)) {
+    throw new Error("Content must be a ContentItem array");
   }
+
+  // Check for file/image items and reject them
+  const fileItems = rawContent.filter(item => item.type === 'file' || item.type === 'image');
+  if (fileItems.length > 0) {
+    throw new Error('File and image note creation is currently disabled');
+  }
+
+  // Process content array
+  const processed = await processContentArray(rawContent, type);
+  if (processed.error) {
+    throw new Error(`Content processing error: ${processed.error}`);
+  }
+
+  const processedContent = processed.content;
+  const finalMime = processed.mimeType || mime;
 
   // Create note with processed content (empty for file/image-only notes)
   const noteData: any = {
@@ -170,19 +165,16 @@ export async function handleUpdateNote(
   // Process content array to ETAPI format
   let processedContent: string;
 
-  if (Array.isArray(rawContent)) {
-    // ContentItem[] array format - process first item only for update
-    const processed = await processContentArray(rawContent);
-    if (processed.error) {
-      throw new Error(`Content processing error: ${processed.error}`);
-    }
-    processedContent = processed.content;
-  } else if (typeof rawContent === 'string') {
-    // Backward compatibility: string content
-    processedContent = rawContent;
-  } else {
-    throw new Error("Content must be a string or ContentItem array");
+  if (!Array.isArray(rawContent)) {
+    throw new Error("Content must be a ContentItem array");
   }
+
+  // ContentItem[] array format - process first item only for update
+  const processed = await processContentArray(rawContent);
+  if (processed.error) {
+    throw new Error(`Content processing error: ${processed.error}`);
+  }
+  processedContent = processed.content;
 
   const response = await axiosInstance.put(`/notes/${noteId}/content`, processedContent, {
     headers: {
@@ -231,19 +223,16 @@ export async function handleAppendNote(
   // Process content array to ETAPI format
   let processedContentToAppend: string;
 
-  if (Array.isArray(contentToAppend)) {
-    // ContentItem[] array format - process first item only for append
-    const processed = await processContentArray(contentToAppend);
-    if (processed.error) {
-      throw new Error(`Content processing error: ${processed.error}`);
-    }
-    processedContentToAppend = processed.content;
-  } else if (typeof contentToAppend === 'string') {
-    // Backward compatibility: string content
-    processedContentToAppend = contentToAppend;
-  } else {
-    throw new Error("Content must be a string or ContentItem array");
+  if (!Array.isArray(contentToAppend)) {
+    throw new Error("Content must be a ContentItem array");
   }
+
+  // ContentItem[] array format - process first item only for append
+  const processed = await processContentArray(contentToAppend);
+  if (processed.error) {
+    throw new Error(`Content processing error: ${processed.error}`);
+  }
+  processedContentToAppend = processed.content;
 
   // Get current content
   const { data: currentContent } = await axiosInstance.get(`/notes/${noteId}/content`, {

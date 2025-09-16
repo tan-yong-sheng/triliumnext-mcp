@@ -120,7 +120,6 @@ src/
 **Key Features**:
 - Dynamic tool availability based on permissions
 - JSON Schema compliance for MCP protocol
-- Backward compatibility maintained
 
 ### Business Logic Managers (`src/modules/*Manager.ts`)
 

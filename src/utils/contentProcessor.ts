@@ -373,23 +373,3 @@ function detectMimeTypeFromFilename(filename?: string): string | undefined {
   return mimeTypes[ext];
 }
 
-/**
- * Backward compatibility: Convert string content to ContentItem[]
- */
-export function stringToContentItem(content: string, noteType?: string): ContentItem[] {
-  if (typeof content !== 'string') {
-    return [];
-  }
-
-  let contentType: ContentItem['type'] = 'text';
-
-  // Determine content type based on note type
-  if (noteType === 'file' || noteType === 'image') {
-    contentType = noteType as 'file' | 'image';
-  }
-
-  return [{
-    type: contentType,
-    content: content
-  }];
-}

@@ -23,18 +23,6 @@ function getContentTypeForNoteType(noteType: NoteType): ContentItem['type'] {
 }
 
 /**
- * Check if content is a URL
- */
-function isUrlContent(content: string): boolean {
-  try {
-    const urlObj = new URL(content);
-    return ['http:', 'https:'].includes(urlObj.protocol);
-  } catch {
-    return false;
-  }
-}
-
-/**
  * Convert flexible content input to ContentItem array
  */
 function normalizeContent(content: ContentInput, noteType: NoteType): ContentItem[] {
