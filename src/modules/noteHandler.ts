@@ -32,7 +32,8 @@ export async function handleCreateNoteRequest(
       title: args.title,
       type: args.type,
       content: args.content,
-      mime: args.mime
+      mime: args.mime,
+      attributes: args.attributes  // ✅ Add this line
     };
 
     const result = await handleCreateNote(noteOperation, axiosInstance);

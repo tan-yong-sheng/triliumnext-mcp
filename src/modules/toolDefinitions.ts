@@ -32,18 +32,18 @@ export function createWriteTools(): any[] {
           },
           content: {
             type: "array",
-            description: "Content of the note as ContentItem array. Content requirements vary by note type: text/render/webView use smart format detection (HTML/Markdown/plain), code/mermaid require plain text, book/search/etc can be empty or optional.",
+            description: "Content of the note as ContentItem array. Content requirements by note type: TEXT NOTES - require HTML content (wrap plain text in <p> tags, e.g., '<p>hello world</p>'); CODE/MERMAID NOTES - require plain text (no HTML tags); BOOK/SEARCH NOTES - can be empty string. Use HTML formatting for text notes: <p> for paragraphs, <strong> for bold, <em> for italic, etc.",
             items: {
               type: "object",
               properties: {
                 type: {
                   type: "string",
                   enum: ["text", "data-url"],
-                  description: "Content type: 'text' for smart format detection (HTML/Markdown/plain), 'data-url' for embedded data"
+                  description: "Content type: 'text' for HTML content (text notes require HTML formatting), 'data-url' for embedded data"
                 },
                 content: {
                   type: "string",
-                  description: "Content data - for text type: automatically detected as HTML/Markdown/plain; for data-url: URL string."
+                  description: "HTML content for text notes (e.g., '<p>hello world</p>', '<strong>bold text</strong>'), plain text for code/mermaid notes"
                 },
                 mimeType: {
                   type: "string",

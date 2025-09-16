@@ -61,7 +61,7 @@ export async function processContentItem(item: ContentItem, noteType?: string): 
 }
 
 /**
- * Process text content (Markdown conversion only for text notes)
+ * Process text content (HTML requirements for text notes)
  */
 async function processTextContent(item: ContentItem, noteType?: string): Promise<ProcessedContent> {
   const content = item.content.trim();
@@ -70,6 +70,11 @@ async function processTextContent(item: ContentItem, noteType?: string): Promise
   if (noteType === 'text' && isLikelyMarkdown(content)) {
     const html = await marked.parse(content);
     return { content: html };
+  }
+
+  // For text notes: auto-wrap plain text in <p> tags if it's not already HTML
+  if (noteType === 'text' && !isLikelyHtml(content)) {
+    return { content: `<p>${content}</p>` };
   }
 
   // For everything else: pass through exactly as provided

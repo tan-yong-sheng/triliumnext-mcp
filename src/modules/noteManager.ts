@@ -5,6 +5,7 @@
 
 import { ContentItem } from '../types/contentTypes.js';
 import { processContentArray, processContentItem } from '../utils/contentProcessor.js';
+import { logVerbose, logVerboseError, logVerboseApi } from '../utils/verboseUtils.js';
 
 export interface Attribute {
   type: 'label' | 'relation';
@@ -101,9 +102,13 @@ export async function handleCreateNote(
   // Handle attributes if provided
   if (attributes && attributes.length > 0) {
     try {
+      logVerbose("handleCreateNote", `Creating ${attributes.length} attributes for note ${noteId}`, attributes);
       await createNoteAttributes(noteId, attributes, axiosInstance);
+      logVerbose("handleCreateNote", `Successfully created all attributes for note ${noteId}`);
     } catch (attributeError) {
-      console.warn(`Note created but attributes failed to apply: ${attributeError}`);
+      const errorMsg = `Note created but attributes failed to apply: ${attributeError instanceof Error ? attributeError.message : attributeError}`;
+      logVerboseError("handleCreateNote", attributeError);
+      console.warn(errorMsg);
     }
   }
 
@@ -123,6 +128,7 @@ async function createNoteAttributes(
 ): Promise<void> {
   const attributePromises = attributes.map(async (attr) => {
     const attributeData = {
+      noteId: noteId,
       type: attr.type,
       name: attr.name,
       value: attr.value || '',
@@ -130,10 +136,14 @@ async function createNoteAttributes(
       isInheritable: attr.isInheritable || false
     };
 
-    return axiosInstance.post(`/notes/${noteId}/attributes`, attributeData);
+    logVerboseApi("POST", `/attributes`, attributeData);
+    const response = await axiosInstance.post(`/attributes`, attributeData);
+    logVerbose("createNoteAttributes", `Created ${attr.type} '${attr.name}' for note ${noteId}`, response.data);
+    return response;
   });
 
-  await Promise.all(attributePromises);
+  const results = await Promise.all(attributePromises);
+  logVerbose("createNoteAttributes", `Successfully created ${results.length} attributes for note ${noteId}`);
 }
 
 /**
