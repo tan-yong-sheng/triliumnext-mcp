@@ -1,17 +1,4 @@
-/**
- * Hash Utilities for TriliumNext MCP
- * Provides content hash generation and validation functionality
- */
-
-import { createHash } from 'crypto';
 import type { NoteType } from '../modules/noteManager.js';
-
-/**
- * Generate MD5 hash of content for validation
- */
-export function generateContentHash(content: string): string {
-  return createHash('md5').update(content).digest('hex');
-}
 
 /**
  * Get content requirements for a note type
@@ -44,10 +31,6 @@ export function getContentRequirements(noteType: NoteType): {
     case 'relationMap':
     case 'book':
     case 'noteMap':
-    case 'shortcut':
-    case 'doc':
-    case 'contentWidget':
-    case 'launcher':
       return {
         requiresHtml: false,
         description: "Content optional or any format accepted",

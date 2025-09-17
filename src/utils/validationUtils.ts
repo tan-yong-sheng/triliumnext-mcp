@@ -31,7 +31,7 @@ export const manageAttributesSchema = z.object({
 export const createNoteSchema = z.object({
   parentNoteId: z.string().min(1, 'Parent note ID cannot be empty'),
   title: z.string().min(1, 'Title cannot be empty'),
-  type: z.enum(['text', 'code', 'render', 'file', 'image', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView', 'shortcut', 'doc', 'contentWidget', 'launcher']),
+  type: z.enum(['text', 'code', 'render', 'file', 'image', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView']),
   content: z.array(z.object({
     type: z.enum(['text']),
     content: z.string()
@@ -50,7 +50,7 @@ export const searchNotesSchema = z.object({
 export const updateNoteSchema = z.object({
   noteId: z.string().min(1, 'Note ID cannot be empty'),
   title: z.string().min(1, 'Title cannot be empty').optional(),
-  type: z.enum(['text', 'code', 'render', 'file', 'image', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView', 'shortcut', 'doc', 'contentWidget', 'launcher']).optional(),
+  type: z.enum(['text', 'code', 'render', 'file', 'image', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView']).optional(),
   content: z.array(z.object({
     type: z.enum(['text']),
     content: z.string()
@@ -166,8 +166,8 @@ export function createValidationError(error: unknown): string {
  * Specific validators for common patterns
  */
 
-export function validateNoteType(type: unknown): 'text' | 'code' | 'render' | 'file' | 'image' | 'search' | 'relationMap' | 'book' | 'noteMap' | 'mermaid' | 'webView' | 'shortcut' | 'doc' | 'contentWidget' | 'launcher' {
-  const validTypes = ['text', 'code', 'render', 'file', 'image', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView', 'shortcut', 'doc', 'contentWidget', 'launcher'];
+export function validateNoteType(type: unknown): 'text' | 'code' | 'render' | 'file' | 'image' | 'search' | 'relationMap' | 'book' | 'noteMap' | 'mermaid' | 'webView' {
+  const validTypes = ['text', 'code', 'render', 'file', 'image', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView'];
 
   if (typeof type !== 'string' || !validTypes.includes(type)) {
     throw new Error(`Invalid note type: ${type}. Must be one of: ${validTypes.join(', ')}`);

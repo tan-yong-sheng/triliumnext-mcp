@@ -30,10 +30,7 @@ The TriliumNext MCP server provides streamlined tools for note creation and mana
 | **`relationMap`** | ⚠️ Optional | String content | ✅ Smart format detection | JSON configuration |
 | **`mermaid`** | ✅ Required | Plain text syntax | ❌ No processing | `"graph TD; A-->B; B-->C;"` |
 | **`webView`** | ✅ Required | String content | ✅ Smart format detection | `"<iframe src='...'></iframe>"` |
-| **`shortcut`** | ⚠️ Optional | String content | ✅ Smart format detection | Target reference |
-| **`doc`** | ⚠️ Optional | String content | ✅ Smart format detection | Document content |
-| **`contentWidget`** | ⚠️ Optional | String content | ✅ Smart format detection | Widget configuration |
-| **`launcher`** | ⚠️ Optional | String content | ✅ Smart format detection | Launch parameters |
+| **`noteMap`** | ⚠️ Optional | String content | ✅ Smart format detection | Note mapping configuration |
 
 ### Smart Content Processing
 
@@ -91,7 +88,7 @@ The system automatically detects content format for text notes:
 {
   "parentNoteId": "string",
   "title": "string",
-  "type": "text | code | render | search | relationMap | book | noteMap | mermaid | webView | shortcut | doc | contentWidget | launcher",
+  "type": "text | code | render | search | relationMap | book | noteMap | mermaid | webView",
   "content": "string",
   "mime": "string (optional, required for code notes)",
   "attributes": "array (optional)"
@@ -430,10 +427,6 @@ try {
 7. **`noteMap`** - Note mapping layouts
 8. **`mermaid`** - Mermaid diagram notes
 9. **`webView`** - Web content embedding
-10. **`shortcut`** - Navigation shortcuts
-11. **`doc`** - Document containers
-12. **`contentWidget`** - Interactive widgets
-13. **`launcher`** - Application launchers
 
 ### Common MIME Types for Code Notes
 

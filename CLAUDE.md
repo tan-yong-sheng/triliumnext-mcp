@@ -393,10 +393,12 @@ This prevents breaking changes to the core search functionality.
 - `render`: Render notes
 - `mermaid`: Mermaid diagram notes (text/vnd.mermaid)
 - `webView`: WebView notes
-- `shortcut`: Shortcut notes
-- `doc`: Document notes
-- `contentWidget`: Content widget notes
-- `launcher`: Launcher notes
+
+**Note**: The following note types have been deprecated and removed from the TriliumNext ETAPI specification. These types are no longer available for search or creation operations:
+- `doc` (document containers)
+- `shortcut` (navigation shortcuts)
+- `contentWidget` (interactive widgets)
+- `launcher` (application launchers)
 
 ### Template-Based Note Types
 

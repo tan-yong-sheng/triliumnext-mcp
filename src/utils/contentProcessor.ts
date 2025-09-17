@@ -138,7 +138,7 @@ function isValidUrl(url: string): boolean {
 export async function processContentArray(content: string, noteType?: string): Promise<ProcessedContent> {
   if (!content || content.trim() === '') {
     // Return empty content for note types that allow it
-    if (noteType && ['book', 'search', 'relationMap', 'shortcut', 'doc', 'contentWidget', 'launcher'].includes(noteType)) {
+    if (noteType && ['book', 'search', 'relationMap', 'noteMap'].includes(noteType)) {
       return { content: '' };
     }
 
@@ -220,10 +220,6 @@ function getContentRequirementsByNoteType(noteType: string): { format: 'html' | 
     case 'relationMap':
     case 'book':
     case 'noteMap':
-    case 'shortcut':
-    case 'doc':
-    case 'contentWidget':
-    case 'launcher':
     default:
       return { format: 'optional' };
   }

@@ -4,7 +4,7 @@ This document provides comprehensive information about the note types supported 
 
 ## Overview
 
-The TriliumNext MCP server supports **13 note types** for search operations that align with the TriliumNext ETAPI specification. However, note creation is currently limited to **text and code note types only** to ensure reliability and eliminate file upload issues. Each note type has specific characteristics, MIME types, and use cases.
+The TriliumNext MCP server supports **9 note types** for search operations that align with the TriliumNext ETAPI specification. However, note creation is currently limited to **text and code note types only** to ensure reliability and eliminate file upload issues. Each note type has specific characteristics, MIME types, and use cases.
 
 ## Supported Note Types
 
@@ -160,57 +160,6 @@ The TriliumNext MCP server supports **13 note types** for search operations that
   }
   ```
 
-### 11. Shortcut Notes (`shortcut`) - Search Only
-- **Description**: Shortcuts to other notes or content (searchable only, creation disabled)
-- **MIME Type**: None
-- **Use Cases**: Quick access, navigation aids
-- **Search Example**:
-  ```json
-  {
-    "searchCriteria": [
-      {"property": "type", "type": "noteProperty", "op": "=", "value": "shortcut"}
-    ]
-  }
-  ```
-
-### 12. Document Notes (`doc`) - Search Only
-- **Description**: Document container notes (searchable only, creation disabled)
-- **MIME Type**: Varies by document type
-- **Use Cases**: Document organization, structured content
-- **Search Example**:
-  ```json
-  {
-    "searchCriteria": [
-      {"property": "type", "type": "noteProperty", "op": "=", "value": "doc"}
-    ]
-  }
-  ```
-
-### 13. Content Widget Notes (`contentWidget`) - Search Only
-- **Description**: Interactive widget containers (searchable only, creation disabled)
-- **MIME Type**: `application/json`
-- **Use Cases**: Interactive content, custom widgets
-- **Search Example**:
-  ```json
-  {
-    "searchCriteria": [
-      {"property": "type", "type": "noteProperty", "op": "=", "value": "contentWidget"}
-    ]
-  }
-  ```
-
-### 14. Launcher Notes (`launcher`) - Search Only
-- **Description**: Application and script launchers (searchable only, creation disabled)
-- **MIME Type**: None
-- **Use Cases**: External application integration, automation
-- **Search Example**:
-  ```json
-  {
-    "searchCriteria": [
-      {"property": "type", "type": "noteProperty", "op": "=", "value": "launcher"}
-    ]
-  }
-  ```
 
 ## Template Relations
 
@@ -268,10 +217,10 @@ Some note types can be associated with built-in templates using the `~template.t
 
 ## ETAPI Alignment
 
-The MCP server supports **13 note types** that align with the TriliumNext ETAPI specification:
+The MCP server supports **9 note types** that align with the TriliumNext ETAPI specification:
 
 ```
-text, code, render, search, relationMap, book, noteMap, mermaid, webView, shortcut, doc, contentWidget, launcher
+text, code, render, search, relationMap, book, noteMap, mermaid, webView
 ```
 
 **Creation Support:**

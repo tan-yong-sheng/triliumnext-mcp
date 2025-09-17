@@ -65,7 +65,7 @@ describe('Create Note Validation', () => {
     it('should validate all supported note types', () => {
       const validTypes = [
         'text', 'code', 'render', 'search', 'relationMap', 'book',
-        'noteMap', 'mermaid', 'webView', 'shortcut', 'doc', 'contentWidget', 'launcher'
+        'noteMap', 'mermaid', 'webView'
       ];
 
       validTypes.forEach(type => {

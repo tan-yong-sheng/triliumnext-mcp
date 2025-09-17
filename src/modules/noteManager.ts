@@ -5,7 +5,7 @@
 
 import { processContentArray } from '../utils/contentProcessor.js';
 import { logVerbose, logVerboseError, logVerboseApi } from '../utils/verboseUtils.js';
-import { generateContentHash, getContentRequirements, validateContentForNoteType } from '../utils/hashUtils.js';
+import { getContentRequirements, validateContentForNoteType } from '../utils/hashUtils.js';
 import { SearchOperation } from './searchManager.js';
 
 export interface Attribute {
@@ -16,7 +16,7 @@ export interface Attribute {
   isInheritable?: boolean;
 }
 
-export type NoteType = 'text' | 'code' | 'render' | 'search' | 'relationMap' | 'book' | 'noteMap' | 'mermaid' | 'webView' | 'shortcut' | 'doc' | 'contentWidget' | 'launcher';
+export type NoteType = 'text' | 'code' | 'render' | 'search' | 'relationMap' | 'book' | 'noteMap' | 'mermaid' | 'webView';
 
 export interface NoteOperation {
   parentNoteId?: string;
