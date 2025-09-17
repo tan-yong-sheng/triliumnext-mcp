@@ -1,7 +1,7 @@
 - Before creating a new note, perform a search within the current directory to check if a note with the same title already exists. If a duplicate is found, do not create the note. (This check is only within the current directory, not across all notes, since identical titles may exist in different folders.)
 
 
-- can search_note function, can search via regex search and return the phrases that match the regex search from all matching notes (so not just note id), meanwhile for phrases that match, perhaps we could use literal string (never regex search) to search_and_replace.... (Perhaps search_and_replace can just integrate to update_note function instead...)
+- can search_note function, can search via regex search and return the phrases that match the regex search from all matching notes (so not just note id), meanwhile for phrases that match, perhaps we could use literal string (never regex search) to search_and_replace.... (Perhaps search_and_replace can just integrate to update_note function instead...). Need to mention how many lines added (with respective line number) and removed, together with added/removed content... 
 
 - in future, we could have easy way to manage calendar note or board note via LLM via predefined instruction like introducing `resolve_intent` function which returns suggested params when people say they want to create/manage calendar note or board note.... 
 

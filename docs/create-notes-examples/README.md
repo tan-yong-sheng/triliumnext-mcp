@@ -721,8 +721,44 @@ const note = await create_note({
 - **Template not found**: Template relations require existing target notes
 - **Duplicate attributes**: Some attributes may be unique per note
 
-## Related Documentation
+## 🆕 Hash Validation & Content Type Safety
 
+### NEW: Enhanced Update Safety
+The `update_note` function now includes comprehensive hash validation and content type safety:
+
+- **BlobId-based concurrency control**: Prevents conflicts using Trilium's native `blobId`
+- **Required hash validation**: Ensures data integrity with `get_note` → `update_note` workflow
+- **Content type validation**: Automatic validation and correction based on note type
+- **Conflict detection**: Clear error messages for concurrent modifications
+
+### Essential Update Workflow
+```javascript
+// ALWAYS follow this pattern:
+const note = await get_note({ noteId: "myNote" });
+await update_note({
+  noteId: "myNote",
+  type: note.note.type,           // Required: match current type
+  content: newContent,
+  expectedHash: note.contentHash   // Required: prevents conflicts
+});
+```
+
+### Key Features
+- **Auto-correction**: Text notes automatically wrap plain text in HTML
+- **Type safety**: Code notes reject HTML content with clear error messages
+- **Conflict prevention**: Detects and prevents concurrent modification conflicts
+- **Required workflow**: Enforces safe update patterns to prevent data loss
+
+### Related Documentation
+
+#### 📚 Hash Validation Guides
+- [Hash Validation Workflow Guide](./hash-validation-workflow-guide.md) - Complete workflow examples
+- [Hash Validation Quick Reference](./hash-validation-quick-reference.md) - Essential patterns and reference
+- [Hash Validation Implementation Plan](./hash-validation-implementation-plan.md) - Technical details
+
+#### 🔧 Existing Documentation
+- [Simplified Interface Guide](./simplified-interface-guide.md) - Easy note creation with helper functions
+- [Template Relations Guide](./template-relations.md) - Built-in template usage
 - [Search Examples](../search-examples/) - Advanced search capabilities
 - [API Reference](../../src/modules/) - Complete tool definitions
 - [Implementation Details](../../CLAUDE.md) - Architecture and development guide

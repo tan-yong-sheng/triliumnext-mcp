@@ -716,6 +716,137 @@ Template relations enable specialized note layouts and functionality by connecti
 **File**: `src/modules/noteManager.ts:101-137` - Attributes integration in create_note function
 **File**: `src/modules/attributeManager.ts:131-198` - Batch attribute creation for performance
 
+### ✅ Hash Validation and Content Type Safety Implementation - COMPLETED
+
+**Status**: ✅ **FULLY IMPLEMENTED & DOCUMENTED**
+
+Comprehensive hash-based validation and content type safety system for the `update_note` function to prevent concurrent modification conflicts and ensure content integrity.
+
+#### Key Features Implemented:
+
+**BlobId-Based Hash Validation**:
+- Uses Trilium's native `blobId` instead of manual MD5 hash generation
+- Perfect reliability and performance with Trilium's built-in content identification
+- Prevents concurrent modification conflicts with optimistic concurrency control
+
+**Required Type Parameter**:
+- Added required `type` parameter to `update_note` for consistency with `create_note`
+- Enables explicit content validation based on note type
+- Ensures type safety across all note operations
+
+**Required Hash Validation**:
+- Made `expectedHash` parameter required for data integrity
+- Enforces `get_note` → `update_note` workflow
+- Prevents accidental overwrites of concurrent changes
+
+**Always-On Content Validation**:
+- Removed redundant `validateType` parameter (simplified API)
+- Content type validation now always enabled for consistent safety
+- Automatic HTML correction for text notes with plain text content
+
+**Enhanced Content Type Safety**:
+- **Text Notes**: Auto-detect HTML/Markdown/plain text, auto-wrap plain text in `<p>` tags
+- **Code Notes**: Plain text only, reject HTML content with clear error messages
+- **Mermaid Notes**: Plain text only, reject HTML content
+- **Other Types**: Flexible content requirements based on note type
+
+#### Implementation Details:
+
+**Enhanced get_note Response**:
+```typescript
+// Returns blobId as contentHash for validation
+return {
+  note: noteData,
+  content: noteContent,
+  contentHash: blobId, // Use blobId as content hash
+  contentRequirements: getContentRequirements(noteData.type)
+};
+```
+
+**Enhanced update_note Validation**:
+```typescript
+// Required hash validation
+if (!args.expectedHash) {
+  throw new McpError(ErrorCode.InvalidParams,
+    "Missing required parameter 'expectedHash'. You must call get_note first to retrieve the current blobId (content hash) before updating."
+  );
+}
+
+// BlobId-based conflict detection
+if (expectedHash) {
+  const currentBlobId = currentNote.data.blobId;
+  if (currentBlobId !== expectedHash) {
+    return { noteId, message: "CONFLICT: Note has been modified by another user...", conflict: true };
+  }
+}
+
+// Always-on content validation
+const validationResult = await validateContentForNoteType(
+  rawContent as ContentItem[],
+  type as NoteType,
+  currentContent.data
+);
+```
+
+#### Workflow Examples:
+
+**Basic Update Workflow**:
+```typescript
+// Step 1: Get current note state with blobId
+const note = await get_note({ noteId: "abc123" });
+// Returns: { note: {...}, content: "...", contentHash: "blobId_123", ... }
+
+// Step 2: Update with blobId validation
+const result = await update_note({
+  noteId: "abc123",
+  type: "text",
+  content: [{ type: "text", content: "<p>Updated content</p>" }],
+  expectedHash: note.contentHash // Required from get_note response
+});
+```
+
+**Content Auto-Correction**:
+```typescript
+// Plain text automatically wrapped in HTML for text notes
+// Input: "Hello world" → Output: "<p>Hello world</p>"
+// Result message: "Note abc123 updated successfully (content auto-corrected)"
+```
+
+**Conflict Detection**:
+```typescript
+// Clear error when note modified by another user
+// "CONFLICT: Note has been modified by another user. Current blobId: blobId_456, expected: blobId_123. Please get the latest note content and retry."
+```
+
+#### Benefits:
+
+**Data Integrity**:
+- Prevents concurrent modification conflicts using Trilium's native blobId
+- Ensures content matches note type requirements
+- Maintains consistency between expected and actual state
+
+**User Experience**:
+- Clear error messages with actionable guidance
+- Automatic content correction when possible
+- Simplified workflow with required parameters
+
+**Performance**:
+- Uses Trilium's native blobId (no manual hash generation)
+- Efficient validation logic
+- Minimal API overhead
+
+**Documentation**:
+- Complete implementation guide: `docs/hash-validation-implementation-plan.md`
+- Comprehensive workflow examples and error handling patterns
+- Migration guidance for existing code
+
+**Files Modified**:
+- `src/modules/toolDefinitions.ts`: Updated update_note schema with required parameters
+- `src/modules/noteHandler.ts`: Added hash validation and required parameter checks
+- `src/modules/noteManager.ts`: Implemented blobId validation and content type safety
+- `src/utils/hashUtils.ts`: Created content validation utilities
+- `docs/hash-validation-implementation-plan.md`: Complete documentation
+
 ### ✅ Note Type Alignment Completed
 **Status**: ✅ **COMPLETED**
 

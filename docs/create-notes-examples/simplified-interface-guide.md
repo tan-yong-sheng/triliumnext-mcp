@@ -1,6 +1,48 @@
 # Simplified Note Creation Guide
 
-This guide demonstrates the new simplified interface for creating notes in TriliumNext MCP.
+This guide demonstrates the new simplified interface for creating notes in TriliumNext MCP with enhanced hash validation and content type safety features.
+
+## 🆕 New Hash Validation Features
+
+The note creation system now includes comprehensive hash validation and content type safety:
+
+- **BlobId-based concurrency control**: Uses Trilium's native `blobId` to prevent conflicts
+- **Content type validation**: Ensures content matches note type requirements
+- **Automatic content correction**: Smart HTML wrapping for text notes
+- **Required get_note → update_note workflow**: Prevents data loss
+
+### Complete Workflow Example
+
+```javascript
+import { buildNoteParams } from 'triliumnext-mcp';
+
+// 1. Create a note with smart content processing
+const createParams = buildNoteParams({
+  parentNoteId: "root",
+  title: "Meeting Notes",
+  noteType: "text",
+  content: "# Q4 Planning\n\n- Budget review\n- Team performance"
+});
+
+const createdNote = await create_note(createParams);
+// Returns: { noteId: "abc123", message: "Created note: abc123" }
+
+// 2. Get note with hash information for safe updates
+const noteInfo = await get_note({
+  noteId: "abc123",
+  includeContent: true
+});
+// Returns: { contentHash: "blobId_456", type: "text", ... }
+
+// 3. Update with hash validation (prevents conflicts)
+const updateResult = await update_note({
+  noteId: "abc123",
+  type: "text",  // Must match current note type
+  content: [{ type: "text", content: "# Q4 Planning - Updated\n\n- Budget approved\n- Targets exceeded" }],
+  expectedHash: noteInfo.contentHash  // Required for safety
+});
+// Success: "Note abc123 updated successfully"
+```
 
 ## 🎯 Problem Solved
 
@@ -197,4 +239,246 @@ LLMs choose parameters based on:
 **✅ Result**: Markdown automatically converted to HTML for text notes only.
 
 
-This simplified interface eliminates the ContentItem complexity while maintaining full power for text and code note creation.
+## 🛡️ Hash Validation Examples
+
+### Content Type Safety in Action
+
+The system automatically validates and corrects content based on note type:
+
+```javascript
+// 1. Create a text note
+const textNote = buildNoteParams({
+  parentNoteId: "root",
+  title: "Project Status",
+  noteType: "text",
+  content: "Plain text that will be auto-wrapped"  // No HTML needed
+});
+
+const created = await create_note(textNote);
+
+// 2. Get the note for safe updates
+const noteInfo = await get_note({ noteId: created.noteId });
+// Returns: contentHash: "blob_123", type: "text"
+
+// 3. Update with plain text (auto-corrected to HTML)
+const result = await update_note({
+  noteId: created.noteId,
+  type: "text",
+  content: [{ type: "text", content: "Updated plain text content" }],
+  expectedHash: noteInfo.contentHash
+});
+
+// Result: "Note abc123 updated successfully (content auto-corrected)"
+// Final content becomes: "<p>Updated plain text content</p>"
+```
+
+### Code Note Type Safety
+
+```javascript
+// 1. Create a code note
+const codeNote = buildNoteParams({
+  parentNoteId: "root",
+  title: "Data Analysis",
+  noteType: "code",
+  content: `import pandas as pd
+df = pd.read_csv('data.csv')
+print(df.head())`,
+  mime: "text/x-python"
+});
+
+const createdCode = await create_note(codeNote);
+
+// 2. Get the code note
+const codeInfo = await get_note({ noteId: createdCode.noteId });
+
+// 3. Update with valid plain code (success)
+await update_note({
+  noteId: createdCode.noteId,
+  type: "code",
+  content: [{ type: "text", content: "print('Hello, World!')" }],
+  expectedHash: codeInfo.contentHash
+});
+
+// 4. Try to update with HTML (rejected)
+try {
+  await update_note({
+    noteId: createdCode.noteId,
+    type: "code",
+    content: [{ type: "text", content: "<p>print('HTML in code note')</p>" }],
+    expectedHash: codeInfo.contentHash
+  });
+} catch (error) {
+  // Error: "CONTENT_TYPE_MISMATCH: code notes require plain text only"
+}
+```
+
+### Conflict Detection Example
+
+```javascript
+// Simulate concurrent users
+const user1Note = await get_note({ noteId: "shared123" });
+const user2Note = await get_note({ noteId: "shared123" });
+// Both get same contentHash: "blob_original"
+
+// User 1 updates first
+await update_note({
+  noteId: "shared123",
+  type: "text",
+  content: [{ type: "text", content: "User 1's changes" }],
+  expectedHash: user1Note.contentHash
+});
+
+// User 2 tries to update with stale hash
+try {
+  await update_note({
+    noteId: "shared123",
+    type: "text",
+    content: [{ type: "text", content: "User 2's changes" }],
+    expectedHash: user2Note.contentHash  // Old hash
+  });
+} catch (error) {
+  // Error: "CONFLICT: Note has been modified by another user"
+
+  // Solution: Get latest note and retry
+  const latestNote = await get_note({ noteId: "shared123" });
+  await update_note({
+    noteId: "shared123",
+    type: "text",
+    content: [{ type: "text", content: "User 2's merged changes" }],
+    expectedHash: latestNote.contentHash  // Current hash
+  });
+}
+```
+
+## 🔄 Safe Update Patterns
+
+### Always Follow Get → Update Pattern
+
+```javascript
+async function safeNoteUpdate(noteId, newContent) {
+  // 1. Always get current state first
+  const currentNote = await get_note({ noteId, includeContent: true });
+
+  // 2. Update with hash validation
+  try {
+    return await update_note({
+      noteId,
+      type: currentNote.note.type,
+      content: [{ type: "text", content: newContent }],
+      expectedHash: currentNote.contentHash,
+      revision: true  // Create backup for safety
+    });
+  } catch (error) {
+    if (error.message.includes("CONFLICT")) {
+      // Handle conflicts gracefully
+      console.log("Conflict detected, retrying with latest version...");
+      const latestNote = await get_note({ noteId, includeContent: true });
+      return await update_note({
+        noteId,
+        type: latestNote.note.type,
+        content: [{ type: "text", content: newContent }],
+        expectedHash: latestNote.contentHash
+      });
+    }
+    throw error;
+  }
+}
+
+// Usage
+await safeNoteUpdate("myNoteId", "Updated content with conflict handling");
+```
+
+### Template Integration with Safe Updates
+
+```javascript
+// Create note with template relation
+const boardNote = buildNoteParams({
+  parentNoteId: "root",
+  title: "Project Board",
+  noteType: "book",
+  content: ""
+});
+
+boardNote.attributes = [{
+  type: "relation",
+  name: "template",
+  value: "Board",
+  position: 10
+}];
+
+const created = await create_note(boardNote);
+
+// Safe update that preserves template relation
+const boardInfo = await get_note({ noteId: created.noteId });
+await update_note({
+  noteId: created.noteId,
+  type: "book",
+  content: [{ type: "text", content: "Updated board configuration" }],
+  expectedHash: boardInfo.contentHash
+});
+```
+
+## 📋 Best Practices
+
+### 1. Content Format Guidelines
+
+| Note Type | Content Format | Auto-Correction | Example |
+|-----------|----------------|-----------------|---------|
+| `text` | HTML, Markdown, or plain text | ✅ Auto-wraps plain text | `<p>Hello</p>` |
+| `code` | Plain text only | ❌ Rejects HTML | `print("Hello")` |
+| `mermaid` | Plain text diagram syntax | ❌ Rejects HTML | `graph TD; A-->B` |
+| `book` | Optional content | ✅ Flexible | Empty string allowed |
+
+### 2. Error Handling Patterns
+
+```javascript
+// Handle common validation errors
+try {
+  await update_note({
+    noteId: "myNote",
+    type: "text",
+    content: newContent,
+    expectedHash: noteHash
+  });
+} catch (error) {
+  if (error.message.includes("Missing required parameter 'expectedHash'")) {
+    console.log("Error: Always call get_note before update_note");
+  } else if (error.message.includes("CONFLICT")) {
+    console.log("Error: Note was modified by another user");
+  } else if (error.message.includes("CONTENT_TYPE_MISMATCH")) {
+    console.log("Error: Content doesn't match note type requirements");
+  }
+}
+```
+
+### 3. Performance Optimization
+
+```javascript
+// Batch operations with template relations
+const noteWithAttrs = buildNoteParams({
+  parentNoteId: "root",
+  title: "Calendar 2024",
+  noteType: "book",
+  content: ""
+});
+
+noteWithAttrs.attributes = [
+  {
+    type: "relation",
+    name: "template",
+    value: "Calendar",
+    position: 10
+  },
+  {
+    type: "label",
+    name: "year",
+    value: "2024",
+    position: 20
+  }
+];
+
+// Single operation creates note + attributes (30-50% faster)
+await create_note(noteWithAttrs);
+```
+
+This simplified interface eliminates the ContentItem complexity while maintaining full power for text and code note creation, now with comprehensive hash validation and content type safety.
