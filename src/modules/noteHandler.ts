@@ -95,7 +95,8 @@ export async function handleUpdateNoteRequest(
       content: args.content,
       mime: args.mime,
       revision: args.revision !== false, // Default to true (safe behavior)
-      expectedHash: args.expectedHash
+      expectedHash: args.expectedHash,
+      mode: args.mode
     };
 
     const result = await handleUpdateNote(noteOperation, axiosInstance);

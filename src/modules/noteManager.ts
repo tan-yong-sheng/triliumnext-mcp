@@ -32,6 +32,7 @@ export interface NoteOperation {
   forceCreate?: boolean;
   regexPattern?: string;
   regexFlags?: string;
+  mode?: 'overwrite' | 'append';
 }
 
 export interface NoteCreateResponse {
@@ -73,6 +74,7 @@ export interface NoteGetResponse {
     flags: string;
     matches: RegexMatch[];
     totalMatches: number;
+    searchMode?: 'html' | 'plain';
   };
 }
 
@@ -81,6 +83,10 @@ export interface RegexMatch {
   index: number;
   length: number;
   groups?: string[];
+  htmlContext?: {
+    contentType: 'html' | 'plain';
+    isHtmlContent: boolean;
+  };
 }
 
 /**
@@ -280,11 +286,16 @@ export async function handleUpdateNote(
     content: rawContent,
     mime,
     revision = true,
-    expectedHash
+    expectedHash,
+    mode
   } = args;
 
   if (!noteId || !expectedHash) {
     throw new Error("noteId and expectedHash are required for update operation.");
+  }
+
+  if (!mode) {
+    throw new Error("mode is required for update operation. Please specify either 'overwrite' or 'append'.");
   }
 
   // Check if this is a title-only update
@@ -384,17 +395,34 @@ export async function handleUpdateNote(
       }
     }
 
-    // Step 5: Process and update content
+    // Step 5: Process and update content based on mode
     if (typeof finalContent !== 'string') {
       throw new Error("Content must be a string");
     }
 
-    const processed = await processContentArray(finalContent, currentNote.data.type);
-    if (processed.error) {
-      throw new Error(`Content processing error: ${processed.error}`);
+    let processedContent: string;
+
+    if (mode === 'append') {
+      // For append mode, get current content and append new content
+      const newProcessed = await processContentArray(finalContent, currentNote.data.type);
+      if (newProcessed.error) {
+        throw new Error(`New content processing error: ${newProcessed.error}`);
+      }
+
+      // Append new content to existing content (currentContent.data is already processed)
+      processedContent = currentContent.data + newProcessed.content;
+    } else if (mode === 'overwrite') {
+      // For overwrite mode, replace entire content
+      const processed = await processContentArray(finalContent, currentNote.data.type);
+      if (processed.error) {
+        throw new Error(`Content processing error: ${processed.error}`);
+      }
+      processedContent = processed.content;
+    } else {
+      throw new Error(`Invalid mode: ${mode}. Mode must be either 'overwrite' or 'append'.`);
     }
 
-    const contentResponse = await axiosInstance.put(`/notes/${noteId}/content`, processed.content, {
+    const contentResponse = await axiosInstance.put(`/notes/${noteId}/content`, processedContent, {
       headers: {
         "Content-Type": "text/plain"
       }
@@ -433,12 +461,13 @@ export async function handleUpdateNote(
 
     const revisionMsg = revisionCreated ? " (revision created)" : " (no revision)";
     const correctionMsg = (finalContent !== rawContent) ? " (content auto-corrected)" : "";
+    const modeMsg = mode === 'append' ? " (content appended)" : " (content overwritten)";
     const titleMsg = (isMultiParamUpdate && title) ? ` (title updated to "${title}")` : "";
     const mimeMsg = (isMultiParamUpdate && mime) ? ` (MIME type updated to "${mime}")` : "";
 
     return {
       noteId,
-      message: `Note ${noteId} updated successfully${revisionMsg}${correctionMsg}${titleMsg}${mimeMsg}`,
+      message: `Note ${noteId} updated successfully${revisionMsg}${correctionMsg}${modeMsg}${titleMsg}${mimeMsg}`,
       revisionCreated,
       conflict: false
     };
@@ -507,14 +536,20 @@ export async function handleGetNote(
 
   // Handle regex search if pattern is provided
   if (regexPattern) {
-    // Prepare content for regex search (strip HTML for text notes)
-    let searchContent = noteContent;
-    if (contentRequirements.requiresHtml) {
-      searchContent = stripHtmlTags(noteContent);
-    }
+    // Use original content directly (no HTML stripping)
+    const searchContent = noteContent;
 
-    // Execute regex search
+    // Execute regex search on original content
     const matches = executeRegexSearch(searchContent, regexPattern, regexFlags);
+
+    // Enhance matches with HTML context information
+    const enhancedMatches = matches.map(match => ({
+      ...match,
+      htmlContext: {
+        contentType: (contentRequirements.requiresHtml ? 'html' : 'plain') as 'html' | 'plain',
+        isHtmlContent: contentRequirements.requiresHtml
+      }
+    }));
 
     return {
       note: noteData,
@@ -522,8 +557,9 @@ export async function handleGetNote(
       regexSearch: {
         pattern: regexPattern,
         flags: regexFlags,
-        matches,
-        totalMatches: matches.length
+        matches: enhancedMatches,
+        totalMatches: enhancedMatches.length,
+        searchMode: contentRequirements.requiresHtml ? 'html' : 'plain'
       }
     };
   }

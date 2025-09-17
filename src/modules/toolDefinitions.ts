@@ -82,7 +82,7 @@ export function createWriteTools(): any[] {
     },
     {
       name: "update_note",
-      description: "Update note with support for title-only updates, content replacement, or both. ⚠️ REQUIRED: ALWAYS call get_note first to obtain current hash. TITLE-ONLY UPDATES: Efficient title changes without content modification. CONTENT UPDATES: Complete content replacement with hash-based concurrency control and content type validation. MULTI-PARAMETER UPDATES: Change multiple properties at once. Prevents overwriting changes made by other users (hash mismatch) or content that doesn't match note type requirements. ONLY use this tool when the user explicitly requests note update (e.g., 'update the note', 'change title', 'replace the content'). WORKFLOW: get_note → review content → update_note with returned hash",
+      description: "Update note with support for title-only updates, content overwrite, or content append. ⚠️ REQUIRED: ALWAYS call get_note first to obtain current hash. MODE SELECTION: Use 'append' when user wants to add/insert content (e.g., 'append to note', 'add to the end', 'insert content', 'add more content', 'continue writing', 'add to bottom'). Use 'overwrite' when replacing entire content (e.g., 'replace content', 'overwrite note', 'update the whole note', 'completely replace'). TITLE-ONLY: Efficient title changes without content modification. PREVENTS: Overwriting changes made by other users (hash mismatch) or content type violations. ONLY use when user explicitly requests note update. WORKFLOW: get_note → review content → update_note with returned hash",
       inputSchema: {
         type: "object",
         properties: {
@@ -115,9 +115,14 @@ export function createWriteTools(): any[] {
             type: "boolean",
             description: "Whether to create a revision before updating (default: true for safety, title-only updates skip revision for efficiency)",
             default: true
+          },
+          mode: {
+            type: "string",
+            enum: ["overwrite", "append"],
+            description: "⚠️ REQUIRED: Content update mode. CRITICAL: Choose based on user intent: 'append' = add/insert content while preserving existing content (use for 'add to', 'append', 'insert', 'add more', 'continue writing'); 'overwrite' = completely replace all existing content (use for 'replace', 'overwrite', 'update all', 'completely replace'). Default behavior is not available - you MUST explicitly choose."
           }
         },
-        required: ["noteId", "expectedHash"]
+        required: ["noteId", "expectedHash", "mode"]
       }
     },
     {
@@ -146,7 +151,7 @@ export function createReadTools(): any[] {
   return [
     {
       name: "get_note",
-      description: "Get a note and its content by ID. Optional regex search to extract pattern matches from content.",
+      description: "Get a note and its content by ID. Optional regex search to extract pattern matches from content. HTML-AWARE: Searches directly on HTML content for text notes (no HTML stripping), enabling HTML structure patterns and precise coordinate mapping for search_and_replace operations.",
       inputSchema: {
         type: "object",
         properties: {
@@ -156,7 +161,7 @@ export function createReadTools(): any[] {
           },
           regexPattern: {
             type: "string",
-            description: "Optional regex pattern to search for in content. When provided, returns regexSearch object instead of content",
+            description: "Optional regex pattern to search for in content. When provided, returns regexSearch object instead of content. HTML-AWARE: For text notes, searches HTML content directly (enables patterns like <span class='highlight'>content</span>). For code/mermaid notes, searches plain text content.",
           },
           regexFlags: {
             type: "string",
