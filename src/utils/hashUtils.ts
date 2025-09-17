@@ -4,7 +4,6 @@
  */
 
 import { createHash } from 'crypto';
-import { ContentItem } from '../types/contentTypes.js';
 import type { NoteType } from '../modules/noteManager.js';
 
 /**
@@ -84,30 +83,24 @@ export function isLikelyHtml(content: string): boolean {
  * Validate content for note type and auto-correct if possible
  */
 export async function validateContentForNoteType(
-  content: ContentItem[],
+  content: string,
   noteType: NoteType,
   currentContent?: string
 ): Promise<{
   valid: boolean;
-  content: ContentItem[];
+  content: string;
   error?: string;
   corrected?: boolean;
 }> {
-  if (!Array.isArray(content) || content.length === 0) {
+  if (!content || content.trim() === '') {
     return {
       valid: false,
       content,
-      error: "Content must be a non-empty ContentItem array"
+      error: "Content must be a non-empty string"
     };
   }
 
-  const firstItem = content[0];
-  if (firstItem.type !== 'text') {
-    // Non-text content (data-url) - assume valid
-    return { valid: true, content };
-  }
-
-  const textContent = firstItem.content.trim();
+  const textContent = content.trim();
   const requirements = getContentRequirements(noteType);
 
   switch (noteType) {
@@ -120,7 +113,7 @@ export async function validateContentForNoteType(
         const wrappedContent = `<p>${textContent}</p>`;
         return {
           valid: true,
-          content: [{ ...firstItem, content: wrappedContent }],
+          content: wrappedContent,
           corrected: true
         };
       }

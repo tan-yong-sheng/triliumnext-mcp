@@ -3,8 +3,7 @@
  * Handles CRUD operations for TriliumNext notes
  */
 
-import { ContentItem } from '../types/contentTypes.js';
-import { processContentArray, processContentItem } from '../utils/contentProcessor.js';
+import { processContentArray } from '../utils/contentProcessor.js';
 import { logVerbose, logVerboseError, logVerboseApi } from '../utils/verboseUtils.js';
 import { generateContentHash, getContentRequirements, validateContentForNoteType } from '../utils/hashUtils.js';
 import { SearchOperation } from './searchManager.js';
@@ -23,7 +22,7 @@ export interface NoteOperation {
   parentNoteId?: string;
   title?: string;
   type?: string;
-  content?: string | ContentItem[];
+  content?: string;
   mime?: string;
   noteId?: string;
   revision?: boolean;
@@ -60,7 +59,7 @@ export interface NoteDeleteResponse {
 
 export interface NoteGetResponse {
   note: any;
-  content?: string | ContentItem[];
+  content?: string;
   contentHash?: string;
   contentRequirements?: {
     requiresHtml: boolean;
@@ -144,14 +143,12 @@ export async function handleCreateNote(
     }
   }
 
-  // Process content array to ETAPI format
-  if (!Array.isArray(rawContent)) {
-    throw new Error("Content must be a ContentItem array");
+  // Process content to ETAPI format
+  if (typeof rawContent !== 'string') {
+    throw new Error("Content must be a string");
   }
 
-  // Content items are now restricted to 'text' type only
-
-  // Process content array
+  // Process content
   const processed = await processContentArray(rawContent, type);
   if (processed.error) {
     throw new Error(`Content processing error: ${processed.error}`);
@@ -313,7 +310,7 @@ export async function handleUpdateNote(
     // Step 3: Content type validation (always enabled)
     let finalContent = rawContent;
     const validationResult = await validateContentForNoteType(
-      rawContent as ContentItem[],
+      rawContent as string,
       type as NoteType,
       currentContent.data
     );
@@ -342,8 +339,8 @@ export async function handleUpdateNote(
     }
 
     // Step 5: Process and update content
-    if (!Array.isArray(finalContent)) {
-      throw new Error("Content must be a ContentItem array");
+    if (typeof finalContent !== 'string') {
+      throw new Error("Content must be a string");
     }
 
     const processed = await processContentArray(finalContent, currentNote.data.type);
@@ -434,14 +431,14 @@ export async function handleAppendNote(
     }
   }
 
-  // Process content array to ETAPI format
+  // Process content to ETAPI format
   let processedContentToAppend: string;
 
-  if (!Array.isArray(contentToAppend)) {
-    throw new Error("Content must be a ContentItem array");
+  if (typeof contentToAppend !== 'string') {
+    throw new Error("Content must be a string");
   }
 
-  // ContentItem[] array format - process first item only for append
+  // Process content for append
   const processed = await processContentArray(contentToAppend);
   if (processed.error) {
     throw new Error(`Content processing error: ${processed.error}`);

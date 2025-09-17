@@ -1,13 +1,12 @@
 /**
  * Content Processing Utilities
- * Handles ContentItem[] array processing for TriliumNext MCP
+ * Handles string content processing for TriliumNext MCP
  */
 
 import { marked } from 'marked';
-import { ContentItem } from '../types/contentTypes.js';
 
 /**
- * Process ContentItem[] array into format suitable for ETAPI
+ * Process string content into format suitable for ETAPI
  */
 export interface ProcessedContent {
   content: string;
@@ -15,24 +14,15 @@ export interface ProcessedContent {
 }
 
 /**
- * Process a single ContentItem into ETAPI-compatible format
+ * Process string content into ETAPI-compatible format
  */
-export async function processContentItem(item: ContentItem, noteType?: string): Promise<ProcessedContent> {
+export async function processContent(content: string, noteType?: string): Promise<ProcessedContent> {
   try {
-    switch (item.type) {
-      case 'text':
-        return await processTextContent(item, noteType);
-
-      default:
-        return {
-          content: '',
-          error: `Unsupported content type: ${(item as any).type}`
-        };
-    }
+    return await processTextContent(content, noteType);
   } catch (error) {
     return {
       content: '',
-      error: `Failed to process content item: ${error instanceof Error ? error.message : String(error)}`
+      error: `Failed to process content: ${error instanceof Error ? error.message : String(error)}`
     };
   }
 }
@@ -40,22 +30,22 @@ export async function processContentItem(item: ContentItem, noteType?: string): 
 /**
  * Process text content (HTML requirements for text notes)
  */
-async function processTextContent(item: ContentItem, noteType?: string): Promise<ProcessedContent> {
-  const content = item.content.trim();
+async function processTextContent(content: string, noteType?: string): Promise<ProcessedContent> {
+  const trimmedContent = content.trim();
 
   // Only for text notes: detect Markdown and convert to HTML
-  if (noteType === 'text' && isLikelyMarkdown(content)) {
-    const html = await marked.parse(content);
+  if (noteType === 'text' && isLikelyMarkdown(trimmedContent)) {
+    const html = await marked.parse(trimmedContent);
     return { content: html };
   }
 
   // For text notes: auto-wrap plain text in <p> tags if it's not already HTML
-  if (noteType === 'text' && !isLikelyHtml(content)) {
-    return { content: `<p>${content}</p>` };
+  if (noteType === 'text' && !isLikelyHtml(trimmedContent)) {
+    return { content: `<p>${trimmedContent}</p>` };
   }
 
   // For everything else: pass through exactly as provided
-  return { content: content };
+  return { content: trimmedContent };
 }
 
 /**
@@ -143,10 +133,10 @@ function isValidUrl(url: string): boolean {
 
 
 /**
- * Process ContentItem[] array into single content string
+ * Process string content into ETAPI-compatible format
  */
-export async function processContentArray(contentItems: ContentItem[], noteType?: string): Promise<ProcessedContent> {
-  if (!contentItems || contentItems.length === 0) {
+export async function processContentArray(content: string, noteType?: string): Promise<ProcessedContent> {
+  if (!content || content.trim() === '') {
     // Return empty content for note types that allow it
     if (noteType && ['book', 'search', 'relationMap', 'shortcut', 'doc', 'contentWidget', 'launcher'].includes(noteType)) {
       return { content: '' };
@@ -158,13 +148,12 @@ export async function processContentArray(contentItems: ContentItem[], noteType?
     };
   }
 
-  // Process first text item only (current behavior)
-  const firstTextItem = contentItems[0];
-  const processed = await processContentItem(firstTextItem, noteType);
+  // Process content
+  const processed = await processContent(content, noteType);
 
   // Validate content type requirements by note type
   if (noteType) {
-    const validation = validateContentForNoteType(processed, noteType, firstTextItem.type);
+    const validation = validateContentForNoteType(processed, noteType);
     if (validation.error) {
       return validation;
     }
@@ -176,13 +165,13 @@ export async function processContentArray(contentItems: ContentItem[], noteType?
 /**
  * Validate that processed content meets note type requirements
  */
-function validateContentForNoteType(processed: ProcessedContent, noteType: string, contentType: string): ProcessedContent {
+function validateContentForNoteType(processed: ProcessedContent, noteType: string): ProcessedContent {
   const requirements = getContentRequirementsByNoteType(noteType);
 
   switch (requirements.format) {
     case 'html':
       // Should be HTML content
-      if (contentType === 'text' && !processed.content.includes('<')) {
+      if (!processed.content.includes('<')) {
         return {
           content: processed.content,
           error: `Note type '${noteType}' requires HTML content. Found plain text.`

@@ -1,28 +1,20 @@
 /**
  * Note Builder Types
- * Simplified interfaces for easy note creation with automatic content mapping
+ * Simplified interfaces for easy note creation with string content
  */
 
-import { ContentItem, Attribute } from './contentTypes.js';
+import { Attribute } from './contentTypes.js';
 import type { NoteType } from '../modules/noteManager.js';
 
 /**
- * Flexible content input that handles strings, single items, or arrays
- */
-export type ContentInput =
-  | string                    // Simple string content (most common)
-  | ContentItem              // Single content item (files, URLs)
-  | ContentItem[]           // Multiple content items (mixed content)
-
-/**
  * Simplified note creation interface
- * Eliminates the need to manually specify ContentItem types
+ * Uses string content for simplified API
  */
 export interface SimpleNoteInput {
   parentNoteId: string;
   title: string;
   noteType: NoteType;
-  content: ContentInput;
+  content: string;
   mime?: string;
   attributes?: Attribute[];
 }
@@ -35,7 +27,7 @@ export interface CreateNoteParams {
   parentNoteId: string;
   title: string;
   type: NoteType;
-  content: ContentItem[];
+  content: string;
   mime?: string;
   attributes?: Attribute[];
 }

@@ -31,23 +31,8 @@ export function createWriteTools(): any[] {
             description: "Type of note (aligned with TriliumNext ETAPI specification)",
           },
           content: {
-            type: "array",
-            description: "Content of the note as text ContentItem array. Content requirements by note type: TEXT/RENDER/WEBVIEW notes require HTML content (plain text auto-wrapped in <p> tags, e.g., '<p>Hello world</p>', '<strong>bold</strong>'); CODE/MERMAID notes require plain text ONLY (HTML tags rejected, e.g., 'def fibonacci(n):'); other note types accept any format or can be empty. All content items must have type: 'text' - file/image support temporarily disabled.",
-            items: {
-              type: "object",
-              properties: {
-                type: {
-                  type: "string",
-                  enum: ["text"],
-                  description: "Content type: only 'text' supported (file/image data support temporarily disabled)"
-                },
-                content: {
-                  type: "string",
-                  description: "Content text with note-type specific formatting: HTML required for text/render/webview notes, plain text only for code/mermaid notes"
-                }
-              },
-              required: ["type", "content"]
-            }
+            type: "string",
+            description: "Content of the note. Content requirements by note type: TEXT/RENDER/WEBVIEW notes require HTML content (plain text auto-wrapped in <p> tags, e.g., '<p>Hello world</p>', '<strong>bold</strong>'); CODE/MERMAID notes require plain text ONLY (HTML tags rejected, e.g., 'def fibonacci(n):'); other note types accept any format or can be empty."
           },
           mime: {
             type: "string",
@@ -119,23 +104,8 @@ export function createWriteTools(): any[] {
             description: "MIME type for code/file/image notes. Helps with syntax highlighting and content type identification."
           },
           content: {
-            type: "array",
-            description: "Content of the note as text ContentItem array. Content requirements by note type: TEXT/RENDER/WEBVIEW notes require HTML content (plain text auto-wrapped in <p> tags, e.g., '<p>Hello world</p>', '<strong>bold</strong>'); CODE/MERMAID notes require plain text ONLY (HTML tags rejected, e.g., 'def fibonacci(n):'); other note types accept any format or can be empty. All content items must have type: 'text' - file/image support temporarily disabled.",
-            items: {
-              type: "object",
-              properties: {
-                type: {
-                  type: "string",
-                  enum: ["text"],
-                  description: "Content type: only 'text' supported (file/image data support temporarily disabled)"
-                },
-                content: {
-                  type: "string",
-                  description: "Content text with note-type specific formatting: HTML required for text/render/webview notes, plain text only for code/mermaid notes"
-                }
-              },
-              required: ["type", "content"]
-            }
+            type: "string",
+            description: "Content of the note. Content requirements by note type: TEXT/RENDER/WEBVIEW notes require HTML content (plain text auto-wrapped in <p> tags, e.g., '<p>Hello world</p>', '<strong>bold</strong>'); CODE/MERMAID notes require plain text ONLY (HTML tags rejected, e.g., 'def fibonacci(n):'); other note types accept any format or can be empty."
           },
           expectedHash: {
             type: "string",
@@ -161,23 +131,8 @@ export function createWriteTools(): any[] {
             description: "ID of the note to append content to"
           },
           content: {
-            type: "array",
-            description: "Content to append as text ContentItem array. Content requirements by note type: TEXT/RENDER/WEBVIEW notes require HTML content (plain text auto-wrapped in <p> tags, e.g., '<p>Hello world</p>', '<strong>bold</strong>'); CODE/MERMAID notes require plain text ONLY (HTML tags rejected, e.g., 'def fibonacci(n):'); other note types accept any format or can be empty. All content items must have type: 'text' - file/image support temporarily disabled.",
-            items: {
-              type: "object",
-              properties: {
-                type: {
-                  type: "string",
-                  enum: ["text"],
-                  description: "Content type: only 'text' supported (file/image data support temporarily disabled)"
-                },
-                content: {
-                  type: "string",
-                  description: "Content text with note-type specific formatting: HTML required for text/render/webview notes, plain text only for code/mermaid notes"
-                }
-              },
-              required: ["type", "content"]
-            }
+            type: "string",
+            description: "Content to append. Content requirements by note type: TEXT/RENDER/WEBVIEW notes require HTML content (plain text auto-wrapped in <p> tags, e.g., '<p>Hello world</p>', '<strong>bold</strong>'); CODE/MERMAID notes require plain text ONLY (HTML tags rejected, e.g., 'def fibonacci(n):'); other note types accept any format or can be empty."
           },
           revision: {
             type: "boolean",

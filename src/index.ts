@@ -148,6 +148,5 @@ server.run().catch((error) => {
 
 // Export helper functions for external use
 export {
-  buildNoteParams,
-  buildContentItem
+  buildNoteParams
 } from './utils/noteBuilder.js';
