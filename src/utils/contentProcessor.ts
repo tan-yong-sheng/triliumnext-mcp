@@ -11,8 +11,6 @@ import { ContentItem } from '../types/contentTypes.js';
  */
 export interface ProcessedContent {
   content: string;
-  mimeType?: string;
-  filename?: string;
   error?: string;
 }
 
@@ -24,27 +22,6 @@ export async function processContentItem(item: ContentItem, noteType?: string): 
     switch (item.type) {
       case 'text':
         return await processTextContent(item, noteType);
-
-      case 'file':
-        return {
-          content: '',
-          error: 'File note creation is currently disabled'
-        };
-
-      case 'image':
-        return {
-          content: '',
-          error: 'Image note creation is currently disabled'
-        };
-
-      case 'url':
-        return {
-          content: '',
-          error: 'URL content processing is currently disabled'
-        };
-
-      case 'data-url':
-        return processDataUrlContent(item);
 
       default:
         return {
@@ -164,40 +141,6 @@ function isValidUrl(url: string): boolean {
   }
 }
 
-/**
- * Process data URL content
- */
-function processDataUrlContent(item: ContentItem): ProcessedContent {
-  if (!item.content.startsWith('data:')) {
-    return {
-      content: '',
-      error: 'Data URL must start with "data:"'
-    };
-  }
-
-  try {
-    // Extract MIME type and base64 data
-    const [header, base64Data] = item.content.split(',');
-    const mimeType = header.split(';')[0].replace('data:', '');
-
-    // For data URLs, convert to img tag or appropriate format
-    if (mimeType.startsWith('image/')) {
-      return {
-        content: `<img src="${item.content}" alt="${item.filename || 'image'}" />`
-      };
-    } else {
-      // For other data types, provide a download link
-      return {
-        content: `<p><a href="${item.content}" download="${item.filename || 'file'}">Download ${item.filename || 'file'}</a></p>`
-      };
-    }
-  } catch (error) {
-    return {
-      content: '',
-      error: `Invalid data URL format: ${error instanceof Error ? error.message : String(error)}`
-    };
-  }
-}
 
 /**
  * Process ContentItem[] array into single content string
@@ -215,34 +158,19 @@ export async function processContentArray(contentItems: ContentItem[], noteType?
     };
   }
 
-  // Separate text content from file/image content
-  const textItems = contentItems.filter(item => item.type === 'text');
-  const fileItems = contentItems.filter(item => item.type === 'file' || item.type === 'image');
+  // Process first text item only (current behavior)
+  const firstTextItem = contentItems[0];
+  const processed = await processContentItem(firstTextItem, noteType);
 
-  // For file/image notes, we'll handle attachments in the noteManager
-  if (fileItems.length > 0 && textItems.length === 0) {
-    // Pure file/image note - return empty content, attachments will be handled separately
-    return { content: '' };
-  }
-
-  // Process text content only
-  if (textItems.length > 0) {
-    const firstTextItem = textItems[0];
-    const processed = await processContentItem(firstTextItem, noteType);
-
-    // Validate content type requirements by note type
-    if (noteType) {
-      const validation = validateContentForNoteType(processed, noteType, firstTextItem.type);
-      if (validation.error) {
-        return validation;
-      }
+  // Validate content type requirements by note type
+  if (noteType) {
+    const validation = validateContentForNoteType(processed, noteType, firstTextItem.type);
+    if (validation.error) {
+      return validation;
     }
-
-    return processed;
   }
 
-  // Mixed content (text + files) - return text content only, files handled as attachments
-  return { content: '' };
+  return processed;
 }
 
 /**
@@ -340,41 +268,4 @@ function isValidBase64(str: string): boolean {
   }
 }
 
-/**
- * Detect MIME type from filename
- */
-function detectMimeTypeFromFilename(filename?: string): string | undefined {
-  if (!filename) return undefined;
-
-  const ext = filename.toLowerCase().split('.').pop();
-  // ext could be undefined when there's no file extension
-  if (!ext) return undefined;
-
-  const mimeTypes: Record<string, string> = {
-    'pdf': 'application/pdf',
-    'jpg': 'image/jpeg',
-    'jpeg': 'image/jpeg',
-    'png': 'image/png',
-    'gif': 'image/gif',
-    'svg': 'image/svg+xml',
-    'txt': 'text/plain',
-    'js': 'text/javascript',
-    'ts': 'text/typescript',
-    'py': 'text/x-python',
-    'java': 'text/x-java',
-    'css': 'text/css',
-    'html': 'text/html',
-    'json': 'application/json',
-    'xml': 'application/xml',
-    'zip': 'application/zip',
-    'doc': 'application/msword',
-    'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'xls': 'application/vnd.ms-excel',
-    'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'ppt': 'application/vnd.ms-powerpoint',
-    'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-  };
-
-  return mimeTypes[ext];
-}
 

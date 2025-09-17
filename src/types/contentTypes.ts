@@ -12,14 +12,6 @@ export interface Attribute {
 }
 
 export interface ContentItem {
-  type: 'text' | 'file' | 'image' | 'url' | 'data-url';
+  type: 'text';
   content: string;
-  mimeType?: string;
-  filename?: string;
-  encoding?: 'plain' | 'base64' | 'data-url' | 'url';
-  urlOptions?: {
-    timeout?: number;
-    headers?: Record<string, string>;
-    followRedirects?: boolean;
-  };
 }

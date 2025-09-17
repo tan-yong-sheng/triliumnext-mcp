@@ -97,29 +97,6 @@ content: [
 ]
 ```
 
-#### File Content (file)
-```typescript
-content: [
-  {
-    type: 'file',
-    content: 'JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXM...', // Base64
-    mimeType: 'application/pdf',
-    filename: 'document.pdf'
-  }
-]
-```
-
-#### Image Content (image)
-```typescript
-content: [
-  {
-    type: 'image',
-    content: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', // Base64
-    mimeType: 'image/png',
-    filename: 'diagram.png'
-  }
-]
-```
 
 #### Mermaid Content (mermaid)
 ```typescript

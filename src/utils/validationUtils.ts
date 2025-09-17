@@ -33,9 +33,8 @@ export const createNoteSchema = z.object({
   title: z.string().min(1, 'Title cannot be empty'),
   type: z.enum(['text', 'code', 'render', 'file', 'image', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView', 'shortcut', 'doc', 'contentWidget', 'launcher']),
   content: z.array(z.object({
-    type: z.enum(['text', 'data-url']),
-    content: z.string(),
-    mimeType: z.string().optional()
+    type: z.enum(['text']),
+    content: z.string()
   })),
   mime: z.string().optional(),
   attributes: z.array(attributeSchema).optional(),
@@ -48,12 +47,38 @@ export const searchNotesSchema = z.object({
   limit: z.number().min(1, 'Limit must be at least 1').optional()
 });
 
+export const updateNoteSchema = z.object({
+  noteId: z.string().min(1, 'Note ID cannot be empty'),
+  title: z.string().min(1, 'Title cannot be empty').optional(),
+  type: z.enum(['text', 'code', 'render', 'file', 'image', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView', 'shortcut', 'doc', 'contentWidget', 'launcher']).optional(),
+  content: z.array(z.object({
+    type: z.enum(['text']),
+    content: z.string()
+  })).optional(),
+  mime: z.string().optional(),
+  revision: z.boolean().optional(),
+  expectedHash: z.string().min(1, 'Expected hash cannot be empty')
+}).refine(
+  (data) => data.title || data.content,
+  {
+    message: "Either 'title' or 'content' (or both) must be provided for update operation",
+    path: ['title', 'content']
+  }
+).refine(
+  (data) => !data.content || data.type,
+  {
+    message: "Parameter 'type' is required when updating content",
+    path: ['type']
+  }
+);
+
 // Type exports
 export type SearchCriteria = z.infer<typeof searchCriteriaSchema>;
 export type Attribute = z.infer<typeof attributeSchema>;
 export type ManageAttributesRequest = z.infer<typeof manageAttributesSchema>;
 export type CreateNoteRequest = z.infer<typeof createNoteSchema>;
 export type SearchNotesRequest = z.infer<typeof searchNotesSchema>;
+export type UpdateNoteRequest = z.infer<typeof updateNoteSchema>;
 
 /**
  * Validate search criteria parameters
@@ -88,6 +113,13 @@ export function validateCreateNote(request: unknown): CreateNoteRequest {
  */
 export function validateSearchNotes(request: unknown): SearchNotesRequest {
   return searchNotesSchema.parse(request);
+}
+
+/**
+ * Validate update note request
+ */
+export function validateUpdateNote(request: unknown): UpdateNoteRequest {
+  return updateNoteSchema.parse(request);
 }
 
 /**
@@ -196,6 +228,24 @@ export function validateNoteId(noteId: unknown): string {
   }
 
   return noteId.trim();
+}
+
+/**
+ * Title validation
+ */
+export function validateTitle(title: unknown): string {
+  if (typeof title !== 'string' || title.trim() === '') {
+    throw new Error('Title cannot be empty');
+  }
+
+  const trimmedTitle = title.trim();
+
+  // Check for reasonable title length (Trilium limits)
+  if (trimmedTitle.length > 500) {
+    throw new Error('Title is too long. Maximum length is 500 characters');
+  }
+
+  return trimmedTitle;
 }
 
 /**

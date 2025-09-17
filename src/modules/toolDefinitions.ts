@@ -32,22 +32,18 @@ export function createWriteTools(): any[] {
           },
           content: {
             type: "array",
-            description: "Content of the note as ContentItem array. Content requirements by note type: TEXT NOTES - require HTML content (wrap plain text in <p> tags, e.g., '<p>hello world</p>'); CODE/MERMAID NOTES - require plain text (no HTML tags); BOOK/SEARCH NOTES - can be empty string. Use HTML formatting for text notes: <p> for paragraphs, <strong> for bold, <em> for italic, etc.",
+            description: "Content of the note as text ContentItem array. Content requirements by note type: TEXT/RENDER/WEBVIEW notes require HTML content (plain text auto-wrapped in <p> tags, e.g., '<p>Hello world</p>', '<strong>bold</strong>'); CODE/MERMAID notes require plain text ONLY (HTML tags rejected, e.g., 'def fibonacci(n):'); other note types accept any format or can be empty. All content items must have type: 'text' - file/image support temporarily disabled.",
             items: {
               type: "object",
               properties: {
                 type: {
                   type: "string",
-                  enum: ["text", "data-url"],
-                  description: "Content type: 'text' for HTML content (text notes require HTML formatting), 'data-url' for embedded data"
+                  enum: ["text"],
+                  description: "Content type: only 'text' supported (file/image data support temporarily disabled)"
                 },
                 content: {
                   type: "string",
-                  description: "HTML content for text notes (e.g., '<p>hello world</p>', '<strong>bold text</strong>'), plain text for code/mermaid notes"
-                },
-                mimeType: {
-                  type: "string",
-                  description: "MIME type for code notes (e.g., 'text/x-javascript', 'text/x-python', 'text/x-typescript'). Helps with syntax highlighting."
+                  description: "Content text with note-type specific formatting: HTML required for text/render/webview notes, plain text only for code/mermaid notes"
                 }
               },
               required: ["type", "content"]
@@ -101,7 +97,7 @@ export function createWriteTools(): any[] {
     },
     {
       name: "update_note",
-      description: "Complete content replacement with hash-based concurrency control and content type validation. ⚠️ REQUIRED: ALWAYS call get_note first to obtain current hash and note type. The system will reject updates without a valid hash to ensure data integrity. Prevents overwriting changes made by other users (hash mismatch) or content that doesn't match note type requirements. ONLY use this tool when the user explicitly requests note update (e.g., 'update the note', 'replace the content', 'rewrite this note'). IDEAL FOR: Major restructuring, complete rewrites, or final document organization after iterative building with append_note. SAFE: Creates revision backup by default (revision=true). WORKFLOW: get_note → review content → update_note with returned hash",
+      description: "Update note with support for title-only updates, content replacement, or both. ⚠️ REQUIRED: ALWAYS call get_note first to obtain current hash. TITLE-ONLY UPDATES: Efficient title changes without content modification. CONTENT UPDATES: Complete content replacement with hash-based concurrency control and content type validation. MULTI-PARAMETER UPDATES: Change multiple properties at once. Prevents overwriting changes made by other users (hash mismatch) or content that doesn't match note type requirements. ONLY use this tool when the user explicitly requests note update (e.g., 'update the note', 'change title', 'replace the content'). WORKFLOW: get_note → review content → update_note with returned hash",
       inputSchema: {
         type: "object",
         properties: {
@@ -109,33 +105,33 @@ export function createWriteTools(): any[] {
             type: "string",
             description: "ID of the note to update"
           },
+          title: {
+            type: "string",
+            description: "New title for the note. If provided alone (without content), performs efficient title-only update without affecting note content or blobId."
+          },
           type: {
             type: "string",
             enum: ["text", "code", "render", "search", "relationMap", "book", "noteMap", "mermaid", "webView", "shortcut", "doc", "contentWidget", "launcher"],
-            description: "Type of note (aligned with TriliumNext ETAPI specification). This determines content validation requirements."
+            description: "Type of note (aligned with TriliumNext ETAPI specification). This determines content validation requirements. Required when updating content, optional for title-only updates."
+          },
+          mime: {
+            type: "string",
+            description: "MIME type for code/file/image notes. Helps with syntax highlighting and content type identification."
           },
           content: {
             type: "array",
-            description: "Content of the note as ContentItem array. Content requirements by note type: TEXT NOTES - require HTML content (wrap plain text in <p> tags, e.g., '<p>hello world</p>'); CODE/MERMAID NOTES - require plain text (no HTML tags); BOOK/SEARCH NOTES - can be empty string. Use HTML formatting for text notes: <p> for paragraphs, <strong> for bold, <em> for italic, etc.",
+            description: "Content of the note as text ContentItem array. Content requirements by note type: TEXT/RENDER/WEBVIEW notes require HTML content (plain text auto-wrapped in <p> tags, e.g., '<p>Hello world</p>', '<strong>bold</strong>'); CODE/MERMAID notes require plain text ONLY (HTML tags rejected, e.g., 'def fibonacci(n):'); other note types accept any format or can be empty. All content items must have type: 'text' - file/image support temporarily disabled.",
             items: {
               type: "object",
               properties: {
                 type: {
                   type: "string",
-                  enum: ["text", "data-url"],
-                  description: "Content type: 'text' for smart format detection (HTML/Markdown/plain), 'data-url' for embedded data"
+                  enum: ["text"],
+                  description: "Content type: only 'text' supported (file/image data support temporarily disabled)"
                 },
                 content: {
                   type: "string",
-                  description: "Content data - for text type: automatically detected as HTML/Markdown/plain; for file/image: base64 encoded; for url/data-url: URL string"
-                },
-                mimeType: {
-                  type: "string",
-                  description: "MIME type for file/image content (e.g., 'image/png', 'application/pdf')"
-                },
-                filename: {
-                  type: "string",
-                  description: "Filename for file/image content"
+                  description: "Content text with note-type specific formatting: HTML required for text/render/webview notes, plain text only for code/mermaid notes"
                 }
               },
               required: ["type", "content"]
@@ -147,11 +143,11 @@ export function createWriteTools(): any[] {
           },
           revision: {
             type: "boolean",
-            description: "Whether to create a revision before updating (default: true for safety)",
+            description: "Whether to create a revision before updating (default: true for safety, title-only updates skip revision for efficiency)",
             default: true
           }
         },
-        required: ["noteId", "type", "content", "expectedHash"]
+        required: ["noteId", "expectedHash"]
       }
     },
     {
@@ -166,26 +162,18 @@ export function createWriteTools(): any[] {
           },
           content: {
             type: "array",
-            description: "Content to append as ContentItem array. Content requirements vary by note type: text/render/webView use smart format detection (HTML/Markdown/plain), code/mermaid require plain text, file/image require base64 encoded data.",
+            description: "Content to append as text ContentItem array. Content requirements by note type: TEXT/RENDER/WEBVIEW notes require HTML content (plain text auto-wrapped in <p> tags, e.g., '<p>Hello world</p>', '<strong>bold</strong>'); CODE/MERMAID notes require plain text ONLY (HTML tags rejected, e.g., 'def fibonacci(n):'); other note types accept any format or can be empty. All content items must have type: 'text' - file/image support temporarily disabled.",
             items: {
               type: "object",
               properties: {
                 type: {
                   type: "string",
-                  enum: ["text", "data-url"],
-                  description: "Content type: 'text' for smart format detection (HTML/Markdown/plain), 'data-url' for embedded data"
+                  enum: ["text"],
+                  description: "Content type: only 'text' supported (file/image data support temporarily disabled)"
                 },
                 content: {
                   type: "string",
-                  description: "Content data - for text type: automatically detected as HTML/Markdown/plain; for file/image: base64 encoded; for url/data-url: URL string"
-                },
-                mimeType: {
-                  type: "string",
-                  description: "MIME type for file/image content (e.g., 'image/png', 'application/pdf')"
-                },
-                filename: {
-                  type: "string",
-                  description: "Filename for file/image content"
+                  description: "Content text with note-type specific formatting: HTML required for text/render/webview notes, plain text only for code/mermaid notes"
                 }
               },
               required: ["type", "content"]

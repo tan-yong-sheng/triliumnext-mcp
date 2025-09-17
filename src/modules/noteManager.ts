@@ -149,11 +149,7 @@ export async function handleCreateNote(
     throw new Error("Content must be a ContentItem array");
   }
 
-  // Check for file/image items and reject them
-  const fileItems = rawContent.filter(item => item.type === 'file' || item.type === 'image');
-  if (fileItems.length > 0) {
-    throw new Error('File and image note creation is currently disabled');
-  }
+  // Content items are now restricted to 'text' type only
 
   // Process content array
   const processed = await processContentArray(rawContent, type);
@@ -162,7 +158,6 @@ export async function handleCreateNote(
   }
 
   const processedContent = processed.content;
-  const finalMime = processed.mimeType || mime;
 
   // Create note with processed content (empty for file/image-only notes)
   const noteData: any = {
@@ -173,8 +168,8 @@ export async function handleCreateNote(
   };
 
   // Add MIME type if specified
-  if (finalMime) {
-    noteData.mime = finalMime;
+  if (mime) {
+    noteData.mime = mime;
   }
 
   const response = await axiosInstance.post("/create-note", noteData);
@@ -237,14 +232,27 @@ export async function handleUpdateNote(
 ): Promise<NoteUpdateResponse> {
   const {
     noteId,
+    title,
     type,
     content: rawContent,
+    mime,
     revision = true,
     expectedHash
   } = args;
 
-  if (!noteId || !type || !rawContent) {
-    throw new Error("noteId, type, and content are required for update operation.");
+  if (!noteId || !expectedHash) {
+    throw new Error("noteId and expectedHash are required for update operation.");
+  }
+
+  // Check if this is a title-only update
+  const isTitleOnlyUpdate = title && !rawContent;
+
+  // Check if this is a multi-parameter update (title + content)
+  const isMultiParamUpdate = title && rawContent;
+
+  // For content updates (with or without title), validate required fields
+  if (rawContent && !type) {
+    throw new Error("type is required when updating content.");
   }
 
   let revisionCreated = false;
@@ -271,6 +279,37 @@ export async function handleUpdateNote(
       }
     }
 
+    // Handle title-only update (efficient PATCH operation)
+    if (isTitleOnlyUpdate) {
+      // For title-only updates, skip revision creation for efficiency
+      const patchData: any = { title };
+
+      // Add MIME type if provided
+      if (mime) {
+        patchData.mime = mime;
+      }
+
+      logVerboseApi("PATCH", `/notes/${noteId}`, patchData);
+      const response = await axiosInstance.patch(`/notes/${noteId}`, patchData, {
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (response.status !== 200) {
+        throw new Error(`Unexpected response status: ${response.status}`);
+      }
+
+      const mimeMessage = mime ? ` and MIME type updated to "${mime}"` : "";
+      return {
+        noteId,
+        message: `Note ${noteId} title updated successfully to "${title}"${mimeMessage}`,
+        revisionCreated: false,
+        conflict: false
+      };
+    }
+
+    // Handle content updates (with optional title change)
     // Step 3: Content type validation (always enabled)
     let finalContent = rawContent;
     const validationResult = await validateContentForNoteType(
@@ -312,22 +351,51 @@ export async function handleUpdateNote(
       throw new Error(`Content processing error: ${processed.error}`);
     }
 
-    const response = await axiosInstance.put(`/notes/${noteId}/content`, processed.content, {
+    const contentResponse = await axiosInstance.put(`/notes/${noteId}/content`, processed.content, {
       headers: {
         "Content-Type": "text/plain"
       }
     });
 
-    if (response.status !== 204) {
-      throw new Error(`Unexpected response status: ${response.status}`);
+    if (contentResponse.status !== 204) {
+      throw new Error(`Unexpected response status: ${contentResponse.status}`);
+    }
+
+    // Step 6: Update title and MIME type if provided (multi-parameter update)
+    if (isMultiParamUpdate && (title || mime)) {
+      const patchData: any = {};
+
+      if (title) {
+        patchData.title = title;
+      }
+
+      if (mime) {
+        patchData.mime = mime;
+      }
+
+      // Only make PATCH call if there's something to update
+      if (Object.keys(patchData).length > 0) {
+        logVerboseApi("PATCH", `/notes/${noteId}`, patchData);
+        const titleResponse = await axiosInstance.patch(`/notes/${noteId}`, patchData, {
+          headers: {
+            "Content-Type": "application/json"
+          }
+        });
+
+        if (titleResponse.status !== 200) {
+          throw new Error(`Unexpected response status for title/mime update: ${titleResponse.status}`);
+        }
+      }
     }
 
     const revisionMsg = revisionCreated ? " (revision created)" : " (no revision)";
     const correctionMsg = (finalContent !== rawContent) ? " (content auto-corrected)" : "";
+    const titleMsg = (isMultiParamUpdate && title) ? ` (title updated to "${title}")` : "";
+    const mimeMsg = (isMultiParamUpdate && mime) ? ` (MIME type updated to "${mime}")` : "";
 
     return {
       noteId,
-      message: `Note ${noteId} updated successfully${revisionMsg}${correctionMsg}`,
+      message: `Note ${noteId} updated successfully${revisionMsg}${correctionMsg}${titleMsg}${mimeMsg}`,
       revisionCreated,
       conflict: false
     };

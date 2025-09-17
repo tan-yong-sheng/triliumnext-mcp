@@ -28,12 +28,12 @@ export async function handleCreateNoteRequest(
 
   try {
     const noteOperation: NoteOperation = {
-      parentNoteId: args.parentNoteId,
+      parentNoteId: args.parentNoteId || "root", // Use default value if not provided
       title: args.title,
       type: args.type,
       content: args.content,
       mime: args.mime,
-      attributes: args.attributes  // ✅ Add this line
+      attributes: args.attributes
     };
 
     const result = await handleCreateNote(noteOperation, axiosInstance);
@@ -72,11 +72,29 @@ export async function handleUpdateNoteRequest(
     );
   }
 
+  // Validate that either title or content is provided
+  if (!args.title && !args.content) {
+    throw new McpError(
+      ErrorCode.InvalidParams,
+      "Either 'title' or 'content' (or both) must be provided for update operation."
+    );
+  }
+
+  // Validate that type is provided when content is being updated
+  if (args.content && !args.type) {
+    throw new McpError(
+      ErrorCode.InvalidParams,
+      "Parameter 'type' is required when updating content."
+    );
+  }
+
   try {
     const noteOperation: NoteOperation = {
       noteId: args.noteId,
+      title: args.title,
       type: args.type,
       content: args.content,
+      mime: args.mime,
       revision: args.revision !== false, // Default to true (safe behavior)
       expectedHash: args.expectedHash
     };

@@ -126,38 +126,7 @@ describe('Create Note Validation', () => {
       assert.strictEqual(result.data.content[0].type, 'text');
     });
 
-    it('should validate data-url content items', () => {
-      const validRequest = {
-        parentNoteId: 'root',
-        title: 'Data URL Note',
-        type: 'text',
-        content: [{ type: 'data-url', content: 'data:text/plain;base64,SGVsbG8gV29ybGQ=' }]
-      };
-
-      const result = safeValidate(createNoteSchema, validRequest);
-      assert.strictEqual(result.success, true);
-      assert.strictEqual(result.data.content[0].type, 'data-url');
-    });
-
-    it('should validate content with mimeType', () => {
-      const validRequest = {
-        parentNoteId: 'root',
-        title: 'MIME Type Note',
-        type: 'text',
-        content: [
-          {
-            type: 'text',
-            content: 'HTML content',
-            mimeType: 'text/html'
-          }
-        ]
-      };
-
-      const result = safeValidate(createNoteSchema, validRequest);
-      assert.strictEqual(result.success, true);
-      assert.strictEqual(result.data.content[0].mimeType, 'text/html');
-    });
-
+    
     it('should reject content items with invalid types', () => {
       const invalidRequest = {
         parentNoteId: 'root',

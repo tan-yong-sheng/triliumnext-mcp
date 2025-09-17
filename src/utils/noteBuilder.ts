@@ -11,15 +11,7 @@ import type { NoteType } from '../modules/noteManager.js';
  * Map note types to appropriate content item types
  */
 function getContentTypeForNoteType(noteType: NoteType): ContentItem['type'] {
-  switch (noteType) {
-    case 'code':
-    case 'mermaid':
-    case 'text':
-    case 'render':
-    case 'webView':
-    default:
-      return 'text'; // All note types use text content
-  }
+  return 'text'; // All note types use text content now
 }
 
 /**
@@ -66,22 +58,13 @@ export function buildNoteParams(input: SimpleNoteInput): CreateNoteParams {
 
 
 /**
- * Helper for creating notes with file/image content
+ * Helper for creating text content items
+ * Note: All content items are now text type. File/image support removed for now.
  */
-export function buildContentItem(type: ContentItem['type'], content: string, options?: {
-  filename?: string;
-  mime?: string;
-  encoding?: 'plain' | 'base64' | 'data-url';
-  urlOptions?: {
-    timeout?: number;
-    headers?: Record<string, string>;
-    followRedirects?: boolean;
-  };
-}): ContentItem {
+export function buildContentItem(content: string): ContentItem {
   return {
-    type,
-    content,
-    ...options
+    type: 'text',
+    content
   };
 }
 
