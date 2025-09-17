@@ -154,14 +154,9 @@ export function createReadTools(): any[] {
             type: "string",
             description: "ID of the note to retrieve",
           },
-          includeContent: {
-            type: "boolean",
-            description: "Whether to include the note's content in the response",
-            default: true
-          }
         },
         required: ["noteId"],
-      },
+      }
     },
     {
       name: "resolve_note_id",
