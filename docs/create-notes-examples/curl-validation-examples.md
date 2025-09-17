@@ -1,6 +1,6 @@
 # TriliumNext MCP - cURL Validation Examples
 
-This document provides comprehensive cURL examples for validating the enhanced note creation and multi-modal content support using TriliumNext's ETAPI.
+This document provides comprehensive cURL examples for validating the string-based note creation and content processing using TriliumNext's ETAPI.
 
 ## Authentication Setup
 
@@ -15,19 +15,19 @@ AUTH_HEADER="Authorization: Bearer $TRILIUM_TOKEN"
 CONTENT_HEADER="Content-Type: application/json"
 ```
 
-## 🚨 CRITICAL: Content Requirements by Note Type
+## Content Requirements by Note Type
 
-**⚠️ IMPORTANT**: Content requirements vary significantly by note type. This affects both format and necessity.
+**⚠️ IMPORTANT**: Content requirements vary significantly by note type.
 
 ### Content Requirements Summary
-- **HTML Required**: `text`, `render`, `webView`
-- **Plain Text Required**: `code`, `mermaid`
-- **Base64 Required**: `file`, `image`
-- **Optional/Empty**: `book`, `search`, `relationMap`, `shortcut`, `doc`, `contentWidget`, `launcher`
+- **String Content**: All note types accept simple string content
+- **Smart Processing**: Text notes auto-detect Markdown, HTML, or plain text
+- **Plain Text Only**: Code and Mermaid notes reject HTML content
+- **Optional Content**: Container notes (book, search, etc.) can be empty
 
-## Basic Text Note Creation (New Array Format)
+## Basic Text Note Creation
 
-### Simple Text Note (HTML Content Required)
+### Simple Text Note (Smart Processing)
 ```bash
 curl -X POST "$TRILIUM_URL/create-note" \
   -H "$AUTH_HEADER" \
@@ -36,92 +36,39 @@ curl -X POST "$TRILIUM_URL/create-note" \
     "parentNoteId": "root",
     "title": "Simple Text Note",
     "type": "text",
-    "content": [
-      {
-        "type": "text",
-        "content": "<h1>Hello World</h1><p>This is a basic text note using the new array format.</p>"
-      }
-    ]
+    "content": "<h1>Hello World</h1><p>This is a basic text note using string content.</p>"
   }'
 ```
 
-### HTML Content Note
+### Markdown Content (Auto-Converted)
 ```bash
 curl -X POST "$TRILIUM_URL/create-note" \
   -H "$AUTH_HEADER" \
   -H "$CONTENT_HEADER" \
   -d '{
     "parentNoteId": "root",
-    "title": "HTML Content Note",
+    "title": "Markdown Note",
     "type": "text",
-    "content": [
-      {
-        "type": "text",
-        "content": "<div><h2>Project Documentation</h2><ul><li>Requirement Analysis</li><li>Design Phase</li><li>Implementation</li></ul></div>"
-      }
-    ]
+    "content": "# Project Documentation\n\n## Overview\nThis project uses **TypeScript** for development.\n\n### Features\n- Type safety\n- Modern syntax\n- Tooling support"
   }'
 ```
 
-## Multi-Modal Content Examples
-
-### Text + Local Image (Mixed Content)
+### Plain Text Content (Auto-Wrapped)
 ```bash
-# NOTE: This requires the enhanced multi-modal content support to be implemented
-# Current ETAPI only supports string content, so this is for future validation
-
 curl -X POST "$TRILIUM_URL/create-note" \
   -H "$AUTH_HEADER" \
   -H "$CONTENT_HEADER" \
   -d '{
     "parentNoteId": "root",
-    "title": "Project Report with Chart",
+    "title": "Plain Text Note",
     "type": "text",
-    "content": [
-      {
-        "type": "text",
-        "content": "<h1>Q3 Project Report</h1><p>Our quarterly performance exceeded expectations.</p>"
-      },
-      {
-        "type": "image",
-        "content": "/local/path/to/performance-chart.png",
-        "mimeType": "image/png",
-        "filename": "performance-chart.png"
-      }
-    ]
-  }'
-```
-
-### Data URL Embedded Content
-```bash
-# NOTE: This requires the enhanced multi-modal content support to be implemented
-# Current ETAPI only supports string content, so this is for future validation
-
-curl -X POST "$TRILIUM_URL/create-note" \
-  -H "$AUTH_HEADER" \
-  -H "$CONTENT_HEADER" \
-  -d '{
-    "parentNoteId": "root",
-    "title": "Embedded SVG Diagram",
-    "type": "text",
-    "content": [
-      {
-        "type": "text",
-        "content": "<h1>System Architecture</h1><p>Embedded SVG diagram:</p>"
-      },
-      {
-        "type": "data-url",
-        "content": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzAwN2JmZiIvPjx0ZXh0IHg9IjEwMCIgeT0iNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPk15IERpYWdyYW08L3RleHQ+PC9zdmc+",
-        "mimeType": "image/svg+xml",
-        "filename": "architecture.svg"
-      }
-    ]
+    "content": "This is plain text content that will be automatically wrapped in HTML tags by the system."
   }'
 ```
 
 ## Code Note Creation
 
-### Python Code Note
+### Python Code Note (Plain Text Required)
 ```bash
 curl -X POST "$TRILIUM_URL/create-note" \
   -H "$AUTH_HEADER" \
@@ -131,16 +78,11 @@ curl -X POST "$TRILIUM_URL/create-note" \
     "title": "Python API Handler",
     "type": "code",
     "mime": "text/x-python",
-    "content": [
-      {
-        "type": "code",
-        "content": "import requests\nimport json\n\ndef api_handler():\n    \"\"\"Handle API requests\"\"\"\n    response = requests.get(\"https://api.example.com/data\")\n    return response.json()\n\nif __name__ == \"__main__\":\n    result = api_handler()\n    print(json.dumps(result, indent=2))"
-      }
-    ]
+    "content": "import requests\nimport json\n\ndef api_handler():\n    \"\"\"Handle API requests\"\"\"\n    response = requests.get(\"https://api.example.com/data\")\n    return response.json()\n\nif __name__ == \"__main__\":\n    result = api_handler()\n    print(json.dumps(result, indent=2))"
   }'
 ```
 
-### JavaScript Code Note (Plain Text Required)
+### JavaScript Code Note
 ```bash
 curl -X POST "$TRILIUM_URL/create-note" \
   -H "$AUTH_HEADER" \
@@ -150,16 +92,13 @@ curl -X POST "$TRILIUM_URL/create-note" \
     "title": "JavaScript Utility Functions",
     "type": "code",
     "mime": "text/x-javascript",
-    "content": [
-      {
-        "type": "code",
-        "content": "// Utility functions for data processing\nfunction formatDate(date) {\n    return new Date(date).toISOString().split(\"T\")[0];\n}\n\nfunction debounce(func, wait) {\n    let timeout;\n    return function executedFunction(...args) {\n        const later = () => {\n            clearTimeout(timeout);\n            func(...args);\n        };\n        clearTimeout(timeout);\n        timeout = setTimeout(later, wait);\n    };\n}"
-      }
-    ]
+    "content": "// Utility functions for data processing\nfunction formatDate(date) {\n    return new Date(date).toISOString().split(\"T\")[0];\n}\n\nfunction debounce(func, wait) {\n    let timeout;\n    return function executedFunction(...args) {\n        const later = () => {\n            clearTimeout(timeout);\n            func(...args);\n        };\n        clearTimeout(timeout);\n        timeout = setTimeout(later, wait);\n    };\n}"
   }'
 ```
 
-### Book Note (Optional Content - Can be Empty)
+## Container Notes
+
+### Book Note (Optional Content)
 ```bash
 curl -X POST "$TRILIUM_URL/create-note" \
   -H "$AUTH_HEADER" \
@@ -168,14 +107,24 @@ curl -X POST "$TRILIUM_URL/create-note" \
     "parentNoteId": "root",
     "title": "Project Folder",
     "type": "book",
-    "content": [
-      {
-        "type": "text",
-        "content": ""  // Empty content for container notes
-      }
-    ]
+    "content": "<p>Container for project-related notes</p>"
   }'
 ```
+
+### Empty Container Note
+```bash
+curl -X POST "$TRILIUM_URL/create-note" \
+  -H "$AUTH_HEADER" \
+  -H "$CONTENT_HEADER" \
+  -d '{
+    "parentNoteId": "root",
+    "title": "Empty Folder",
+    "type": "book",
+    "content": ""
+  }'
+```
+
+## Specialized Note Types
 
 ### Mermaid Diagram Note (Plain Text Diagram Syntax)
 ```bash
@@ -186,60 +135,21 @@ curl -X POST "$TRILIUM_URL/create-note" \
     "parentNoteId": "root",
     "title": "System Architecture",
     "type": "mermaid",
-    "mime": "text/vnd.mermaid",
-    "content": [
-      {
-        "type": "text",
-        "content": "graph TD\n    A[Client] --> B[Load Balancer]\n    B --> C[Server1]\n    B --> D[Server2]\n    C --> E[Database]\n    D --> E[Database]"
-      }
-    ]
+    "content": "graph TD\n    A[Client] --> B[Load Balancer]\n    B --> C[Server1]\n    B --> D[Server2]\n    C --> E[Database]\n    D --> E[Database]"
   }'
 ```
 
-### File Note (Base64 Encoded Content Required)
+### Search Note
 ```bash
-# First, encode a file to base64
-FILE_BASE64=$(base64 -w 0 /path/to/document.pdf)
-
 curl -X POST "$TRILIUM_URL/create-note" \
   -H "$AUTH_HEADER" \
   -H "$CONTENT_HEADER" \
-  -d "{
-    \"parentNoteId\": \"root\",
-    \"title\": \"PDF Document\",
-    \"type\": \"file\",
-    \"mime\": \"application/pdf\",
-    \"content\": [
-      {
-        \"type\": \"file\",
-        \"content\": \"$FILE_BASE64\",
-        \"filename\": \"document.pdf\"
-      }
-    ]
-  }"
-```
-
-### Image Note (Base64 Encoded Content Required)
-```bash
-# First, encode an image to base64
-IMAGE_BASE64=$(base64 -w 0 /path/to/image.png)
-
-curl -X POST "$TRILIUM_URL/create-note" \
-  -H "$AUTH_HEADER" \
-  -H "$CONTENT_HEADER" \
-  -d "{
-    \"parentNoteId\": \"root\",
-    \"title\": \"Diagram Image\",
-    \"type\": \"image\",
-    \"mime\": \"image/png\",
-    \"content\": [
-      {
-        \"type\": \"image\",
-        \"content\": \"$IMAGE_BASE64\",
-        \"filename\": \"diagram.png\"
-      }
-    ]
-  }"
+  -d '{
+    "parentNoteId": "root",
+    "title": "Important Tasks",
+    "type": "search",
+    "content": "note.type = \"text\" AND #important AND #task"
+  }'
 ```
 
 ## Template-Based Note Creation
@@ -253,12 +163,7 @@ curl -X POST "$TRILIUM_URL/create-note" \
     "parentNoteId": "root",
     "title": "Project Task Board",
     "type": "book",
-    "content": [
-      {
-        "type": "text",
-        "content": "<h1>Project Task Board</h1><p>Manage your project tasks and track progress.</p>"
-      }
-    ],
+    "content": "<h1>Project Task Board</h1><p>Manage your project tasks and track progress.</p>",
     "attributes": [
       {
         "type": "relation",
@@ -285,12 +190,7 @@ curl -X POST "$TRILIUM_URL/create-note" \
     "parentNoteId": "root",
     "title": "Project Calendar",
     "type": "book",
-    "content": [
-      {
-        "type": "text",
-        "content": "<h1>Project Timeline</h1><p>Track project milestones and deadlines.</p>"
-      }
-    ],
+    "content": "<h1>Project Timeline</h1><p>Track project milestones and deadlines.</p>",
     "attributes": [
       {
         "type": "relation",
@@ -319,12 +219,7 @@ curl -X POST "$TRILIUM_URL/create-note" \
     "parentNoteId": "root",
     "title": "API Documentation",
     "type": "text",
-    "content": [
-      {
-        "type": "text",
-        "content": "<h1>REST API Documentation</h1><p>Complete reference for our RESTful API endpoints.</p>"
-      }
-    ],
+    "content": "<h1>REST API Documentation</h1><p>Complete reference for our RESTful API endpoints.</p>",
     "attributes": [
       {
         "type": "label",
@@ -352,6 +247,75 @@ curl -X POST "$TRILIUM_URL/create-note" \
       }
     ]
   }'
+```
+
+## Hash Validation Examples
+
+### Safe Update Workflow
+```bash
+#!/bin/bash
+
+# Step 1: Create a note
+CREATE_RESPONSE=$(curl -s -X POST "$TRILIUM_URL/create-note" \
+  -H "$AUTH_HEADER" \
+  -H "$CONTENT_HEADER" \
+  -d '{
+    "parentNoteId": "root",
+    "title": "Test Note for Updates",
+    "type": "text",
+    "content": "<h1>Original Content</h1><p>This will be updated.</p>"
+  }')
+
+NOTE_ID=$(echo $CREATE_RESPONSE | jq -r '.note.noteId')
+echo "Created note with ID: $NOTE_ID"
+
+# Step 2: Get note with hash info
+NOTE_INFO=$(curl -s -X GET "$TRILIUM_URL/notes/$NOTE_ID" \
+  -H "$AUTH_HEADER")
+
+BLOB_ID=$(echo $NOTE_INFO | jq -r '.blobId')
+echo "Current blobId: $BLOB_ID"
+
+# Step 3: Update with hash validation
+UPDATE_RESPONSE=$(curl -s -X PUT "$TRILIUM_URL/notes/$NOTE_ID/content" \
+  -H "$AUTH_HEADER" \
+  -H "Content-Type: text/plain" \
+  -d '<h1>Updated Content</h1><p>This content has been safely updated.</p>')
+
+echo "Update response: $UPDATE_RESPONSE"
+
+# Step 4: Update note metadata (title, type, etc.)
+curl -s -X PATCH "$TRILIUM_URL/notes/$NOTE_ID" \
+  -H "$AUTH_HEADER" \
+  -H "$CONTENT_HEADER" \
+  -d '{
+    "title": "Updated Test Note"
+  }'
+```
+
+## Update Note Examples
+
+### Update Content with Type Parameter
+```bash
+#!/bin/bash
+
+# Get current note state
+NOTE_INFO=$(curl -s -X GET "$TRILIUM_URL/notes/$NOTE_ID" \
+  -H "$AUTH_HEADER")
+
+BLOB_ID=$(echo $NOTE_INFO | jq -r '.blobId')
+NOTE_TYPE=$(echo $NOTE_INFO | jq -r '.type')
+
+# Update content using MCP update_note function
+curl -X POST "$TRILIUM_URL/update-note" \
+  -H "$AUTH_HEADER" \
+  -H "$CONTENT_HEADER" \
+  -d "{
+    \"noteId\": \"$NOTE_ID\",
+    \"type\": \"$NOTE_TYPE\",
+    \"content\": \"<h1>Safely Updated Content</h1><p>Updated via MCP with hash validation.</p>\",
+    \"expectedHash\": \"$BLOB_ID\"
+  }"
 ```
 
 ## Attribute Management Examples
@@ -383,117 +347,97 @@ curl -X POST "$TRILIUM_URL/attributes" \
   }'
 ```
 
-### Create Multiple Labels (Batch via Individual Calls)
+### Batch Attribute Creation (via create_note attributes parameter)
 ```bash
-# Note: ETAPI requires individual calls for each attribute
-# Create project label
-curl -X POST "$TRILIUM_URL/attributes" \
-  -H "$AUTH_HEADER" \
-  -H "$CONTENT_HEADER" \
-  -d '{
-    "noteId": "abc123",
-    "type": "label",
-    "name": "project",
-    "value": "api",
-    "position": 10
-  }'
-
-# Create language label
-curl -X POST "$TRILIUM_URL/attributes" \
-  -H "$AUTH_HEADER" \
-  -H "$CONTENT_HEADER" \
-  -d '{
-    "noteId": "abc123",
-    "type": "label",
-    "name": "language",
-    "value": "python",
-    "position": 20
-  }'
-
-# Create status label
-curl -X POST "$TRILIUM_URL/attributes" \
-  -H "$AUTH_HEADER" \
-  -H "$CONTENT_HEADER" \
-  -d '{
-    "noteId": "abc123",
-    "type": "label",
-    "name": "status",
-    "value": "in-progress",
-    "position": 30
-  }'
-```
-
-## Common Content Mistakes to Test
-
-### Invalid Content Format (Old String Format - Should Fail)
-```bash
-# This should fail with the new array-only requirement
 curl -X POST "$TRILIUM_URL/create-note" \
   -H "$AUTH_HEADER" \
   -H "$CONTENT_HEADER" \
   -d '{
     "parentNoteId": "root",
-    "title": "Invalid Format",
+    "title": "Code Snippet Repository",
     "type": "text",
-    "content": "<h1>This should fail</h1>"
-  }'
-```
-
-### Wrong Content Type for Note Type (HTML in Code Note)
-```bash
-# This should fail or produce unexpected results
-curl -X POST "$TRILIUM_URL/create-note" \
-  -H "$AUTH_HEADER" \
-  -H "$CONTENT_HEADER" \
-  -d '{
-    "parentNoteId": "root",
-    "title": "Wrong Content Type",
-    "type": "code",
-    "mime": "text/x-javascript",
-    "content": [
+    "content": "<h1>Reusable Code Snippets</h1><p>Collection of useful code examples.</p>",
+    "attributes": [
       {
-        "type": "code",
-        "content": "<h1>This should be plain code, not HTML</h1><p>function test() {}</p>"
+        "type": "relation",
+        "name": "template",
+        "value": "Text Snippet",
+        "position": 10
+      },
+      {
+        "type": "label",
+        "name": "language",
+        "value": "javascript",
+        "position": 20
+      },
+      {
+        "type": "label",
+        "name": "category",
+        "value": "utilities",
+        "position": 30
       }
     ]
   }'
 ```
 
-### Missing Content for Required Note Type
+## Common Content Validation Tests
+
+### Invalid Content Type (HTML in Code Note)
 ```bash
-# This should fail for note types that require content
+# This should fail with content type mismatch
+curl -X POST "$TRILIUM_URL/create-note" \
+  -H "$AUTH_HEADER" \
+  -H "$CONTENT_HEADER" \
+  -d '{
+    "parentNoteId": "root",
+    "title": "Invalid Code Note",
+    "type": "code",
+    "mime": "text/x-javascript",
+    "content": "<h1>This should fail</h1><p>HTML in code note</p>"
+  }'
+```
+
+### Plain Text in Code Note (Should Work)
+```bash
+# This should work - plain text for code notes
+curl -X POST "$TRILIUM_URL/create-note" \
+  -H "$AUTH_HEADER" \
+  -H "$CONTENT_HEADER" \
+  -d '{
+    "parentNoteId": "root",
+    "title": "Valid Code Note",
+    "type": "code",
+    "mime": "text/x-javascript",
+    "content": "function validCode() {\n  return true;\n}"
+  }'
+```
+
+### Smart Content Detection Test
+```bash
+# Test auto-detection of different content formats
+curl -X POST "$TRILIUM_URL/create-note" \
+  -H "$AUTH_HEADER" \
+  -H "$CONTENT_HEADER" \
+  -d '{
+    "parentNoteId": "root",
+    "title": "Smart Content Test",
+    "type": "text",
+    "content": "# Auto-Detected Markdown\n\nThis **markdown** should be automatically converted to HTML.\n\n## Features\n- List item 1\n- List item 2\n\n[Link example](https://example.com)"
+  }'
+```
+
+## Error Handling Examples
+
+### Missing Required Parameters
+```bash
+# Should fail - missing required content parameter
 curl -X POST "$TRILIUM_URL/create-note" \
   -H "$AUTH_HEADER" \
   -H "$CONTENT_HEADER" \
   -d '{
     "parentNoteId": "root",
     "title": "Missing Content",
-    "type": "text",
-    "content": [
-      {
-        "type": "text",
-        "content": ""  # Empty content for note type that requires it
-      }
-    ]
-  }'
-```
-
-### Plain Text in HTML Note Type
-```bash
-# This should work but may not display as expected
-curl -X POST "$TRILIUM_URL/create-note" \
-  -H "$AUTH_HEADER" \
-  -H "$CONTENT_HEADER" \
-  -d '{
-    "parentNoteId": "root",
-    "title": "Plain Text in HTML Note",
-    "type": "text",
-    "content": [
-      {
-        "type": "text",
-        "content": "This is plain text, not HTML. Line breaks\nand special characters < > & may need escaping."
-      }
-    ]
+    "type": "text"
   }'
 ```
 
@@ -506,25 +450,20 @@ curl -X POST "$TRILIUM_URL/create-note" \
     "parentNoteId": "root",
     "title": "Invalid Type",
     "type": "invalid_type",
-    "content": [
-      {
-        "type": "text",
-        "content": "<h1>Test</h1>"
-      }
-    ]
+    "content": "test content"
   }'
 ```
 
-### Missing Required Fields
+### Update Without Hash (Should Fail)
 ```bash
-curl -X POST "$TRILIUM_URL/create-note" \
+# Should fail - missing expectedHash parameter
+curl -X POST "$TRILIUM_URL/update-note" \
   -H "$AUTH_HEADER" \
   -H "$CONTENT_HEADER" \
   -d '{
-    "parentNoteId": "root",
-    "title": "Missing Content",
-    "type": "text"
-    # Missing content field
+    "noteId": "abc123",
+    "type": "text",
+    "content": "Updated content"
   }'
 ```
 
@@ -547,12 +486,7 @@ for i in {1..5}; do
       \"parentNoteId\": \"root\",
       \"title\": \"Batch Test Note $i\",
       \"type\": \"text\",
-      \"content\": [
-        {
-          \"type\": \"text\",
-          \"content\": \"<h1>Note $i</h1><p>Created at $(date)</p>\"
-        }
-      ]
+      \"content\": \"<h1>Note $i</h1><p>Created at $(date)</p>\"
     }")
 
   NOTE_ID=$(echo $RESPONSE | jq -r '.note.noteId')
@@ -566,144 +500,34 @@ echo "Batch creation completed in $DURATION seconds"
 echo "Average time per note: $(echo "scale=2; $DURATION / 5" | bc) seconds"
 ```
 
-## 🚨 ACTION REQUIRED: Tool Description Updates
+## Smart Processing Validation
 
-### Critical Tool Description Changes Needed
-
-**⚠️ IMPORTANT**: The MCP tool descriptions must be updated to reflect the content requirements by note type. This is critical for proper LLM usage.
-
-### Required Tool Description Updates
-
-#### create_note Tool Description
-```markdown
-# Current (Insufficient)
-"Create a new note with content"
-
-# Required Update
-"Create a new note with content. Content requirements vary by note type:
-- text/render/webView: HTML content required (e.g., '<h1>Title</h1>')
-- code/mermaid: Plain text content required (no HTML)
-- file/image: Base64 encoded content required
-- book/search/etc: Optional content (can be empty)
-Content parameter accepts only arrays of ContentItem objects, not strings."
-```
-
-#### update_note Tool Description
-```markdown
-# Required Update
-"Update existing note content. Content requirements vary by note type:
-- text/render/webView: HTML content required
-- code/mermaid: Plain text content required
-- file/image: Base64 encoded content required
-- book/search/etc: Optional content
-Content parameter accepts only arrays of ContentItem objects, not strings."
-```
-
-#### append_note Tool Description
-```markdown
-# Required Update
-"Append content to existing note. Content requirements vary by note type:
-- text/render/webView: HTML content required
-- code/mermaid: Plain text content required
-- file/image: Base64 encoded content required
-- book/search/etc: Optional content
-Content parameter accepts only arrays of ContentItem objects, not strings."
-```
-
-### Content Type Guidelines for Tool Descriptions
-
-#### HTML Content Types
-```
-text: HTML content required - <h1>Title</h1><p>Content</p>
-render: HTML content required - <div>{{template}}</div>
-webView: HTML content required - <iframe src="..."></iframe>
-```
-
-#### Plain Text Content Types
-```
-code: Plain text code required - function test() { return true; }
-mermaid: Plain text diagram required - graph TD; A-->B;
-```
-
-#### Base64 Content Types
-```
-file: Base64 encoded file data required
-image: Base64 encoded image data required
-```
-
-#### Optional Content Types
-```
-book: Content optional - can be empty string
-search: Content optional - search query string
-relationMap: Content optional - JSON configuration
-shortcut: Content optional - target reference
-doc: Content optional - document content
-contentWidget: Content optional - widget configuration
-launcher: Content optional - launch parameters
-```
-
-## Current Limitations
-
-### ETAPI Limitations
-1. **Single Content Field**: Current ETAPI only supports `content: string`
-2. **No Built-in URL Fetching**: External content must be pre-processed
-3. **No Attachment Creation**: Attachments require separate `/attachments` endpoint calls
-4. **No Batch Attributes**: Each attribute requires individual API calls
-
-### Multi-Modal Content Support
-The examples above showing mixed content (text + images, data URLs) are for **future validation** once the enhanced multi-modal content support is implemented. The current ETAPI only supports string content.
-
-### Validation Strategy
-1. **Basic Note Creation**: Validate current array-format text content works
-2. **Content Type Testing**: Verify different content formats work correctly
-3. **Attribute Management**: Test individual and batch attribute operations
-4. **Template Relations**: Verify template functionality works correctly
-5. **Error Handling**: Confirm proper error messages for invalid requests
-6. **Performance**: Measure timing for various operations
-
-## Migration Validation
-
-### String to Array Migration Test
+### Markdown Auto-Conversion Test
 ```bash
 #!/bin/bash
 
-echo "Testing string to array format migration..."
+echo "Testing Markdown auto-conversion..."
 
-# Test 1: Old format (should fail)
-echo "Testing old string format..."
-OLD_RESPONSE=$(curl -s -X POST "$TRILIUM_URL/create-note" \
+# Create note with Markdown content
+MARKDOWN_RESPONSE=$(curl -s -X POST "$TRILIUM_URL/create-note" \
   -H "$AUTH_HEADER" \
   -H "$CONTENT_HEADER" \
   -d '{
     "parentNoteId": "root",
-    "title": "Old Format Test",
+    "title": "Markdown Test",
     "type": "text",
-    "content": "<h1>Old format</h1>"
+    "content": "# Markdown Heading\n\nThis is **bold text** and *italic text*.\n\n## List\n- Item 1\n- Item 2\n- Item 3"
   }')
 
-echo "Old format response: $OLD_RESPONSE"
+NOTE_ID=$(echo $MARKDOWN_RESPONSE | jq -r '.note.noteId')
+echo "Created Markdown note with ID: $NOTE_ID"
 
-# Test 2: New format (should work)
-echo "Testing new array format..."
-NEW_RESPONSE=$(curl -s -X POST "$TRILIUM_URL/create-note" \
-  -H "$AUTH_HEADER" \
-  -H "$CONTENT_HEADER" \
-  -d '{
-    "parentNoteId": "root",
-    "title": "New Format Test",
-    "type": "text",
-    "content": [
-      {
-        "type": "text",
-        "content": "<h1>New format</h1>"
-      }
-    ]
-  }')
+# Get the processed content
+CONTENT_RESPONSE=$(curl -s -X GET "$TRILIUM_URL/notes/$NOTE_ID/content" \
+  -H "$AUTH_HEADER")
 
-NEW_NOTE_ID=$(echo $NEW_RESPONSE | jq -r '.note.noteId')
-echo "New format response - Note ID: $NEW_NOTE_ID"
-
-echo "Migration validation complete."
+echo "Processed content:"
+echo "$CONTENT_RESPONSE"
 ```
 
-These cURL examples provide comprehensive validation for both current functionality and future enhanced features of the TriliumNext MCP server.
+These cURL examples provide comprehensive validation for the string-based note creation system with smart content processing and hash validation features.

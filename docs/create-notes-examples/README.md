@@ -1,454 +1,380 @@
-# TriliumNext MCP - Comprehensive Note Creation Guide
+# TriliumNext MCP - Note Creation Guide
 
-This document provides a complete guide to creating and managing notes in TriliumNext using the MCP server, including enhanced multi-modal content support and attribute management.
+This guide provides a complete reference for creating and managing notes in TriliumNext using the MCP server with simplified string-based content.
 
 ## Overview
 
-The TriliumNext MCP server provides powerful tools for note creation and management with the following key capabilities:
+The TriliumNext MCP server provides streamlined tools for note creation and management with the following key capabilities:
 
-- **Multi-modal Content**: Support for text, files, URLs, and mixed content
-- **Enhanced create_note**: Create notes with optional attributes in one operation
-- **Attribute Management**: Full CRUD operations for labels and relations
+- **String-based Content**: Simple string content with automatic format detection
+- **Smart Content Processing**: Auto-detects Markdown, HTML, and plain text for text notes
+- **Hash Validation**: Safe updates with blobId-based concurrency control
 - **Template Integration**: Built-in template support for specialized layouts
+- **Attribute Management**: Full CRUD operations for labels and relations
 
-## Enhanced Note Creation
+## Content Format
 
-### Breaking Change: Content Parameter Update
+### ⚠️ IMPORTANT: String Content Only
 
-**⚠️ IMPORTANT**: The `content` parameter in `create_note`, `update_note`, and `append_note` now accepts **only arrays of ContentItem objects**, not strings. This is a breaking change that requires migration of existing code.
+**The `content` parameter in `create_note`, `update_note`, and `append_note` now accepts strings only.** This is a significant simplification from the previous array-based approach.
 
-## 🚨 CRITICAL: Content Requirements by Note Type
+### Content Requirements by Note Type
 
-**⚠️ ACTION REQUIRED**: Tool descriptions must be updated to reflect these content requirements. The content format and necessity varies significantly by note type.
+| Note Type | Content Required | Content Format | Auto-Processing | Examples |
+|-----------|------------------|----------------|-----------------|----------|
+| **`text`** | ✅ Required | String content | ✅ Smart format detection | `"# Hello World\n\nContent"` |
+| **`code`** | ✅ Required | Plain text code | ❌ No processing | `"function test() { return true; }"` |
+| **`render`** | ✅ Required | String content | ✅ Smart format detection | `"<div>Template content</div>"` |
+| **`search`** | ⚠️ Optional | String content | ✅ Smart format detection | `"note.type = 'text' AND #important"` |
+| **`book`** | ⚠️ Optional | String content | ✅ Smart format detection | `"<p>Project folder</p>"` (can be empty) |
+| **`relationMap`** | ⚠️ Optional | String content | ✅ Smart format detection | JSON configuration |
+| **`mermaid`** | ✅ Required | Plain text syntax | ❌ No processing | `"graph TD; A-->B; B-->C;"` |
+| **`webView`** | ✅ Required | String content | ✅ Smart format detection | `"<iframe src='...'></iframe>"` |
+| **`shortcut`** | ⚠️ Optional | String content | ✅ Smart format detection | Target reference |
+| **`doc`** | ⚠️ Optional | String content | ✅ Smart format detection | Document content |
+| **`contentWidget`** | ⚠️ Optional | String content | ✅ Smart format detection | Widget configuration |
+| **`launcher`** | ⚠️ Optional | String content | ✅ Smart format detection | Launch parameters |
 
-### Content Requirements Matrix
+### Smart Content Processing
 
-| Note Type | Content Required | Content Format | Examples |
-|-----------|------------------|----------------|----------|
-| **`text`** | ✅ Required | HTML content | `<h1>Title</h1><p>Content</p>` |
-| **`code`** | ✅ Required | Plain text code | `function test() { return true; }` |
-| **`file`** | ✅ Required | Base64 encoded file data | `JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXM...` |
-| **`image`** | ✅ Required | Base64 encoded image data | `iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==` |
-| **`render`** | ✅ Required | HTML or template content | `<div>{{content}}</div>` |
-| **`search`** | ⚠️ Optional | Search query string | `note.type = 'text' AND #important` |
-| **`book`** | ⚠️ Optional | Description HTML | `<p>Project folder</p>` (can be empty) |
-| **`relationMap`** | ⚠️ Optional | Configuration data | JSON configuration |
-| **`mermaid`** | ✅ Required | Mermaid diagram syntax | `graph TD; A-->B; B-->C;` |
-| **`webView`** | ✅ Required | HTML content | `<iframe src="..."></iframe>` |
-| **`shortcut`** | ⚠️ Optional | Target reference | `targetNoteId` or empty |
-| **`doc`** | ⚠️ Optional | Document content | HTML or structured data |
-| **`contentWidget`** | ⚠️ Optional | Widget configuration | JSON configuration |
-| **`launcher`** | ⚠️ Optional | Launch parameters | Command or URL |
-
-### Content Format Guidelines
-
-#### Smart Format Detection (New!)
-
-The system now automatically detects content format for text notes:
+The system automatically detects content format for text notes:
 
 - **HTML content**: Detected by HTML tags (`<h1>`, `<p>`, `<strong>`, etc.) - passed through as-is
 - **Markdown content**: Detected by Markdown patterns (`#`, `**bold**`, `- lists`, `[links]()`) - converted to HTML
-- **Plain text**: No special formatting detected - wrapped in `<p>` tags with HTML escaping
-
-**No format specification needed!** Just provide content and the system handles the rest.
+- **Plain text**: No special formatting detected - wrapped in `<p>` tags
 
 #### Examples:
 
 **Markdown content (automatically detected):**
-```typescript
-content: [
-  {
-    type: 'text',
-    content: '# Note Title\n\nThis is **markdown** content with:\n- Lists\n- **Bold text**\n- *Italic text*\n- [Links](https://example.com)'
-  }
-]
+```json
+{
+  "content": "# Note Title\n\nThis is **markdown** content with:\n- Lists\n- **Bold text**\n- *Italic text*\n- [Links](https://example.com)"
+}
 ```
 
 **HTML content (automatically detected):**
-```typescript
-content: [
-  {
-    type: 'text',
-    content: '<h1>Note Title</h1><p>This is <strong>HTML</strong> content.</p>'
-  }
-]
+```json
+{
+  "content": "<h1>Note Title</h1><p>This is <strong>HTML</strong> content.</p>"
+}
 ```
 
 **Plain text (automatically detected):**
-```typescript
-content: [
-  {
-    type: 'text',
-    content: 'This is plain text content.\n\nLine breaks are preserved.'
-  }
-]
-```
-
-#### Code Content (code)
-```typescript
-content: [
-  {
-    type: 'code',
-    content: `function helloWorld() {
-  console.log('Hello, World!');
-  return true;
-}`
-  }
-]
-```
-
-
-#### Mermaid Content (mermaid)
-```typescript
-content: [
-  {
-    type: 'text',
-    content: `graph TD
-    A[Start] --> B{Process}
-    B -->|Yes| C[End]
-    B -->|No| D[Continue]
-    D --> B`
-  }
-]
-```
-
-#### Empty Content (book, search, etc.)
-```typescript
-content: [
-  {
-    type: 'text',
-    content: ''  // Empty string for container notes
-  }
-]
-```
-
-### Common Mistakes to Avoid
-
-1. **Wrong Content Type**: Using HTML content for `code` notes
-2. **Missing Content**: Leaving content empty for required types
-3. **Wrong Encoding**: Not using base64 for file/image content
-4. **HTML in Code**: Putting HTML tags in code note content
-
-### ContentItem Interface
-
-```typescript
-interface ContentItem {
-  type: 'text' | 'file' | 'image' | 'url' | 'data-url';
-  content: string;
-  mimeType?: string;
-  filename?: string;
-  encoding?: 'plain' | 'base64' | 'data-url';
-  urlOptions?: {
-    timeout?: number;
-    headers?: Record<string, string>;
-    followRedirects?: boolean;
-  };
+```json
+{
+  "content": "This is plain text content.\n\nLine breaks are preserved."
 }
 ```
 
-### Enhanced create_note Interface
-
-```typescript
-interface EnhancedCreateNoteParams {
-  parentNoteId: string;
-  title: string;
-  type: NoteType;  // 15 ETAPI-aligned types
-  content: ContentItem[];  // Array only - no string support
-  mime?: string;
-  attributes?: Attribute[];  // Optional attributes
+**Code content (no processing):**
+```json
+{
+  "content": "function helloWorld() {\n  console.log('Hello, World!');\n  return true;\n}",
+  "type": "code",
+  "mime": "text/x-javascript"
 }
 ```
 
-### 🆕 Simplified Interface (New!)
+**Mermaid content (no processing):**
+```json
+{
+  "content": "graph TD\n  A[Start] --> B{Process}\n  B -->|Yes| C[End]\n  B -->|No| D[Continue]\n  D --> B",
+  "type": "mermaid"
+}
+```
 
-**The `buildNoteParams` helper function eliminates ContentItem complexity:**
+## Tool Interfaces
 
-```typescript
-import { buildNoteParams, buildCodeNote, buildImageNote } from 'triliumnext-mcp';
+### create_note Interface
 
-// Simple text note - auto-detected format
-const simpleNote = buildNoteParams({
-  parentNoteId: "root",
-  title: "My Note",
-  noteType: "text",
-  content: "# Hello World\n\nThis is **markdown** content!"
-});
+```json
+{
+  "parentNoteId": "string",
+  "title": "string",
+  "type": "text | code | render | search | relationMap | book | noteMap | mermaid | webView | shortcut | doc | contentWidget | launcher",
+  "content": "string",
+  "mime": "string (optional, required for code notes)",
+  "attributes": "array (optional)"
+}
+```
 
-// Code note - automatic plain text handling
-const codeNote = buildCodeNote({
-  parentNoteId: "root",
-  title: "Fibonacci",
-  content: `def fibonacci(n):
-    if n <= 0:
-        return []
-    elif n == 1:
-        return [0]
-    else:
-        fib = [0, 1]
-        while len(fib) < n:
-            fib.append(fib[-1] + fib[-2])
-        return fib`,
-  mime: "text/x-python"
-});
+### update_note Interface
 
-// Image upload - direct file handling
-const imageNote = buildImageNote({
-  parentNoteId: "root",
-  title: "Chart",
-  content: "base64-image-data...",
-  filename: "chart.png",
-  mime: "image/png"
-});
+```json
+{
+  "noteId": "string",
+  "title": "string (optional)",
+  "type": "string (required when updating content)",
+  "content": "string (required for content updates)",
+  "mime": "string (optional)",
+  "expectedHash": "string (required)",
+  "revision": "boolean (optional, default: true)"
+}
+```
 
-// Mixed content - text + image
-const mixedNote = buildNoteParams({
-  parentNoteId: "root",
-  title: "Report",
-  noteType: "text",
-  content: [
-    { type: "text", content: "# Quarterly Report\n\nHere are the results:" },
-    { type: "image", content: "base64-data...", filename: "chart.png" }
-  ]
-});
+### append_note Interface
+
+```json
+{
+  "noteId": "string",
+  "content": "string",
+  "revision": "boolean (optional, default: false)"
+}
 ```
 
 ## Usage Examples
 
-### 🚀 Simplified Usage (Recommended)
-
-**For most cases, use the simplified interface with `buildNoteParams`:**
+### Text Notes
 
 #### Simple Text Note
+```json
+{
+  "parentNoteId": "root",
+  "title": "Meeting Notes",
+  "type": "text",
+  "content": "# Meeting Summary\n\n- Discussed Q4 goals\n- **Action items** identified\n- [Follow-up required](https://example.com)"
+}
+```
+
+#### HTML Text Note
+```json
+{
+  "parentNoteId": "root",
+  "title": "Project Documentation",
+  "type": "text",
+  "content": "<h1>Project Overview</h1><p>This project uses <strong>TypeScript</strong> for development.</p>"
+}
+```
+
+#### Plain Text Note (auto-wrapped)
+```json
+{
+  "parentNoteId": "root",
+  "title": "Quick Note",
+  "type": "text",
+  "content": "This is plain text that will be automatically wrapped in HTML tags."
+}
+```
+
+### Code Notes
+
+#### Python Code
+```json
+{
+  "parentNoteId": "root",
+  "title": "Fibonacci Function",
+  "type": "code",
+  "content": "def fibonacci(n):\n    if n <= 0:\n        return []\n    elif n == 1:\n        return [0]\n    else:\n        fib = [0, 1]\n        while len(fib) < n:\n            fib.append(fib[-1] + fib[-2])\n        return fib",
+  "mime": "text/x-python"
+}
+```
+
+#### JavaScript Code
+```json
+{
+  "parentNoteId": "root",
+  "title": "Data Processing",
+  "type": "code",
+  "content": "function processData(data) {\n  return data.filter(item => item.active)\n    .map(item => ({\n      ...item,\n      processed: true\n    }));\n}",
+  "mime": "text/x-javascript"
+}
+```
+
+### Mermaid Diagrams
+```json
+{
+  "parentNoteId": "root",
+  "title": "System Architecture",
+  "type": "mermaid",
+  "content": "graph TD\n  A[Client] --> B[Server]\n  B --> C[Database]\n  B --> D[Cache]\n  C --> E[Backup]"
+}
+```
+
+### Container Notes (book, search, etc.)
+```json
+{
+  "parentNoteId": "root",
+  "title": "Project Folder",
+  "type": "book",
+  "content": "<p>Container for project-related notes</p>"
+}
+```
+
+### Empty Container Notes
+```json
+{
+  "parentNoteId": "root",
+  "title": "Empty Folder",
+  "type": "book",
+  "content": ""
+}
+```
+
+## Hash Validation & Safe Updates
+
+### Essential Update Workflow
+
 ```javascript
-// Text with automatic format detection
-const params = buildNoteParams({
-  parentNoteId: "root",
-  title: "Meeting Notes",
-  noteType: "text",
-  content: "# Meeting Summary\n\n- Discussed Q4 goals\n- **Action items** identified\n- [Follow-up required](https://example.com)"
+// 1. Get current note state with hash
+const note = await get_note({
+  noteId: "abc123",
+  includeContent: true
+});
+// Returns: { contentHash: "blobId_123", type: "text", ... }
+
+// 2. Update with hash validation
+const result = await update_note({
+  noteId: "abc123",
+  type: note.note.type,           // Required: match current type
+  content: "# Updated Content\n\nNew information added",
+  expectedHash: note.contentHash   // Required: prevents conflicts
 });
 ```
 
-#### Code Note (Perfect for your Fibonacci example!)
+### Content Auto-Correction
+
 ```javascript
-// Code notes are handled automatically - no HTML detection
-const params = buildCodeNote({
-  parentNoteId: "root",
-  title: "Fibonacci Function",
-  content: `def fibonacci(n):
-    if n <= 0:
-        return []
-    elif n == 1:
-        return [0]
-    else:
-        fib = [0, 1]
-        while len(fib) < n:
-            fib.append(fib[-1] + fib[-2])
-        return fib`,
-  mime: "text/x-python"
+// Plain text automatically corrected to HTML for text notes
+await update_note({
+  noteId: "abc123",
+  type: "text",
+  content: "This is plain text content",
+  expectedHash: note.contentHash
 });
+// Result: "Note abc123 updated successfully (content auto-corrected)"
+// Final content: "<p>This is plain text content</p>"
 ```
 
-#### Image Upload
+### Conflict Detection
+
 ```javascript
-// Easy image uploads
-const params = buildImageNote({
-  parentNoteId: "root",
-  title: "Project Chart",
-  content: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
-  filename: "chart.png",
-  mime: "image/png"
-});
+// If another user modifies the note concurrently
+try {
+  await update_note({
+    noteId: "abc123",
+    type: "text",
+    content: "My changes",
+    expectedHash: "old_blobId"  // Stale hash
+  });
+} catch (error) {
+  // Error: "CONFLICT: Note has been modified by another user"
+  // Solution: Get latest note and retry
+  const latestNote = await get_note({ noteId: "abc123" });
+  await update_note({
+    noteId: "abc123",
+    type: "text",
+    content: "My changes with latest merge",
+    expectedHash: latestNote.contentHash
+  });
+}
 ```
 
-### Advanced Usage (Direct ContentItem Array)
+## Template Integration
 
-```typescript
-// Text content must be wrapped in ContentItem array
-create_note({
-  parentNoteId: 'root',
-  title: 'Simple Note',
-  type: 'text',
-  content: [
-    { type: 'text', content: '<h1>Hello World</h1><p>This uses the new array format.</p>' }
-  ]
-});
-```
+### Creating Template Notes
 
-### Mixed Content (Text + Local Image)
-
-```typescript
-create_note({
-  parentNoteId: 'root',
-  title: 'Project Report with Chart',
-  type: 'text',
-  content: [
+#### Task Board
+```json
+{
+  "parentNoteId": "root",
+  "title": "Project Tasks",
+  "type": "book",
+  "content": "<h1>Project Board</h1>",
+  "attributes": [
     {
-      type: 'text',
-      content: '<h1>Q3 Project Report</h1><p>Our quarterly performance exceeded expectations.</p>'
+      "type": "relation",
+      "name": "template",
+      "value": "Board",
+      "position": 10
     },
     {
-      type: 'image',
-      content: '/local/path/to/performance-chart.png',
-      mimeType: 'image/png',
-      filename: 'performance-chart.png'
+      "type": "label",
+      "name": "project",
+      "value": "web-development",
+      "position": 20
     }
   ]
-});
+}
 ```
 
-### Remote URL Content
-
-```typescript
-create_note({
-  parentNoteId: 'root',
-  title: 'Remote API Documentation',
-  type: 'text',
-  content: [
+#### Calendar
+```json
+{
+  "parentNoteId": "root",
+  "title": "2024 Event Calendar",
+  "type": "book",
+  "content": "<h1>Event Calendar</h1>",
+  "attributes": [
     {
-      type: 'text',
-      content: '<h1>Latest API Documentation</h1><p>Fetched from external source.</p>'
-    },
-    {
-      type: 'url',
-      content: 'https://api.example.com/docs/latest.pdf',
-      mimeType: 'application/pdf',
-      filename: 'api-docs.pdf',
-      urlOptions: {
-        timeout: 30000,
-        headers: {
-          'Authorization': 'Bearer api-token-123',
-          'User-Agent': 'TriliumNext-MCP/1.0'
-        },
-        followRedirects: true
-      }
+      "type": "relation",
+      "name": "template",
+      "value": "Calendar",
+      "position": 10
     }
   ]
-});
+}
 ```
 
-### Data URL Content
-
-```typescript
-create_note({
-  parentNoteId: 'root',
-  title: 'Embedded SVG Diagram',
-  type: 'text',
-  content: [
+#### Text Snippet Repository
+```json
+{
+  "parentNoteId": "root",
+  "title": "Code Snippets",
+  "type": "text",
+  "content": "<h1>Reusable Code Snippets</h1>",
+  "attributes": [
     {
-      type: 'text',
-      content: '<h1>System Architecture</h1><p>Embedded SVG diagram:</p>'
+      "type": "relation",
+      "name": "template",
+      "value": "Text Snippet",
+      "position": 10
     },
     {
-      type: 'data-url',
-      content: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzAwN2JmZiIvPjx0ZXh0IHg9IjEwMCIgeT0iNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPk15IERpYWdyYW08L3RleHQ+PC9zdmc+',
-      mimeType: 'image/svg+xml',
-      filename: 'architecture.svg'
+      "type": "label",
+      "name": "language",
+      "value": "javascript",
+      "position": 20
     }
   ]
-});
-```
-
-## Note Types Supported
-
-The MCP server supports all 15 note types from the TriliumNext ETAPI:
-
-### Core Types
-- **`text`**: Rich text notes with HTML formatting
-- **`code`**: Code with syntax highlighting (Python, JavaScript, TypeScript, etc.)
-- **`render`**: Rendered content notes
-- **`file`**: File attachments and documents (PDF, Word, Excel, etc.)
-- **`image`**: Image files (JPEG, PNG, GIF, SVG)
-
-### Specialized Types
-- **`search`**: Saved search queries
-- **`book`**: Folders/containers for organizing notes
-- **`relationMap`**: Relationship mapping notes
-- **`mermaid`**: Mermaid diagram notes
-- **`webView`**: Web content embedding
-- **`shortcut`**: Navigation shortcuts
-- **`doc`**: Document containers
-- **`contentWidget`**: Interactive widgets
-- **`launcher`**: Application launchers
-
-## Enhanced Note Creation with Attributes
-
-### Basic Usage with Attributes
-
-```typescript
-const note = await create_note({
-  parentNoteId: 'root',
-  title: 'Project Tasks',
-  type: 'book',
-  content: [
-    { type: 'text', content: '<h1>Project Board</h1>' }
-  ],
-  attributes: [
-    {
-      type: 'relation',
-      name: 'template',
-      value: 'Board',
-      position: 10
-    }
-  ]
-});
-```
-
-### Complex Multi-Attribute Creation
-
-```typescript
-const note = await create_note({
-  parentNoteId: 'root',
-  title: 'API Handler',
-  type: 'code',
-  mime: 'text/x-python',
-  content: [
-    { type: 'text', content: '<h1>Python API Handler</h1>' },
-    { type: 'code', content: 'def api_handler():\n    pass' }
-  ],
-  attributes: [
-    {
-      type: 'label',
-      name: 'language',
-      value: 'python',
-      position: 10
-    },
-    {
-      type: 'label',
-      name: 'project',
-      value: 'api',
-      position: 20
-    },
-    {
-      type: 'relation',
-      name: 'template',
-      value: 'Grid View',
-      position: 30
-    }
-  ]
-});
+}
 ```
 
 ## Attribute Management
 
-### manage_attributes Tool
+### Create Note with Attributes
 
-The `manage_attributes` tool provides full CRUD operations for note attributes:
+```json
+{
+  "parentNoteId": "root",
+  "title": "API Documentation",
+  "type": "text",
+  "content": "<h1>REST API Documentation</h1>",
+  "attributes": [
+    {
+      "type": "label",
+      "name": "category",
+      "value": "documentation",
+      "position": 10
+    },
+    {
+      "type": "label",
+      "name": "priority",
+      "value": "high",
+      "position": 20
+    },
+    {
+      "type": "relation",
+      "name": "template",
+      "value": "Grid View",
+      "position": 30
+    }
+  ]
+}
+```
 
-#### Available Operations
-- **`create`**: Create individual attributes
-- **`batch_create`**: Create multiple attributes efficiently (30-50% faster)
-- **`read`**: View existing attributes
-- **`update`**: Modify existing attributes
-- **`delete`**: Remove attributes
+### Using manage_attributes Tool
 
-#### Attribute Types
-- **Labels**: User-defined tags (`#important`, `#project`)
-- **Relations**: Connections between notes (`~template`, `~author`)
-
-### Attribute Examples
-
-#### Create Single Label
+#### Create Labels
 ```json
 {
   "noteId": "abc123",
@@ -457,22 +383,6 @@ The `manage_attributes` tool provides full CRUD operations for note attributes:
     {
       "type": "label",
       "name": "important",
-      "position": 10
-    }
-  ]
-}
-```
-
-#### Create Template Relation
-```json
-{
-  "noteId": "abc123",
-  "operation": "create",
-  "attributes": [
-    {
-      "type": "relation",
-      "name": "template",
-      "value": "Board",
       "position": 10
     }
   ]
@@ -507,235 +417,123 @@ The `manage_attributes` tool provides full CRUD operations for note attributes:
 }
 ```
 
-## Template Relations
+## Note Types Reference
 
-### Built-in Templates
+### Supported Note Types (ETAPI-aligned)
 
-TriliumNext includes several built-in templates:
+1. **`text`** - Rich text notes with smart format detection
+2. **`code`** - Code snippets with syntax highlighting
+3. **`render`** - Rendered content notes
+4. **`search`** - Saved search queries
+5. **`relationMap`** - Relationship mapping notes
+6. **`book`** - Folders/containers for organizing notes
+7. **`noteMap`** - Note mapping layouts
+8. **`mermaid`** - Mermaid diagram notes
+9. **`webView`** - Web content embedding
+10. **`shortcut`** - Navigation shortcuts
+11. **`doc`** - Document containers
+12. **`contentWidget`** - Interactive widgets
+13. **`launcher`** - Application launchers
 
-- **Calendar**: Calendar notes with date navigation
-- **Board**: Task boards with columns and cards
-- **Text Snippet**: Reusable text/code snippets
-- **Grid View**: Data grid layouts
-- **List View**: List-based layouts
-- **Table**: Table views
-- **Geo Map**: Geographic maps
+### Common MIME Types for Code Notes
 
-### Template Usage Examples
-
-#### Create Calendar Note
-```typescript
-const calendar = await create_note({
-  parentNoteId: 'root',
-  title: 'Project Calendar',
-  type: 'book',
-  content: [
-    { type: 'text', content: '<h1>Project Timeline</h1>' }
-  ],
-  attributes: [
-    {
-      type: 'relation',
-      name: 'template',
-      value: 'Calendar',
-      position: 10
-    },
-    {
-      type: 'label',
-      name: 'project',
-      value: 'tracking',
-      position: 20
-    }
-  ]
-});
-```
-
-#### Create Task Board
-```typescript
-const board = await create_note({
-  parentNoteId: 'root',
-  title: 'Project Tasks',
-  type: 'book',
-  content: [
-    { type: 'text', content: '<h1>Task Board</h1>' }
-  ],
-  attributes: [
-    {
-      type: 'relation',
-      name: 'template',
-      value: 'Board',
-      position: 10
-    },
-    {
-      type: 'label',
-      name: 'category',
-      value: 'project-management',
-      position: 20
-    }
-  ]
-});
-```
-
-## Migration Guide
-
-### From String Content to Array Content
-
-#### Before (Old Format)
-```typescript
-// NO LONGER SUPPORTED
-create_note({
-  parentNoteId: 'root',
-  title: 'Note',
-  type: 'text',
-  content: '<h1>Hello World</h1>'  // String content - deprecated
-});
-```
-
-#### After (New Format)
-```typescript
-// REQUIRED NEW FORMAT
-create_note({
-  parentNoteId: 'root',
-  title: 'Note',
-  type: 'text',
-  content: [
-    { type: 'text', content: '<h1>Hello World</h1>' }  // Array format
-  ]
-});
-```
-
-### From Multi-Step to One-Step Creation
-
-#### Before (Multi-Step)
-```typescript
-// Step 1: Create note
-const note = await create_note({
-  parentNoteId: 'root',
-  title: 'Project Board',
-  type: 'book',
-  content: '<h1>Project</h1>'
-});
-
-// Step 2: Add template (separate call)
-await manage_attributes({
-  noteId: note.noteId,
-  operation: 'create',
-  attributes: [
-    {
-      type: 'relation',
-      name: 'template',
-      value: 'Board',
-      position: 10
-    }
-  ]
-});
-```
-
-#### After (One-Step)
-```typescript
-// Single operation with attributes
-const note = await create_note({
-  parentNoteId: 'root',
-  title: 'Project Board',
-  type: 'book',
-  content: [
-    { type: 'text', content: '<h1>Project</h1>' }
-  ],
-  attributes: [
-    {
-      type: 'relation',
-      name: 'template',
-      value: 'Board',
-      position: 10
-    }
-  ]
-});
-```
-
-## Performance Considerations
-
-### Batch Operations
-- **`batch_create`**: 30-50% faster than individual attribute creation
-- **Parallel Processing**: Content processing and attribute preparation happen in parallel
-- **HTTP Optimization**: Reduced round trips compared to manual multi-step approaches
-
-### Content Processing
-- **Local Files**: Direct file system access with MIME type detection
-- **Remote URLs**: Configurable timeouts and HTTP headers
-- **Data URLs**: Built-in parsing and validation
-- **Mixed Content**: Parallel processing of different content types
+- `text/x-javascript` - JavaScript
+- `text/x-python` - Python
+- `text/x-typescript` - TypeScript
+- `text/x-java` - Java
+- `text/x-csrc` - C
+- `text/x-c++src` - C++
+- `text/x-html` - HTML
+- `text/x-css` - CSS
+- `text/x-sql` - SQL
+- `text/x-yaml` - YAML
+- `text/x-json` - JSON
+- `text/x-markdown` - Markdown
+- `text/x-shellscript` - Shell scripts
+- `text/x-powershell` - PowerShell
+- `text/x-rust` - Rust
+- `text/x-go` - Go
+- `text/x-ruby` - Ruby
+- `text/x-php` - PHP
 
 ## Best Practices
 
 ### Content Organization
-1. **Use descriptive filenames** for file and image content
-2. **Set appropriate MIME types** for better content handling
-3. **Structure mixed content logically** with text descriptions
-4. **Use URL options** for remote content (timeouts, headers)
 
-### Attribute Management
-1. **Use batch_create** for multiple attributes
-2. **Set meaningful positions** for display ordering
-3. **Choose descriptive names** for labels and relations
-4. **Validate template existence** before creating template relations
+1. **Use appropriate note types** - Choose the right type for your content
+2. **Leverage smart format detection** - Use Markdown for readability, let the system handle HTML conversion
+3. **Keep code notes pure** - Never include HTML in code notes
+4. **Use meaningful titles** - Helps with search and organization
+5. **Organize with folders** - Use `book` type notes as containers
+
+### Safe Updates
+
+1. **Always use get_note before update_note** - Get the current hash
+2. **Handle conflicts gracefully** - Implement retry logic
+3. **Use revision backups** - Enable `revision: true` for important changes
+4. **Validate content types** - Ensure content matches note type requirements
 
 ### Template Usage
-1. **Pair templates with relevant labels** for better organization
-2. **Use consistent naming** across template relations
-3. **Consider hierarchy** when placing template notes
-4. **Test template functionality** after creation
+
+1. **Pair templates with labels** - Better organization and searchability
+2. **Use batch operations** - Create attributes with the note for better performance
+3. **Choose appropriate templates** - Match template to content type
+4. **Test template functionality** - Verify templates work as expected
+
+### Performance
+
+1. **Batch attribute creation** - 30-50% faster than separate calls
+2. **Use appropriate content formats** - Let smart processing handle format detection
+3. **Organize hierarchically** - Use parent-child relationships for better navigation
 
 ## Error Handling
 
 ### Common Content Errors
-- **Invalid ContentItem type**: Must be one of 'text', 'file', 'image', 'url', 'data-url'
-- **Missing required fields**: Each ContentItem requires `type` and `content`
-- **File not found**: Local file paths must be accessible
-- **URL validation**: Remote URLs must use HTTP/HTTPS protocols
+
+- **Content type mismatch**: Using HTML content in code notes
+- **Missing expectedHash**: Always required for update operations
+- **Hash conflicts**: Note modified by another user
+- **Invalid note types**: Must be one of the supported ETAPI types
 
 ### Common Attribute Errors
-- **Permission denied**: WRITE permission required for attribute operations
-- **Invalid attribute names**: Must not contain spaces
-- **Template not found**: Template relations require existing target notes
-- **Duplicate attributes**: Some attributes may be unique per note
 
-## 🆕 Hash Validation & Content Type Safety
+- **Permission denied**: WRITE permission required
+- **Invalid attribute names**: No spaces allowed
+- **Template not found**: Template must exist
+- **Duplicate attributes**: Some attributes must be unique
 
-### NEW: Enhanced Update Safety
-The `update_note` function now includes comprehensive hash validation and content type safety:
+## Migration from Previous Versions
 
-- **BlobId-based concurrency control**: Prevents conflicts using Trilium's native `blobId`
-- **Required hash validation**: Ensures data integrity with `get_note` → `update_note` workflow
-- **Content type validation**: Automatic validation and correction based on note type
-- **Conflict detection**: Clear error messages for concurrent modifications
-
-### Essential Update Workflow
-```javascript
-// ALWAYS follow this pattern:
-const note = await get_note({ noteId: "myNote" });
-await update_note({
-  noteId: "myNote",
-  type: note.note.type,           // Required: match current type
-  content: newContent,
-  expectedHash: note.contentHash   // Required: prevents conflicts
-});
+### Before (ContentItem Arrays)
+```json
+{
+  "parentNoteId": "root",
+  "title": "Note",
+  "type": "text",
+  "content": [
+    {
+      "type": "text",
+      "content": "<h1>Hello World</h1>"
+    }
+  ]
+}
 ```
 
-### Key Features
-- **Auto-correction**: Text notes automatically wrap plain text in HTML
-- **Type safety**: Code notes reject HTML content with clear error messages
-- **Conflict prevention**: Detects and prevents concurrent modification conflicts
-- **Required workflow**: Enforces safe update patterns to prevent data loss
+### After (String Content)
+```json
+{
+  "parentNoteId": "root",
+  "title": "Note",
+  "type": "text",
+  "content": "<h1>Hello World</h1>"
+}
+```
 
-### Related Documentation
+The new approach is much simpler while maintaining all the functionality through smart content processing.
 
-#### 📚 Hash Validation Guides
-- [Hash Validation Workflow Guide](./hash-validation-workflow-guide.md) - Complete workflow examples
-- [Hash Validation Quick Reference](./hash-validation-quick-reference.md) - Essential patterns and reference
-- [Hash Validation Implementation Plan](./hash-validation-implementation-plan.md) - Technical details
+## Related Documentation
 
-#### 🔧 Existing Documentation
-- [Simplified Interface Guide](./simplified-interface-guide.md) - Easy note creation with helper functions
+- [Hash Validation Guide](./hash-validation-workflow-guide.md) - Complete workflow examples
 - [Template Relations Guide](./template-relations.md) - Built-in template usage
 - [Search Examples](../search-examples/) - Advanced search capabilities
-- [API Reference](../../src/modules/) - Complete tool definitions
 - [Implementation Details](../../CLAUDE.md) - Architecture and development guide

@@ -1,30 +1,27 @@
 # Simplified Note Creation Guide
 
-This guide demonstrates the new simplified interface for creating notes in TriliumNext MCP with enhanced hash validation and content type safety features.
+This guide demonstrates the simplified string-based interface for creating notes in TriliumNext MCP with smart content processing and hash validation.
 
-## 🆕 New Hash Validation Features
+## 🆕 String-Based Content Features
 
-The note creation system now includes comprehensive hash validation and content type safety:
+The note creation system now uses simple string content with intelligent processing:
 
+- **String content only**: Content parameter accepts strings directly
+- **Smart format detection**: Auto-detects Markdown, HTML, and plain text for text notes
+- **Content type safety**: Validates content matches note type requirements
 - **BlobId-based concurrency control**: Uses Trilium's native `blobId` to prevent conflicts
-- **Content type validation**: Ensures content matches note type requirements
 - **Automatic content correction**: Smart HTML wrapping for text notes
-- **Required get_note → update_note workflow**: Prevents data loss
 
 ### Complete Workflow Example
 
 ```javascript
-import { buildNoteParams } from 'triliumnext-mcp';
-
 // 1. Create a note with smart content processing
-const createParams = buildNoteParams({
+const createdNote = await create_note({
   parentNoteId: "root",
   title: "Meeting Notes",
-  noteType: "text",
+  type: "text",
   content: "# Q4 Planning\n\n- Budget review\n- Team performance"
 });
-
-const createdNote = await create_note(createParams);
 // Returns: { noteId: "abc123", message: "Created note: abc123" }
 
 // 2. Get note with hash information for safe updates
@@ -38,7 +35,7 @@ const noteInfo = await get_note({
 const updateResult = await update_note({
   noteId: "abc123",
   type: "text",  // Must match current note type
-  content: [{ type: "text", content: "# Q4 Planning - Updated\n\n- Budget approved\n- Targets exceeded" }],
+  content: "# Q4 Planning - Updated\n\n- Budget approved\n- Targets exceeded",
   expectedHash: noteInfo.contentHash  // Required for safety
 });
 // Success: "Note abc123 updated successfully"
@@ -46,7 +43,7 @@ const updateResult = await update_note({
 
 ## 🎯 Problem Solved
 
-The original interface required understanding ContentItem types:
+The old interface required complex ContentItem arrays:
 ```json
 {
   "parentNoteId": "root",
@@ -54,29 +51,25 @@ The original interface required understanding ContentItem types:
   "type": "code",
   "content": [
     {
-      "type": "text",  // ❌ Confusing! Should be automatic
+      "type": "text",
       "content": "def fibonacci(n):..."
     }
   ]
 }
 ```
 
-## ✅ New Simplified Interface (Single Function)
+## ✅ New Simplified Interface
 
-### Single Function Design
+### Direct String Content
 
-The simplified interface uses **one function** for supported note types:
-
-- **`buildNoteParams()`** - Universal function that handles text and code note types with automatic content mapping
+The simplified interface uses simple string content directly:
 
 ```javascript
-import { buildNoteParams, buildContentItem } from 'triliumnext-mcp';
-
-// All note types use the same function - just change noteType
-const codeNote = buildNoteParams({
+// Code note - content passes through unchanged
+const codeNote = {
   parentNoteId: "root",
   title: "Fibonacci Function",
-  noteType: "code",  // ← This determines the note type
+  type: "code",
   content: `def fibonacci(n):
     if n <= 0:
         return []
@@ -88,72 +81,103 @@ const codeNote = buildNoteParams({
             fib.append(fib[-1] + fib[-2])
         return fib`,
   mime: "text/x-python"
-});
+};
 
-const textNote = buildNoteParams({
+// Text note with auto Markdown detection
+const textNote = {
   parentNoteId: "root",
   title: "Meeting Notes",
-  noteType: "text",  // ← Different note type, same function
-  content: "# Meeting Summary\n\n- Discussed Q4 goals"
-});
-
+  type: "text",
+  content: "# Meeting Summary\n\n- Discussed Q4 goals\n- **Action items** identified"
+  // Auto-detected as Markdown → converted to HTML
+};
 ```
 
 ### Key Benefits
 
-1. **🎯 Single Function**: LLMs always use the same function - no confusion
-2. **🧠 Smart Content Processing**: Automatic format detection and type mapping
-3. **🔧 Clear Intent**: `noteType` parameter makes purpose explicit
-4. **🎨 Mixed Content Ready**: Text notes can combine multiple text sections
-5. **📝 Markdown Support**: Automatic conversion to HTML for text notes
+1. **🎯 Simple Strings**: Content is just a string - no complex objects
+2. **🧠 Smart Processing**: Automatic format detection for text notes
+3. **🔧 Clear Intent**: Content format determined by note type
+4. **📝 Markdown Support**: Automatic conversion to HTML for text notes
+5. **🛡️ Type Safety**: Content validation based on note type
 
 ## 📋 Usage Examples
 
 ### Text Notes (Smart Format Detection)
 
 ```javascript
-const textNote = buildNoteParams({
+// HTML content (detected automatically)
+const htmlNote = {
+  parentNoteId: "root",
+  title: "Project Documentation",
+  type: "text",
+  content: "<h1>Project Overview</h1><p>This project uses <strong>TypeScript</strong>.</p>"
+};
+
+// Markdown content (auto-converted to HTML)
+const markdownNote = {
   parentNoteId: "root",
   title: "Meeting Notes",
-  noteType: "text",
-  content: "# Meeting Summary\n\n- Discussed Q4 goals\n- **Action items** identified"
-  // Auto-detected as Markdown → converted to HTML
-});
+  type: "text",
+  content: "# Meeting Summary\n\n- Discussed Q4 goals\n- **Action items** identified\n- [Follow-up required](https://example.com)"
+};
+
+// Plain text (auto-wrapped in HTML)
+const plainTextNote = {
+  parentNoteId: "root",
+  title: "Quick Note",
+  type: "text",
+  content: "This is plain text that will be automatically wrapped in HTML tags."
+};
 ```
 
 ### Code Notes (No Processing)
 
 ```javascript
-const pythonNote = buildNoteParams({
+const pythonNote = {
   parentNoteId: "root",
   title: "Data Analysis",
-  noteType: "code",
+  type: "code",
   content: `import pandas as pd
 df = pd.read_csv('data.csv')
 print(df.head())`,
   mime: "text/x-python"
   // Content passed through unchanged - no HTML detection
-});
+};
+
+const javascriptNote = {
+  parentNoteId: "root",
+  title: "Data Processing",
+  type: "code",
+  content: `function processData(data) {
+  return data.filter(item => item.active)
+    .map(item => ({
+      ...item,
+      processed: true
+    }));
+}`,
+  mime: "text/x-javascript"
+};
 ```
 
-
-### Mixed Content (Text Notes Only)
+### Mermaid Diagrams
 
 ```javascript
-const reportNote = buildNoteParams({
+const mermaidNote = {
   parentNoteId: "root",
-  title: "Project Report",
-  noteType: "text",  // Only text notes support mixed content
-  content: [
-    { type: "text", content: "# Quarterly Report" },
-    { type: "text", content: "## Analysis\n\nThe results show..." }
-  ]
-});
+  title: "System Architecture",
+  type: "mermaid",
+  content: `graph TD
+  A[Client] --> B[Server]
+  B --> C[Database]
+  B --> D[Cache]
+  C --> E[Backup]`
+};
 ```
 
 ## 🔄 Migration from Old Interface
 
-### Before (Complex)
+### Before (ContentItem Arrays)
 ```json
 {
   "parentNoteId": "root",
@@ -168,93 +192,84 @@ const reportNote = buildNoteParams({
 }
 ```
 
-### After (Simple)
-```javascript
-const note = buildNoteParams({
-  parentNoteId: "root",
-  title: "My Note",
-  noteType: "text",
-  content: "<h1>Title</h1>"  // Auto-detected as HTML
-});
+### After (String Content)
+```json
+{
+  "parentNoteId": "root",
+  "title": "My Note",
+  "type": "text",
+  "content": "<h1>Title</h1>"
+}
 ```
 
 ## 🛠 Available Helper Functions
 
-- `buildNoteParams()` - Universal function for text and code note types
-- `buildContentItem()` - Utility for creating individual ContentItems (advanced use)
+- `buildNoteParams()` - Universal function for text and code note types with automatic content mapping
 
-## 🎯 LLM Decision Strategy
+### Using buildNoteParams Helper
 
-LLMs choose parameters based on:
+```javascript
+import { buildNoteParams } from 'triliumnext-mcp';
 
-1. **User Intent**: What type of content the user wants to create
-2. **Available Data**: Text content for notes
-3. **Tool Descriptions**: Clear guidance on note types and content formats
-4. **Parameter Requirements**: Content arrays and mime types for code notes
+// Code note using helper
+const codeNote = buildNoteParams({
+  parentNoteId: "root",
+  title: "Fibonacci Function",
+  noteType: "code",
+  content: `def fibonacci(n):
+    if n <= 0:
+        return []
+    elif n == 1:
+        return [0]
+    else:
+        fib = [0, 1]
+        while len(fib) < n:
+            fib.append(fib[-1] + fib[-2])
+        return fib`,
+  mime: "text/x-python"
+});
 
-## 📝 Parameter Decision Guide
-
-| Parameter | When to Use | Example Values |
-|-----------|-------------|----------------|
-| `noteType: "text"` | Rich text, documents | Meeting notes, documentation |
-| `noteType: "code"` | Code snippets, scripts | Python, JavaScript, SQL |
-| `content: array` | ContentItem array (required) | Formatted text content |
-| `mime: "..."` | Required for code notes | `text/x-python`, `text/x-javascript` |
-
-## ✅ Working Examples
-
-### Code Notes (Fixed!)
-```json
-{
-  "parentNoteId": "root",
-  "title": "Fibonacci Function in Python",
-  "type": "code",
-  "content": [
-    {
-      "type": "text",
-      "content": "def fibonacci(n):\n    if n <= 0:\n        return []\n    elif n == 1:\n        return [0]\n    else:\n        list_fib = [0, 1]\n        while len(list_fib) < n:\n            next_fib = list_fib[-1] + list_fib[-2]\n            list_fib.append(next_fib)\n        return list_fib"
-    }
-  ],
-  "mime": "text/x-python"
-}
+// Text note using helper
+const textNote = buildNoteParams({
+  parentNoteId: "root",
+  title: "Meeting Notes",
+  noteType: "text",
+  content: "# Meeting Summary\n\n- Discussed Q4 goals"
+});
 ```
 
-**✅ Result**: Python code passes through exactly as written - no HTML processing!
+## 🎯 Content Type Guidelines
 
-### Text Notes with Markdown
-```json
-{
-  "parentNoteId": "root",
-  "title": "Meeting Notes",
-  "type": "text",
-  "content": [
-    {
-      "type": "text",
-      "content": "# Meeting Summary\n\n- Discussed Q4 goals\n- **Action items** identified\n- [Follow-up required](https://example.com)"
-    }
-  ]
-}
-```
+### Content Processing by Note Type
 
-**✅ Result**: Markdown automatically converted to HTML for text notes only.
+| Note Type | Content Format | Processing | Example |
+|-----------|----------------|------------|---------|
+| `text` | String content | ✅ Smart format detection | `# Heading` → `<h1>Heading</h1>` |
+| `code` | String content | ❌ No processing | `print("Hello")` → unchanged |
+| `mermaid` | String content | ❌ No processing | `graph TD; A-->B` → unchanged |
+| `book` | String content | ✅ Smart format detection | `<p>Folder</p>` |
+| `render` | String content | ✅ Smart format detection | `<div>Content</div>` |
+| `search` | String content | ✅ Smart format detection | `note.type = 'text'` |
 
+### Content Validation Rules
+
+1. **Text Notes**: Accept HTML, Markdown, or plain text - auto-converts to HTML
+2. **Code Notes**: Plain text only - rejects HTML content with error
+3. **Mermaid Notes**: Plain text diagram syntax only - rejects HTML content
+4. **Container Notes** (book, search, etc.): Content optional, any format accepted
 
 ## 🛡️ Hash Validation Examples
 
-### Content Type Safety in Action
-
-The system automatically validates and corrects content based on note type:
+### Content Auto-Correction
 
 ```javascript
-// 1. Create a text note
-const textNote = buildNoteParams({
+// 1. Create a text note with plain text
+const created = await create_note({
   parentNoteId: "root",
   title: "Project Status",
-  noteType: "text",
-  content: "Plain text that will be auto-wrapped"  // No HTML needed
+  type: "text",
+  content: "Plain text that will be auto-wrapped"
 });
-
-const created = await create_note(textNote);
 
 // 2. Get the note for safe updates
 const noteInfo = await get_note({ noteId: created.noteId });
@@ -264,7 +279,7 @@ const noteInfo = await get_note({ noteId: created.noteId });
 const result = await update_note({
   noteId: created.noteId,
   type: "text",
-  content: [{ type: "text", content: "Updated plain text content" }],
+  content: "Updated plain text content",
   expectedHash: noteInfo.contentHash
 });
 
@@ -272,21 +287,19 @@ const result = await update_note({
 // Final content becomes: "<p>Updated plain text content</p>"
 ```
 
-### Code Note Type Safety
+### Type Safety Enforcement
 
 ```javascript
 // 1. Create a code note
-const codeNote = buildNoteParams({
+const createdCode = await create_note({
   parentNoteId: "root",
   title: "Data Analysis",
-  noteType: "code",
+  type: "code",
   content: `import pandas as pd
 df = pd.read_csv('data.csv')
 print(df.head())`,
   mime: "text/x-python"
 });
-
-const createdCode = await create_note(codeNote);
 
 // 2. Get the code note
 const codeInfo = await get_note({ noteId: createdCode.noteId });
@@ -295,7 +308,7 @@ const codeInfo = await get_note({ noteId: createdCode.noteId });
 await update_note({
   noteId: createdCode.noteId,
   type: "code",
-  content: [{ type: "text", content: "print('Hello, World!')" }],
+  content: "print('Hello, World!')",
   expectedHash: codeInfo.contentHash
 });
 
@@ -304,7 +317,7 @@ try {
   await update_note({
     noteId: createdCode.noteId,
     type: "code",
-    content: [{ type: "text", content: "<p>print('HTML in code note')</p>" }],
+    content: "<p>print('HTML in code note')</p>",
     expectedHash: codeInfo.contentHash
   });
 } catch (error) {
@@ -312,7 +325,7 @@ try {
 }
 ```
 
-### Conflict Detection Example
+### Conflict Detection
 
 ```javascript
 // Simulate concurrent users
@@ -324,7 +337,7 @@ const user2Note = await get_note({ noteId: "shared123" });
 await update_note({
   noteId: "shared123",
   type: "text",
-  content: [{ type: "text", content: "User 1's changes" }],
+  content: "User 1's changes",
   expectedHash: user1Note.contentHash
 });
 
@@ -333,7 +346,7 @@ try {
   await update_note({
     noteId: "shared123",
     type: "text",
-    content: [{ type: "text", content: "User 2's changes" }],
+    content: "User 2's changes",
     expectedHash: user2Note.contentHash  // Old hash
   });
 } catch (error) {
@@ -344,7 +357,7 @@ try {
   await update_note({
     noteId: "shared123",
     type: "text",
-    content: [{ type: "text", content: "User 2's merged changes" }],
+    content: "User 2's merged changes",
     expectedHash: latestNote.contentHash  // Current hash
   });
 }
@@ -364,7 +377,7 @@ async function safeNoteUpdate(noteId, newContent) {
     return await update_note({
       noteId,
       type: currentNote.note.type,
-      content: [{ type: "text", content: newContent }],
+      content: newContent,
       expectedHash: currentNote.contentHash,
       revision: true  // Create backup for safety
     });
@@ -376,7 +389,7 @@ async function safeNoteUpdate(noteId, newContent) {
       return await update_note({
         noteId,
         type: latestNote.note.type,
-        content: [{ type: "text", content: newContent }],
+        content: newContent,
         expectedHash: latestNote.contentHash
       });
     }
@@ -388,23 +401,24 @@ async function safeNoteUpdate(noteId, newContent) {
 await safeNoteUpdate("myNoteId", "Updated content with conflict handling");
 ```
 
-### Template Integration with Safe Updates
+### Template Integration
 
 ```javascript
 // Create note with template relation
-const boardNote = buildNoteParams({
+const boardNote = {
   parentNoteId: "root",
   title: "Project Board",
-  noteType: "book",
-  content: ""
-});
-
-boardNote.attributes = [{
-  type: "relation",
-  name: "template",
-  value: "Board",
-  position: 10
-}];
+  type: "book",
+  content: "<h1>Project Board</h1>",
+  attributes: [
+    {
+      type: "relation",
+      name: "template",
+      value: "Board",
+      position: 10
+    }
+  ]
+};
 
 const created = await create_note(boardNote);
 
@@ -413,7 +427,7 @@ const boardInfo = await get_note({ noteId: created.noteId });
 await update_note({
   noteId: created.noteId,
   type: "book",
-  content: [{ type: "text", content: "Updated board configuration" }],
+  content: "<h1>Updated Project Board</h1><p>New configuration</p>",
   expectedHash: boardInfo.contentHash
 });
 ```
@@ -454,31 +468,30 @@ try {
 ### 3. Performance Optimization
 
 ```javascript
-// Batch operations with template relations
-const noteWithAttrs = buildNoteParams({
+// Batch operations with template relations (30-50% faster)
+const noteWithAttrs = {
   parentNoteId: "root",
   title: "Calendar 2024",
-  noteType: "book",
-  content: ""
-});
+  type: "book",
+  content: "<h1>2024 Event Calendar</h1>",
+  attributes: [
+    {
+      type: "relation",
+      name: "template",
+      value: "Calendar",
+      position: 10
+    },
+    {
+      type: "label",
+      name: "year",
+      value: "2024",
+      position: 20
+    }
+  ]
+};
 
-noteWithAttrs.attributes = [
-  {
-    type: "relation",
-    name: "template",
-    value: "Calendar",
-    position: 10
-  },
-  {
-    type: "label",
-    name: "year",
-    value: "2024",
-    position: 20
-  }
-];
-
-// Single operation creates note + attributes (30-50% faster)
+// Single operation creates note + attributes
 await create_note(noteWithAttrs);
 ```
 
-This simplified interface eliminates the ContentItem complexity while maintaining full power for text and code note creation, now with comprehensive hash validation and content type safety.
+This simplified string-based interface eliminates complexity while maintaining full power for note creation with comprehensive content validation and hash-based safety.

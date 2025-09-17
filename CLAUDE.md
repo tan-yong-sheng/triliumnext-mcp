@@ -110,6 +110,43 @@ assert.ok(result.includes('new message')); // Changed from expected message
 ### Example: Test Reorganization (User-Approved)
 The recent reorganization of validation tests from a 449-line monolithic file into 8 focused test files was performed with explicit user approval and serves as an example of major test restructuring that follows the proper protocol.
 
+## Development Workflow
+
+**Standard Development Process**:
+1. **Edit Code** - Implement new features or fix bugs in source files
+2. **Write Tests** - Add comprehensive tests for new functionality
+3. **Update Documentation** - Sync documentation with code changes
+4. **Build & Validate** - Run `npm run build` to ensure TypeScript compilation success
+
+**Workflow Guidelines**:
+- **Code First**: Focus on implementing the core functionality in TypeScript
+- **Test Coverage**: Add tests that cover all new functionality, edge cases, and error conditions
+- **Documentation Sync**: Update CLAUDE.md, tool descriptions, and any relevant documentation
+- **Build Validation**: Always run `npm run build` to catch TypeScript errors before committing
+- **Iterative Development**: Repeat the cycle for each feature or bug fix
+
+**Quality Checks**:
+- TypeScript compilation must pass (no errors)
+- New functionality must have corresponding tests
+- Documentation must reflect current implementation
+- Build process must complete successfully
+
+**Example Workflow**:
+```bash
+# 1. Edit code
+vim src/modules/newFeature.ts
+
+# 2. Write tests
+vim tests/newFeature.test.js
+
+# 3. Update documentation
+vim CLAUDE.md
+
+# 4. Build and validate
+npm run check
+npm run build
+```
+
 ## Project Overview
 
 This is a Model Context Protocol (MCP) server for TriliumNext Notes that provides tools to interact with Trilium Notes instances through the MCP framework. The server allows AI assistants to search, read, create, update, and delete notes in TriliumNext through its External API (ETAPI).
