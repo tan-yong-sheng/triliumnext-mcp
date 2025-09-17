@@ -163,15 +163,26 @@ export async function handleGetNoteRequest(
   try {
     const noteOperation: NoteOperation = {
       noteId: args.noteId,
-      includeContent: args.includeContent !== false
+      includeContent: args.includeContent !== false,
+      regexPattern: args.regexPattern,
+      regexFlags: args.regexFlags || 'g'
     };
 
     const result = await handleGetNote(noteOperation, axiosInstance);
 
-    const responseData = {
+    // Build response data based on whether regex search was performed
+    let responseData: any = {
       ...result.note,
-      ...(result.content && { content: result.content })
+      contentHash: result.contentHash
     };
+
+    if (result.regexSearch) {
+      // Regex search was performed, include regexSearch object but not content
+      responseData.regexSearch = result.regexSearch;
+    } else if (result.content) {
+      // Standard response, include content but not regexSearch
+      responseData.content = result.content;
+    }
 
     return {
       content: [{

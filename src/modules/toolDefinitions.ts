@@ -146,13 +146,21 @@ export function createReadTools(): any[] {
   return [
     {
       name: "get_note",
-      description: "Get a note and its content by ID",
+      description: "Get a note and its content by ID. Optional regex search to extract pattern matches from content.",
       inputSchema: {
         type: "object",
         properties: {
           noteId: {
             type: "string",
             description: "ID of the note to retrieve",
+          },
+          regexPattern: {
+            type: "string",
+            description: "Optional regex pattern to search for in content. When provided, returns regexSearch object instead of content",
+          },
+          regexFlags: {
+            type: "string",
+            description: "Optional regex flags (g, i, m, s, u, y). Defaults to 'g' for global search",
           },
         },
         required: ["noteId"],

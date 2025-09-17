@@ -30,6 +30,8 @@ export interface NoteOperation {
   attributes?: Attribute[];
   expectedHash?: string;
   forceCreate?: boolean;
+  regexPattern?: string;
+  regexFlags?: string;
 }
 
 export interface NoteCreateResponse {
@@ -66,6 +68,50 @@ export interface NoteGetResponse {
     description: string;
     examples: string[];
   };
+  regexSearch?: {
+    pattern: string;
+    flags: string;
+    matches: RegexMatch[];
+    totalMatches: number;
+  };
+}
+
+export interface RegexMatch {
+  match: string;
+  index: number;
+  length: number;
+  groups?: string[];
+}
+
+/**
+ * Strip HTML tags from content for text notes
+ */
+function stripHtmlTags(html: string): string {
+  return html.replace(/<[^>]*>/g, '');
+}
+
+/**
+ * Execute regex search on content
+ */
+function executeRegexSearch(content: string, pattern: string, flags: string = 'g'): RegexMatch[] {
+  try {
+    const regex = new RegExp(pattern, flags);
+    const matches: RegexMatch[] = [];
+    let match;
+
+    while ((match = regex.exec(content)) !== null) {
+      matches.push({
+        match: match[0],
+        index: match.index,
+        length: match[0].length,
+        groups: match.length > 1 ? match.slice(1) : undefined
+      });
+    }
+
+    return matches;
+  } catch (error) {
+    throw new Error(`Invalid regex pattern: ${pattern}. Error: ${error}`);
+  }
 }
 
 /**
@@ -434,7 +480,7 @@ export async function handleGetNote(
   args: NoteOperation,
   axiosInstance: any
 ): Promise<NoteGetResponse> {
-  const { noteId, includeContent = true } = args;
+  const { noteId, includeContent = true, regexPattern, regexFlags = 'g' } = args;
 
   if (!noteId) {
     throw new Error("noteId is required for get operation.");
@@ -459,6 +505,30 @@ export async function handleGetNote(
   const blobId = noteData.blobId;
   const contentRequirements = getContentRequirements(noteData.type);
 
+  // Handle regex search if pattern is provided
+  if (regexPattern) {
+    // Prepare content for regex search (strip HTML for text notes)
+    let searchContent = noteContent;
+    if (contentRequirements.requiresHtml) {
+      searchContent = stripHtmlTags(noteContent);
+    }
+
+    // Execute regex search
+    const matches = executeRegexSearch(searchContent, regexPattern, regexFlags);
+
+    return {
+      note: noteData,
+      contentHash: blobId,
+      regexSearch: {
+        pattern: regexPattern,
+        flags: regexFlags,
+        matches,
+        totalMatches: matches.length
+      }
+    };
+  }
+
+  // Standard response without regex search
   return {
     note: noteData,
     content: noteContent,
