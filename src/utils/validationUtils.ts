@@ -32,9 +32,14 @@ export const createNoteSchema = z.object({
   parentNoteId: z.string().min(1, 'Parent note ID cannot be empty'),
   title: z.string().min(1, 'Title cannot be empty'),
   type: z.enum(['text', 'code', 'render', 'file', 'image', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView', 'shortcut', 'doc', 'contentWidget', 'launcher']),
-  content: z.string(),
+  content: z.array(z.object({
+    type: z.enum(['text', 'data-url']),
+    content: z.string(),
+    mimeType: z.string().optional()
+  })),
   mime: z.string().optional(),
-  attributes: z.array(attributeSchema).optional()
+  attributes: z.array(attributeSchema).optional(),
+  forceCreate: z.boolean().optional()
 });
 
 export const searchNotesSchema = z.object({

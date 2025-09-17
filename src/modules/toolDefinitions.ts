@@ -12,7 +12,7 @@ export function createWriteTools(): any[] {
   return [
     {
       name: "create_note",
-      description: "Create a new note in TriliumNext. ONLY use this tool when the user explicitly requests note creation (e.g., 'create a note', 'make a new note'). DO NOT use this tool proactively or when the user is only asking questions about their notes. TIP: For code notes, content is plain text (no HTML processing).",
+      description: "Create a new note in TriliumNext with duplicate title detection. When a note with the same title already exists in the same directory, you'll be presented with choices: skip creation, create anyway (with forceCreate: true), or update the existing note. ONLY use this tool when the user explicitly requests note creation (e.g., 'create a note', 'make a new note'). DO NOT use this tool proactively or when the user is only asking questions about their notes. TIP: For code notes, content is plain text (no HTML processing).",
       inputSchema: {
         type: "object",
         properties: {
@@ -89,6 +89,11 @@ export function createWriteTools(): any[] {
               },
               required: ["type", "name"]
             }
+          },
+          forceCreate: {
+            type: "boolean",
+            description: "Bypass duplicate title check and create note even if a note with the same title already exists in the same directory. Use this when you want to intentionally create duplicate notes.",
+            default: false
           },
         },
         required: ["parentNoteId", "title", "type", "content"],

@@ -13,7 +13,11 @@
     "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
     "prepare": "npm run build",
     "watch": "tsc --watch",
-    "check": "npm run build && node --test tests/validation.test.js",
+    "test": "npm run build && node --test tests/**/*.test.js",
+    "test:unit": "npm run build && node --test tests/unit/**/*.test.js",
+    "test:integration": "npm run build && node --test tests/integration/**/*.test.js",
+    "test:e2e": "npm run build && node --test tests/e2e/**/*.test.js",
+    "check": "npm run test",
     "inspector": "npx @modelcontextprotocol/inspector build/index.js"
   },
   "dependencies": {

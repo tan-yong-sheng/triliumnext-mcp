@@ -7,6 +7,7 @@ import { ContentItem } from '../types/contentTypes.js';
 import { processContentArray, processContentItem } from '../utils/contentProcessor.js';
 import { logVerbose, logVerboseError, logVerboseApi } from '../utils/verboseUtils.js';
 import { generateContentHash, getContentRequirements, validateContentForNoteType } from '../utils/hashUtils.js';
+import { SearchOperation } from './searchManager.js';
 
 export interface Attribute {
   type: 'label' | 'relation';
@@ -29,11 +30,20 @@ export interface NoteOperation {
   includeContent?: boolean;
   attributes?: Attribute[];
   expectedHash?: string;
+  forceCreate?: boolean;
 }
 
 export interface NoteCreateResponse {
-  noteId: string;
+  noteId?: string;
   message: string;
+  duplicateFound?: boolean;
+  duplicateNoteId?: string;
+  choices?: {
+    skip: string;
+    createAnyway: string;
+    updateExisting: string;
+  };
+  nextSteps?: string;
 }
 
 export interface NoteUpdateResponse {
@@ -60,16 +70,78 @@ export interface NoteGetResponse {
 }
 
 /**
+ * Check if a note with the same title already exists in the same directory
+ */
+async function checkDuplicateTitleInDirectory(
+  parentNoteId: string,
+  title: string,
+  axiosInstance: any
+): Promise<{ found: boolean; duplicateNoteId?: string }> {
+  // Search for notes with exact title in the same parent directory
+  const searchParams: SearchOperation = {
+    searchCriteria: [
+      {
+        property: "title",
+        op: "=",
+        value: title,
+        logic: "AND"
+      },
+      {
+        property: "parents.noteId",
+        op: "=",
+        value: parentNoteId,
+        logic: "AND"
+      }
+    ]
+  };
+
+  try {
+    // Use the search function to find duplicates
+    const response = await axiosInstance.get(`/notes?search=note.title%20%3D%20%27${encodeURIComponent(title)}%27%20AND%20note.parents.noteId%20%3D%20%27${encodeURIComponent(parentNoteId)}%27&fastSearch=false&includeArchivedNotes=true`);
+    const results = response.data.results || [];
+
+    logVerbose("checkDuplicateTitleInDirectory", `Search for duplicate title "${title}" in parent ${parentNoteId} found ${results.length} results`);
+
+    if (results.length > 0) {
+      return { found: true, duplicateNoteId: results[0].noteId };
+    }
+    return { found: false };
+  } catch (error) {
+    logVerboseError("checkDuplicateTitleInDirectory", error);
+    // If search fails, proceed cautiously (don't block creation)
+    return { found: false };
+  }
+}
+
+/**
  * Handle create note operation
  */
 export async function handleCreateNote(
   args: NoteOperation,
   axiosInstance: any
 ): Promise<NoteCreateResponse> {
-  const { parentNoteId, title, type, content: rawContent, mime, attributes } = args;
+  const { parentNoteId, title, type, content: rawContent, mime, attributes, forceCreate = false } = args;
 
   if (!parentNoteId || !title || !type || !rawContent) {
     throw new Error("parentNoteId, title, type, and content are required for create operation.");
+  }
+
+  // Check for duplicate title in the same directory (unless forceCreate is true)
+  if (!forceCreate) {
+    const duplicateCheck = await checkDuplicateTitleInDirectory(parentNoteId, title, axiosInstance);
+    if (duplicateCheck.found) {
+      return {
+        message: `Found existing note with title "${title}" in this directory. Please choose how to proceed:`,
+        duplicateFound: true,
+        duplicateNoteId: duplicateCheck.duplicateNoteId,
+        choices: {
+          skip: "Skip creation - do nothing",
+          createAnyway: "Create anyway - create duplicate note with same title (set forceCreate: true)",
+          updateExisting: "Update existing - replace content of existing note with new content"
+        },
+        nextSteps: `Please specify your choice by calling create_note again with your preferred action. To update the existing note, use update_note with noteId: ${duplicateCheck.duplicateNoteId}`
+      };
+    }
   }
 
   // Process content array to ETAPI format
@@ -123,7 +195,8 @@ export async function handleCreateNote(
 
   return {
     noteId: noteId,
-    message: `Created note: ${noteId}`
+    message: `Created note: ${noteId}`,
+    duplicateFound: false
   };
 }
 
