@@ -12,10 +12,9 @@ import axios from "axios";
 
 // Import modular components
 import { generateTools } from "./modules/toolDefinitions.js";
-import { 
+import {
   handleCreateNoteRequest,
-  handleUpdateNoteRequest, 
-  handleAppendNoteRequest,
+  handleUpdateNoteRequest,
   handleDeleteNoteRequest,
   handleGetNoteRequest
 } from "./modules/noteHandler.js";
@@ -95,9 +94,6 @@ class TriliumServer {
 
           case "update_note":
             return await handleUpdateNoteRequest(request.params.arguments, this.axiosInstance, this);
-
-          case "append_note":
-            return await handleAppendNoteRequest(request.params.arguments, this.axiosInstance, this);
 
           case "delete_note":
             return await handleDeleteNoteRequest(request.params.arguments, this.axiosInstance, this);

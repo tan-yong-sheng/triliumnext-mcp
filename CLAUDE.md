@@ -156,7 +156,7 @@ This is a Model Context Protocol (MCP) server for TriliumNext Notes that provide
 ### Modular Structure (Refactored from Monolithic)
 - **Main Server**: `src/index.ts` - Lightweight MCP server setup (~150 lines, down from 1400+)
 - **Business Logic Modules**: `src/modules/` - Core functionality separated by domain:
-  - `noteManager.ts` - Note creation, update, append, delete, and retrieval
+  - `noteManager.ts` - Note creation, update, delete, and retrieval
   - `searchManager.ts` - Core search operations with hierarchy navigation support
   - `resolveManager.ts` - Note ID resolution with simple title-based search
 - **Request Handlers**: `src/modules/` - MCP request/response processing:
@@ -306,7 +306,6 @@ try {
 - `create_note`: Create new notes with various types (text, code, mermaid, canvas, book, etc.) - 13 ETAPI-aligned note types supported. Includes optional `attributes` parameter for one-step template relation creation (30-50% performance improvement over manual two-step approach)
 - `manage_attributes`: Manage note attributes (labels and relations) with write operations. Create labels (#tags), template relations (~template), update existing attributes, and organize notes with metadata. Supports single operations and efficient batch creation for better performance. Template relations like ~template = 'Board' enable specialized note layouts and functionality. Supports "create", "update", "delete", and "batch_create" operations.
 - `update_note`: Update existing note content with revision control (defaults to revision=true for safety)
-- `append_note`: Add content to existing notes without replacement (defaults to revision=false for performance)
 - `delete_note`: Delete notes by ID (permanent operation with caution warnings)
 
 ### Permission-Based Tool Behavior
@@ -503,13 +502,11 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 
 ### Revision Control Behavior
 - **`update_note`**: Defaults to `revision=true` (safe behavior) - creates backup before complete content replacement
-- **`append_note`**: Defaults to `revision=false` (performance behavior) - efficient for frequent additions like logs/journals
-- **Risk-based defaults**: High-impact operations (complete replacement) default to safety, low-impact operations (append) default to efficiency
+- **Risk-based defaults**: High-impact operations (complete replacement) default to safety
 
 ### Content Operation Guidelines
-- Use `append_note` for adding content while preserving existing content (logs, journals, incremental updates)
-- Use `update_note` for complete content replacement (rewrites, major edits)
-- Both functions support explicit revision control override via `revision` parameter
+- Use `update_note` for both content additions and complete content replacement (rewrites, major edits)
+- The function supports explicit revision control override via `revision` parameter
 - `delete_note` includes strong caution warnings as it's irreversible
 
 ## Field-Specific Search Implementation

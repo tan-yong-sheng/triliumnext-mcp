@@ -121,29 +121,6 @@ export function createWriteTools(): any[] {
       }
     },
     {
-      name: "append_note",
-      description: "Append content without overwriting existing text. ONLY use this tool when the user explicitly requests content addition (e.g., 'add to the note', 'append this text', 'add this to my notes'). TRY NOT to use this tool proactively unless building content incrementally as part of a clear workflow. Perfect for iterative building (logs, drafts, sections). WORKFLOW: Build content incrementally, then use update_note for major restructuring when needed. Performance optimized with revision=false by default.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          noteId: {
-            type: "string",
-            description: "ID of the note to append content to"
-          },
-          content: {
-            type: "string",
-            description: "Content to append. Content requirements by note type: TEXT/RENDER/WEBVIEW notes require HTML content (plain text auto-wrapped in <p> tags, e.g., '<p>Hello world</p>', '<strong>bold</strong>'); CODE/MERMAID notes require plain text ONLY (HTML tags rejected, e.g., 'def fibonacci(n):'); other note types accept any format or can be empty."
-          },
-          revision: {
-            type: "boolean",
-            description: "Whether to create a revision before appending (default: false for performance)",
-            default: false
-          }
-        },
-        required: ["noteId", "content"]
-      }
-    },
-    {
       name: "delete_note",
       description: "Delete a note permanently. ONLY use this tool when the user explicitly requests note deletion (e.g., 'delete the note', 'remove this note', 'delete this permanently'). TRY NOT to use this tool proactively or for automated cleanup. CAUTION: This action cannot be undone and will permanently remove the note and all its content.",
       inputSchema: {

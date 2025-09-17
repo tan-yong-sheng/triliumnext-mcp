@@ -9,7 +9,6 @@ import {
   NoteOperation,
   handleCreateNote,
   handleUpdateNote,
-  handleAppendNote,
   handleDeleteNote,
   handleGetNote
 } from "./noteManager.js";
@@ -115,40 +114,6 @@ export async function handleUpdateNoteRequest(
   }
 }
 
-/**
- * Handle append_note tool requests
- */
-export async function handleAppendNoteRequest(
-  args: any,
-  axiosInstance: any,
-  permissionChecker: PermissionChecker
-): Promise<{ content: Array<{ type: string; text: string }> }> {
-  if (!permissionChecker.hasPermission("WRITE")) {
-    throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to append to notes.");
-  }
-
-  try {
-    const noteOperation: NoteOperation = {
-      noteId: args.noteId,
-      content: args.content,
-      revision: args.revision === true // Default to false (performance behavior)
-    };
-
-    const result = await handleAppendNote(noteOperation, axiosInstance);
-
-    return {
-      content: [{
-        type: "text",
-        text: result.message
-      }]
-    };
-  } catch (error) {
-    if (error instanceof McpError) {
-      throw error;
-    }
-    throw new McpError(ErrorCode.InvalidParams, error instanceof Error ? error.message : String(error));
-  }
-}
 
 /**
  * Handle delete_note tool requests

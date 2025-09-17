@@ -32,7 +32,7 @@ async function testDuplicateHandling() {
     parentNoteId: 'root',
     title: 'Test Note',
     type: 'text',
-    content: [{ type: 'text', content: '<p>New content</p>' }]
+    content: '<p>New content</p>'
   };
 
   try {
@@ -54,7 +54,7 @@ async function testDuplicateHandling() {
     parentNoteId: 'root',
     title: 'Unique Note',
     type: 'text',
-    content: [{ type: 'text', content: '<p>Unique content</p>' }]
+    content: '<p>Unique content</p>'
   };
 
   try {
@@ -81,7 +81,7 @@ async function testDuplicateHandling() {
     parentNoteId: 'root',
     title: 'Test Note',
     type: 'text',
-    content: [{ type: 'text', content: '<p>Forced content</p>' }],
+    content: '<p>Forced content</p>',
     forceCreate: true
   };
 

@@ -75,7 +75,7 @@ PERMISSIONS="READ;WRITE"     // Full access
 
 **Permission Tools Mapping**:
 - **READ**: `search_notes`, `resolve_note_id`, `get_note`, `manage_attributes` (read-only)
-- **WRITE**: `create_note`, `update_note`, `append_note`, `delete_note`, `manage_attributes` (write-only)
+- **WRITE**: `create_note`, `update_note`, `delete_note`, `manage_attributes` (write-only)
 
 ### 3. Separation of Concerns
 
