@@ -192,7 +192,7 @@ export function createReadTools(): any[] {
   return [
     {
       name: "get_note",
-      description: "Get a note and its content by ID. Perfect for when someone wants to see what's in a note, extract specific information, or prepare for search and replace operations. Getting the full content lets you see the context and create better regex patterns for extraction or replacement.",
+      description: "Get a note and its content by ID. Perfect for when someone wants to see what's in a note, extract specific information, or prepare for search and replace operations. Getting the full content lets you see the context and create better regex patterns for extraction or replacement. For extracting information from multiple notes, first use search_notes to find relevant notes, then use get_note with searchPattern to extract specific patterns from each note.",
       inputSchema: {
         type: "object",
         properties: {
@@ -202,20 +202,20 @@ export function createReadTools(): any[] {
           },
           searchPattern: {
             type: "string",
-            description: "Optional pattern to search for within the note. Use when you need to find specific text or extract information.",
+            description: "Optional pattern to search for within the note. ⚠️ IMPORTANT: When users request to extract specific types of information (URLs, emails, dates, code snippets, etc.), automatically generate appropriate regex patterns based on the extraction request. Use useRegex=true for pattern matching and searchFlags='gi' for comprehensive results.",
           },
           useRegex: {
             type: "boolean",
-            description: "Whether to use regex patterns (default: true).",
-            default: true
+            description: "Whether to use regex patterns for searchPattern. Set to true for extracting URLs, emails, dates, or any pattern-based information.",
+            default: false
           },
           searchFlags: {
             type: "string",
-            description: "Search options. Defaults to 'gi' (find all matches, case-insensitive).",
+            description: "Search options. Defaults to 'gi' (find all matches, case-insensitive). Use 'gi' for comprehensive extraction of all patterns.",
             default: "gi"
           },
         },
-        required: ["noteId"],
+        required: ["noteId", "useRegex"],
       }
     },
     {
