@@ -51,10 +51,7 @@ export const updateNoteSchema = z.object({
   noteId: z.string().min(1, 'Note ID cannot be empty'),
   title: z.string().min(1, 'Title cannot be empty').optional(),
   type: z.enum(['text', 'code', 'render', 'file', 'image', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView']).optional(),
-  content: z.array(z.object({
-    type: z.enum(['text']),
-    content: z.string()
-  })).optional(),
+  content: z.string().optional(),
   mime: z.string().optional(),
   revision: z.boolean().optional(),
   expectedHash: z.string().min(1, 'Expected hash cannot be empty')
@@ -254,6 +251,9 @@ export function validateTitle(title: unknown): string {
 export function validateLogicOperator(logic: unknown): 'AND' | 'OR' {
   if (logic !== 'AND' && logic !== 'OR') {
     throw new Error(`Invalid logic operator: ${logic}. Must be 'AND' or 'OR'`);
+  }
+  return logic;
+}}. Must be 'AND' or 'OR'`);
   }
   return logic;
 }
