@@ -5,7 +5,7 @@
 
 import { processContentArray } from '../utils/contentProcessor.js';
 import { logVerbose, logVerboseError, logVerboseApi } from '../utils/verboseUtils.js';
-import { getContentRequirements, validateContentForNoteType } from '../utils/hashUtils.js';
+import { getContentRequirements, validateContentForNoteType, extractTemplateRelation } from '../utils/contentRules.js';
 import { SearchOperation } from './searchManager.js';
 
 export interface Attribute {
@@ -289,8 +289,30 @@ export async function handleCreateNote(
     throw new Error("Content must be a string");
   }
 
-  // Process content
-  const processed = await processContentArray(rawContent, type);
+  // Extract template relation for content validation
+  const templateRelation = extractTemplateRelation(attributes);
+
+  // Validate content with template-aware rules
+  const contentValidation = await validateContentForNoteType(
+    rawContent,
+    type as NoteType,
+    undefined,
+    templateRelation
+  );
+
+  if (!contentValidation.valid) {
+    return {
+      message: `CONTENT_VALIDATION_ERROR: ${contentValidation.error}`,
+      duplicateFound: false,
+      nextSteps: "Please adjust your content according to the requirements and try again."
+    };
+  }
+
+  // Use validated content (may have been auto-corrected)
+  const validatedContent = contentValidation.content;
+
+  // Process content to ETAPI format
+  const processed = await processContentArray(validatedContent, type);
   if (processed.error) {
     throw new Error(`Content processing error: ${processed.error}`);
   }
@@ -453,18 +475,32 @@ export async function handleUpdateNote(
     }
 
     // Handle content updates (with optional title change)
-    // Step 3: Content type validation (always enabled)
+    // Step 3: Get existing template relations for content validation
+    let existingTemplateRelation: string | undefined;
+    try {
+      // Check if the note has existing template relations
+      const existingAttributes = currentNote.data.attributes || [];
+      existingTemplateRelation = existingAttributes.find(
+        (attr: any) => attr.type === 'relation' && attr.name === 'template'
+      )?.value;
+    } catch (error) {
+      // If we can't read existing attributes, proceed without template validation
+      logVerbose("handleUpdateNote", "Could not read existing attributes for template validation", error);
+    }
+
+    // Step 4: Content type validation with template awareness (always enabled)
     let finalContent = rawContent;
     const validationResult = await validateContentForNoteType(
       rawContent as string,
       type as NoteType,
-      currentContent.data
+      currentContent.data,
+      existingTemplateRelation
     );
 
     if (!validationResult.valid) {
       return {
         noteId,
-        message: `CONTENT_TYPE_MISMATCH: ${validationResult.error}`,
+        message: `CONTENT_VALIDATION_ERROR: ${validationResult.error}`,
         revisionCreated: false,
         conflict: false
       };
@@ -473,7 +509,7 @@ export async function handleUpdateNote(
     // Use validated/corrected content
     finalContent = validationResult.content;
 
-    // Step 4: Create revision if requested
+    // Step 5: Create revision if requested
     if (revision) {
       try {
         await axiosInstance.post(`/notes/${noteId}/revision`);
@@ -484,7 +520,7 @@ export async function handleUpdateNote(
       }
     }
 
-    // Step 5: Process and update content based on mode
+    // Step 6: Process and update content based on mode
     if (typeof finalContent !== 'string') {
       throw new Error("Content must be a string");
     }
@@ -521,7 +557,7 @@ export async function handleUpdateNote(
       throw new Error(`Unexpected response status: ${contentResponse.status}`);
     }
 
-    // Step 6: Update title and MIME type if provided (multi-parameter update)
+    // Step 7: Update title and MIME type if provided (multi-parameter update)
     if (isMultiParamUpdate && (title || mime)) {
       const patchData: any = {};
 

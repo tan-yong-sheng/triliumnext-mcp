@@ -21,7 +21,7 @@ describe('Create Note Validation', () => {
         parentNoteId: 'root',
         title: 'Test Note',
         type: 'text',
-        content: [{ type: 'text', content: '<p>This is a test note</p>' }]
+        content: '<p>This is a test note</p>'
       };
 
       const result = safeValidate(createNoteSchema, validRequest);
@@ -29,6 +29,7 @@ describe('Create Note Validation', () => {
       assert.ok(result.data);
       assert.strictEqual(result.data.title, 'Test Note');
       assert.strictEqual(result.data.type, 'text');
+      assert.strictEqual(result.data.content, '<p>This is a test note</p>');
     });
 
     it('should validate create note with minimal content', () => {
@@ -36,16 +37,16 @@ describe('Create Note Validation', () => {
         parentNoteId: 'root',
         title: 'Empty Note',
         type: 'text',
-        content: [{ type: 'text', content: '' }]
+        content: ''
       };
 
       const result = safeValidate(createNoteSchema, validRequest);
       assert.strictEqual(result.success, true);
-      assert.strictEqual(result.data.content[0].content, '');
+      assert.strictEqual(result.data.content, '');
     });
 
-    it('should validate create note with multiple content items', () => {
-      const validRequest = {
+    it('should reject multiple content items (not supported)', () => {
+      const invalidRequest = {
         parentNoteId: 'root',
         title: 'Multi-content Note',
         type: 'text',
@@ -55,9 +56,9 @@ describe('Create Note Validation', () => {
         ]
       };
 
-      const result = safeValidate(createNoteSchema, validRequest);
-      assert.strictEqual(result.success, true);
-      assert.strictEqual(result.data.content.length, 2);
+      const result = safeValidate(createNoteSchema, invalidRequest);
+      assert.strictEqual(result.success, false);
+      assert.ok(result.error);
     });
   });
 
@@ -73,7 +74,7 @@ describe('Create Note Validation', () => {
           parentNoteId: 'root',
           title: 'Test Note',
           type: type,
-          content: [{ type: 'text', content: 'test' }]
+          content: 'test'
         };
 
         const result = safeValidate(createNoteSchema, request);
@@ -86,7 +87,7 @@ describe('Create Note Validation', () => {
         parentNoteId: 'root',
         title: 'Test Note',
         type: 'invalid_type',
-        content: [{ type: 'text', content: '<p>This is a test note</p>' }]
+        content: '<p>This is a test note</p>'
       };
 
       const result = safeValidate(createNoteSchema, invalidRequest);
@@ -103,7 +104,7 @@ describe('Create Note Validation', () => {
           parentNoteId: 'root',
           title: 'Test Note',
           type: type,
-          content: [{ type: 'text', content: 'test' }]
+          content: 'test'
         };
 
         const result = safeValidate(createNoteSchema, request);
@@ -118,26 +119,26 @@ describe('Create Note Validation', () => {
         parentNoteId: 'root',
         title: 'Text Content Note',
         type: 'text',
-        content: [{ type: 'text', content: 'Plain text content' }]
+        content: 'Plain text content'
       };
 
       const result = safeValidate(createNoteSchema, validRequest);
       assert.strictEqual(result.success, true);
-      assert.strictEqual(result.data.content[0].type, 'text');
+      assert.strictEqual(typeof result.data.content, 'string');
     });
 
     
-    it('should reject content items with invalid types', () => {
-      const invalidRequest = {
+    it('should validate content as string type', () => {
+      const validRequest = {
         parentNoteId: 'root',
-        title: 'Invalid Content Note',
+        title: 'String Content Note',
         type: 'text',
-        content: [{ type: 'invalid_type', content: 'test' }]
+        content: 'test'
       };
 
-      const result = safeValidate(createNoteSchema, invalidRequest);
-      assert.strictEqual(result.success, false);
-      assert.ok(result.error);
+      const result = safeValidate(createNoteSchema, validRequest);
+      assert.strictEqual(result.success, true);
+      assert.strictEqual(result.data.content, 'test');
     });
 
     it('should validate content with complex HTML', () => {
@@ -145,10 +146,7 @@ describe('Create Note Validation', () => {
         parentNoteId: 'root',
         title: 'Complex HTML Note',
         type: 'text',
-        content: [{
-          type: 'text',
-          content: '<div><h1>Title</h1><p>Content with <strong>formatting</strong></p></div>'
-        }]
+        content: '<div><h1>Title</h1><p>Content with <strong>formatting</strong></p></div>'
       };
 
       const result = safeValidate(createNoteSchema, validRequest);
@@ -165,7 +163,7 @@ describe('Create Note Validation', () => {
           parentNoteId: parentId,
           title: 'Test Note',
           type: 'text',
-          content: [{ type: 'text', content: 'test' }]
+          content: 'test'
         };
 
         const result = safeValidate(createNoteSchema, request);
@@ -178,7 +176,7 @@ describe('Create Note Validation', () => {
         parentNoteId: '',
         title: 'Test Note',
         type: 'text',
-        content: [{ type: 'text', content: 'test' }]
+        content: 'test'
       };
 
       const result = safeValidate(createNoteSchema, invalidRequest);
@@ -192,7 +190,7 @@ describe('Create Note Validation', () => {
         parentNoteId: '12345678-1234-1234-1234-123456789012',
         title: 'Test Note',
         type: 'text',
-        content: [{ type: 'text', content: 'test' }]
+        content: 'test'
       };
 
       const result = safeValidate(createNoteSchema, validRequest);
@@ -217,7 +215,7 @@ describe('Create Note Validation', () => {
           parentNoteId: 'root',
           title: title,
           type: 'text',
-          content: [{ type: 'text', content: 'test' }]
+          content: 'test'
         };
 
         const result = safeValidate(createNoteSchema, request);
@@ -230,7 +228,7 @@ describe('Create Note Validation', () => {
         parentNoteId: 'root',
         title: '',
         type: 'text',
-        content: [{ type: 'text', content: 'test' }]
+        content: 'test'
       };
 
       const result = safeValidate(createNoteSchema, invalidRequest);
@@ -244,7 +242,7 @@ describe('Create Note Validation', () => {
         parentNoteId: 'root',
         title: '   ',
         type: 'text',
-        content: [{ type: 'text', content: 'test' }]
+        content: 'test'
       };
 
       const result = safeValidate(createNoteSchema, request);
@@ -258,7 +256,7 @@ describe('Create Note Validation', () => {
         parentNoteId: 'root',
         title: 'Project Board',
         type: 'book',
-        content: [{ type: 'text', content: '' }],
+        content: '',
         attributes: [
           {
             type: 'relation',
@@ -280,7 +278,7 @@ describe('Create Note Validation', () => {
         parentNoteId: 'root',
         title: 'Complex Note',
         type: 'book',
-        content: [{ type: 'text', content: '' }],
+        content: '',
         attributes: [
           {
             type: 'relation',
@@ -307,7 +305,7 @@ describe('Create Note Validation', () => {
         parentNoteId: 'root',
         title: 'Note with Empty Attributes',
         type: 'text',
-        content: [{ type: 'text', content: 'test' }],
+        content: 'test',
         attributes: []
       };
 
@@ -323,7 +321,7 @@ describe('Create Note Validation', () => {
         parentNoteId: 'root',
         title: 'Test Note',
         type: 'text',
-        content: [{ type: 'text', content: '<p>Test content</p>' }],
+        content: '<p>Test content</p>',
         forceCreate: true
       };
 
@@ -338,7 +336,7 @@ describe('Create Note Validation', () => {
         parentNoteId: 'root',
         title: 'Test Note',
         type: 'text',
-        content: [{ type: 'text', content: '<p>Test content</p>' }],
+        content: '<p>Test content</p>',
         forceCreate: false
       };
 
@@ -352,7 +350,7 @@ describe('Create Note Validation', () => {
         parentNoteId: 'root',
         title: 'MIME Note',
         type: 'text',
-        content: [{ type: 'text', content: 'test' }],
+        content: 'test',
         mime: 'text/plain'
       };
 
@@ -379,7 +377,7 @@ describe('Create Note Validation', () => {
       const invalidRequest = {
         title: 'Test Note',
         type: 'text',
-        content: [{ type: 'text', content: 'test' }]
+        content: 'test'
       };
 
       const result = safeValidate(createNoteSchema, invalidRequest);
@@ -391,7 +389,7 @@ describe('Create Note Validation', () => {
       const invalidRequest = {
         parentNoteId: 'root',
         type: 'text',
-        content: [{ type: 'text', content: 'test' }]
+        content: 'test'
       };
 
       const result = safeValidate(createNoteSchema, invalidRequest);
@@ -403,7 +401,7 @@ describe('Create Note Validation', () => {
       const invalidRequest = {
         parentNoteId: 'root',
         title: 'Test Note',
-        content: [{ type: 'text', content: 'test' }]
+        content: 'test'
       };
 
       const result = safeValidate(createNoteSchema, invalidRequest);
@@ -411,16 +409,16 @@ describe('Create Note Validation', () => {
       assert.ok(result.error);
     });
 
-    it('should reject request missing content', () => {
-      const invalidRequest = {
+    it('should accept request without content (optional parameter)', () => {
+      const validRequest = {
         parentNoteId: 'root',
         title: 'Test Note',
         type: 'text'
       };
 
-      const result = safeValidate(createNoteSchema, invalidRequest);
-      assert.strictEqual(result.success, false);
-      assert.ok(result.error);
+      const result = safeValidate(createNoteSchema, validRequest);
+      assert.strictEqual(result.success, true);
+      assert.ok(result.data);
     });
   });
 
@@ -430,7 +428,7 @@ describe('Create Note Validation', () => {
         parentNoteId: 'root',
         title: 'A',
         type: 'text',
-        content: [{ type: 'text', content: '' }]
+        content: ''
       };
 
       const result = safeValidate(createNoteSchema, minimalRequest);
@@ -442,7 +440,7 @@ describe('Create Note Validation', () => {
         parentNoteId: 'root',
         title: 'Complete Note',
         type: 'book',
-        content: [{ type: 'text', content: 'Full content' }],
+        content: 'Full content',
         mime: 'text/html',
         attributes: [
           {
@@ -463,7 +461,7 @@ describe('Create Note Validation', () => {
         parentNoteId: 'root',
         title: 'Note with émojis 🎉 and spëciål chäracters',
         type: 'text',
-        content: [{ type: 'text', content: 'Special content' }]
+        content: 'Special content'
       };
 
       const result = safeValidate(createNoteSchema, specialCharRequest);

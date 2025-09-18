@@ -32,7 +32,7 @@ export function createWriteTools(): any[] {
           },
           content: {
             type: "string",
-            description: "Content of the note. Content requirements by note type: TEXT/RENDER/WEBVIEW notes require HTML content (plain text auto-wrapped in <p> tags, e.g., '<p>Hello world</p>', '<strong>bold</strong>'); CODE/MERMAID notes require plain text ONLY (HTML tags rejected, e.g., 'def fibonacci(n):'); other note types accept any format or can be empty."
+            description: "Content of the note (optional). Content requirements by note type: TEXT notes require HTML content (plain text auto-wrapped in <p> tags, e.g., '<p>Hello world</p>', '<strong>bold</strong>'); CODE/MERMAID notes require plain text ONLY (HTML tags rejected, e.g., 'def fibonacci(n):'); ⚠️ OMIT CONTENT for: 1) WEBVIEW notes (use #webViewSrc label instead), 2) Container templates (Board, Calendar, Grid View, List View, Table, Geo Map), 3) System notes: RENDER (create child HTML note with type='code' and mime='application/x-html', then link with ~renderNote relation), SEARCH (queries in search properties), RELATION_MAP (visual maps), NOTE_MAP (visual hierarchies), BOOK (container notes) - these must be EMPTY to work properly. When omitted, note will be created with empty content."
           },
           mime: {
             type: "string",
@@ -40,7 +40,7 @@ export function createWriteTools(): any[] {
           },
           attributes: {
             type: "array",
-            description: "Optional attributes to create with the note (labels and relations). Enables one-step note creation with metadata. Labels use #tag format (e.g., 'important', 'project'), relations connect to other notes (e.g., template relations use 'Board', 'Calendar', 'Text Snippet').",
+            description: "Optional attributes to create with the note (labels and relations). Enables one-step note creation with metadata. Labels use #tag format (e.g., 'important', 'project'), relations connect to other notes (e.g., template relations use 'Board', 'Calendar', 'Text Snippet'). ⚠️ TEMPLATE RESTRICTIONS: Container templates (Board, Calendar, Grid View, List View, Table, Geo Map) MUST be empty notes - add content as child notes.",
             items: {
               type: "object",
               properties: {
@@ -77,7 +77,7 @@ export function createWriteTools(): any[] {
             default: false
           },
         },
-        required: ["parentNoteId", "title", "type", "content"],
+        required: ["parentNoteId", "title", "type"],
       },
     },
     {
@@ -105,7 +105,7 @@ export function createWriteTools(): any[] {
           },
           content: {
             type: "string",
-            description: "Content of the note. Content requirements by note type: TEXT/RENDER/WEBVIEW notes require HTML content (plain text auto-wrapped in <p> tags, e.g., '<p>Hello world</p>', '<strong>bold</strong>'); CODE/MERMAID notes require plain text ONLY (HTML tags rejected, e.g., 'def fibonacci(n):'); other note types accept any format or can be empty."
+            description: "Content of the note. Content requirements by note type: TEXT notes require HTML content (plain text auto-wrapped in <p> tags, e.g., '<p>Hello world</p>', '<strong>bold</strong>'); CODE/MERMAID notes require plain text ONLY (HTML tags rejected, e.g., 'def fibonacci(n):'); ⚠️ SYSTEM NOTES MUST REMAIN EMPTY: RENDER (HTML handled by note type), SEARCH (queries in search properties), RELATION_MAP (visual maps), NOTE_MAP (visual hierarchies), BOOK (container notes), WEBVIEW (use #webViewSrc label); IMPORTANT: When updating notes with template relations (Board, Calendar, Grid View, List View, Table, Geo Map), the note must remain EMPTY - these templates provide specialized layouts and content should be added as child notes instead."
           },
           expectedHash: {
             type: "string",

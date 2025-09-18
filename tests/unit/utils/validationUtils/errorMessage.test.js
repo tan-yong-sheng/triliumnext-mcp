@@ -78,17 +78,17 @@ describe('Error Message Validation', () => {
       assert.ok(result.error.toLowerCase().includes('type'));
     });
 
-    it('should provide specific error for missing content', () => {
-      const invalidRequest = {
+    it('should accept request without content since content is optional', () => {
+      const validRequest = {
         parentNoteId: 'root',
         title: 'Test Note',
         type: 'text'
       };
 
-      const result = safeValidate(createNoteSchema, invalidRequest);
-      assert.strictEqual(result.success, false);
-      assert.ok(result.error);
-      assert.ok(result.error.toLowerCase().includes('content'));
+      const result = safeValidate(createNoteSchema, validRequest);
+      assert.strictEqual(result.success, true);
+      assert.ok(result.data);
+      assert.strictEqual(result.data.content, undefined);
     });
   });
 

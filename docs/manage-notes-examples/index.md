@@ -21,14 +21,6 @@ The `create_note` and `update_note` tools use a simplified string-based interfac
 }
 ```
 
-### Internal Processing (Server-Side)
-```typescript
-interface ContentItem {
-  type: 'text';
-  content: string;
-}
-```
-
 The server automatically converts the simple string input to the appropriate internal structure based on the note type.
 
 ## Tool Interfaces

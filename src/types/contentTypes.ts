@@ -11,7 +11,3 @@ export interface Attribute {
   isInheritable?: boolean;
 }
 
-export interface ContentItem {
-  type: 'text';
-  content: string;
-}

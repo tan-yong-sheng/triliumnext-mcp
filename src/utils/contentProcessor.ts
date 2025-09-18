@@ -4,6 +4,7 @@
  */
 
 import { marked } from 'marked';
+import { isLikelyHtml } from './contentRules.js';
 
 /**
  * Process string content into format suitable for ETAPI
@@ -49,37 +50,8 @@ async function processTextContent(content: string, noteType?: string): Promise<P
 }
 
 /**
- * Check if content is likely HTML (definitive detection)
+ * Check if content is likely HTML (imported from contentRules.ts)
  */
-function isLikelyHtml(content: string): boolean {
-  // Check for HTML tags (more definitive)
-  const htmlTagPattern = /<[a-zA-Z][^>]*>.*<\/[a-zA-Z][^>]*>|<[a-zA-Z][^>]*\/>/;
-  const selfClosingTagPattern = /<[a-zA-Z][^>]*\/>/;
-  const openTagPattern = /<[a-zA-Z][^>]*>/;
-
-  // More specific HTML patterns
-  const specificPatterns = [
-    /<[hH][1-6][^>]*>.*<\/[hH][1-6][^>]*>/, // Headers
-    /<[pP][^>]*>.*<\/[pP][^>]*>/, // Paragraphs
-    /<[dD][iI][vV][^>]*>.*<\/[dD][iI][vV][^>]*>/, // Divs
-    /<[sS][pP][aA][nN][^>]*>.*<\/[sS][pP][aA][nN][^>]*>/, // Spans
-    /<[aA][^>]*href=.*>.*<\/[aA]>/, // Links
-    /<[iI][mM][gG][^>]*src=.*>/, // Images
-    /<[bB][rR][^>]*>/, // Line breaks
-    /<[hH][rR][^>]*>/, // Horizontal rules
-    /<[uU][lL][^>]*>.*<\/[uU][lL]>/, // Unordered lists
-    /<[oO][lL][^>]*>.*<\/[oO][lL]>/, // Ordered lists
-    /<[tT][aA][bB][lL][eE][^>]*>.*<\/[tT][aA][bB][lL][eE]>/, // Tables
-    /<[tT][rR][^>]*>.*<\/[tT][rR]>/, // Table rows
-    /<[tT][dD][^>]*>.*<\/[tT][dD]>/, // Table cells
-  ];
-
-  // Check for any HTML patterns
-  return htmlTagPattern.test(content) ||
-         selfClosingTagPattern.test(content) ||
-         openTagPattern.test(content) ||
-         specificPatterns.some(pattern => pattern.test(content));
-}
 
 /**
  * Check if content is likely Markdown (high confidence detection)

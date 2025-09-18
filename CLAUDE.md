@@ -421,7 +421,6 @@ The server now includes intelligent content processing:
 ### Simplified Helper Functions
 Exported helper functions for easier note creation:
 - `buildNoteParams()` - Universal function for text and code note types with automatic content mapping
-- `buildContentItem()` - Utility for creating individual ContentItems (advanced use)
 
 **Usage Example:**
 ```typescript
@@ -786,7 +785,6 @@ Template relations enable specialized note layouts and functionality by connecti
   "parentNoteId": "root",
   "title": "Project Tasks",
   "type": "book",
-  "content": [{"type": "text", "content": ""}],
   "attributes": [
     {
       "type": "relation",
@@ -805,7 +803,6 @@ Template relations enable specialized note layouts and functionality by connecti
   "parentNoteId": "root",
   "title": "2024 Event Calendar",
   "type": "book",
-  "content": [{"type": "text", "content": ""}],
   "attributes": [
     {
       "type": "relation",
@@ -925,13 +922,6 @@ if (expectedHash) {
     return { noteId, message: "CONFLICT: Note has been modified by another user...", conflict: true };
   }
 }
-
-// Always-on content validation
-const validationResult = await validateContentForNoteType(
-  rawContent as ContentItem[],
-  type as NoteType,
-  currentContent.data
-);
 ```
 
 #### Workflow Examples:

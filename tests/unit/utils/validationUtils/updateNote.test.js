@@ -29,7 +29,7 @@ describe('Update Note MIME Parameter Handling', () => {
     const updateData = {
       noteId: "test123",
       type: "code",
-      content: [{ type: "text", content: "console.log('hello');" }],
+      content: "console.log('hello');",
       mime: "text/x-javascript",
       expectedHash: "abc123"
     };
@@ -38,7 +38,7 @@ describe('Update Note MIME Parameter Handling', () => {
     assert.equal(result.noteId, "test123");
     assert.equal(result.type, "code");
     assert.equal(result.mime, "text/x-javascript");
-    assert.deepEqual(result.content, [{ type: "text", content: "console.log('hello');" }]);
+    assert.equal(result.content, "console.log('hello');");
   });
 
   it('should validate update note without mime parameter', () => {
@@ -78,7 +78,7 @@ describe('Update Note MIME Parameter Handling', () => {
   it('should reject update note with content but no type', () => {
     const updateData = {
       noteId: "test123",
-      content: [{ type: "text", content: "test content" }],
+      content: "test content",
       mime: "text/x-javascript",
       expectedHash: "abc123"
       // Missing type when content is provided
