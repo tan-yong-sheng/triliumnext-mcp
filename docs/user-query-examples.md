@@ -85,6 +85,13 @@ This document provides simple examples of natural language queries you can try w
 - "Show me the content of my 'TODO' note"
 - "What's in my 'Meeting Notes'?"
 
+### Content Extraction and Pattern Matching
+- "Extract all URLs from note with ID QNwfEYTxLzVP"
+- "Find all email addresses in my project note"
+- "Extract phone numbers from the meeting notes"
+- "Get all dates mentioned in note ABC123"
+- "Search for specific patterns in note XYZ789"
+
 ## Attribute Management
 
 ### Viewing Attributes

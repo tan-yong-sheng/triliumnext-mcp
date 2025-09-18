@@ -10,7 +10,8 @@ import {
   handleCreateNote,
   handleUpdateNote,
   handleDeleteNote,
-  handleGetNote
+  handleGetNote,
+  handleSearchReplaceNote
 } from "./noteManager.js";
 
 /**
@@ -165,23 +166,24 @@ export async function handleGetNoteRequest(
     const noteOperation: NoteOperation = {
       noteId: args.noteId,
       includeContent: args.includeContent !== false,
-      regexPattern: args.regexPattern,
-      regexFlags: args.regexFlags || 'g'
+      searchPattern: args.searchPattern,
+      useRegex: args.useRegex !== false, // Default to true
+      searchFlags: args.searchFlags || 'g'
     };
 
     const result = await handleGetNote(noteOperation, axiosInstance);
 
-    // Build response data based on whether regex search was performed
+    // Build response data based on whether search was performed
     let responseData: any = {
       ...result.note,
       contentHash: result.contentHash
     };
 
-    if (result.regexSearch) {
-      // Regex search was performed, include regexSearch object but not content
-      responseData.regexSearch = result.regexSearch;
+    if (result.search) {
+      // Search was performed, include search object but not content
+      responseData.search = result.search;
     } else if (result.content) {
-      // Standard response, include content but not regexSearch
+      // Standard response, include content but not search
       responseData.content = result.content;
     }
 
@@ -189,6 +191,68 @@ export async function handleGetNoteRequest(
       content: [{
         type: "text",
         text: JSON.stringify(responseData, null, 2)
+      }]
+    };
+  } catch (error) {
+    if (error instanceof McpError) {
+      throw error;
+    }
+    throw new McpError(ErrorCode.InvalidParams, error instanceof Error ? error.message : String(error));
+  }
+}
+
+/**
+ * Handle search_and_replace_note tool requests
+ */
+export async function handleSearchReplaceNoteRequest(
+  args: any,
+  axiosInstance: any,
+  permissionChecker: PermissionChecker
+): Promise<{ content: Array<{ type: string; text: string }> }> {
+  if (!permissionChecker.hasPermission("WRITE")) {
+    throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to modify notes.");
+  }
+
+  // Validate that expectedHash is provided (required for data integrity)
+  if (!args.expectedHash) {
+    throw new McpError(
+      ErrorCode.InvalidParams,
+      "Missing required parameter 'expectedHash'. You must call get_note first to retrieve the current blobId (content hash) before performing search and replace. This ensures data integrity by preventing overwriting changes made by other users."
+    );
+  }
+
+  // Validate required parameters
+  if (!args.searchPattern) {
+    throw new McpError(
+      ErrorCode.InvalidParams,
+      "Missing required parameter 'searchPattern'. The pattern to search for is required."
+    );
+  }
+
+  if (!args.replacePattern) {
+    throw new McpError(
+      ErrorCode.InvalidParams,
+      "Missing required parameter 'replacePattern'. The replacement pattern is required."
+    );
+  }
+
+  try {
+    const noteOperation: NoteOperation = {
+      noteId: args.noteId,
+      searchPattern: args.searchPattern,
+      replacePattern: args.replacePattern,
+      useRegex: args.useRegex !== false, // Default to true
+      searchFlags: args.searchFlags || 'g',
+      revision: args.revision !== false, // Default to true for safety
+      expectedHash: args.expectedHash
+    };
+
+    const result = await handleSearchReplaceNote(noteOperation, axiosInstance);
+
+    return {
+      content: [{
+        type: "text",
+        text: result.message
       }]
     };
   } catch (error) {

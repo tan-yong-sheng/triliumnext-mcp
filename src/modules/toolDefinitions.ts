@@ -139,6 +139,47 @@ export function createWriteTools(): any[] {
         required: ["noteId"],
       },
     },
+    {
+      name: "search_and_replace_note",
+      description: "Search and replace content within a single note. Supports both regex and literal string replacement with HTML-aware processing. ⚠️ REQUIRED: ALWAYS call get_note first to obtain current hash. USE CASES: Bulk find/replace operations, text corrections, content updates across entire notes. HTML-AWARE: For text notes, processes HTML content directly (enables precise HTML structure replacements). For code/mermaid notes, processes plain text. SAFETY: Hash validation prevents concurrent modification conflicts, revision control enabled by default. WORKFLOW: get_note → review content → search_and_replace_note with returned hash.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          noteId: {
+            type: "string",
+            description: "ID of the note to perform search and replace on"
+          },
+          searchPattern: {
+            type: "string",
+            description: "Pattern to search for. Use regex patterns when useRegex=true (e.g., '\\bword\\b', '\\d+'), literal strings when useRegex=false (e.g., 'hello world'). HTML-AWARE: For text notes, search patterns operate on HTML content (enables finding '<p>content</p>', '<span class=\"highlight\">', etc.). For code/mermaid notes, searches plain text content."
+          },
+          replacePattern: {
+            type: "string",
+            description: "Replacement pattern. When useRegex=true, supports regex replacement patterns (e.g., '$1', '${groupName}'). When useRegex=false, literal string replacement. HTML-AWARE: For text notes, can include HTML tags in replacement (e.g., '<strong>$1</strong>'). For code/mermaid notes, plain text replacement only."
+          },
+          useRegex: {
+            type: "boolean",
+            description: "Whether to interpret searchPattern as regex (default: true). Set to false for literal string matching. NOTE: When useRegex=true, special regex characters must be properly escaped or use literal mode.",
+            default: true
+          },
+          searchFlags: {
+            type: "string",
+            description: "Regex flags (g, i, m, s, u, y). Defaults to 'g' (global replacement). Common flags: 'i' (case-insensitive), 'm' (multiline), 's' (dotall). Only applies when useRegex=true.",
+            default: "g"
+          },
+          expectedHash: {
+            type: "string",
+            description: "⚠️ REQUIRED: Blob ID (content hash) from get_note response. Ensures data integrity by verifying the note hasn't been modified since retrieval."
+          },
+          revision: {
+            type: "boolean",
+            description: "Whether to create a revision before replacement (default: true for safety)",
+            default: true
+          }
+        },
+        required: ["noteId", "searchPattern", "replacePattern", "expectedHash"]
+      }
+    },
     ];
 }
 
@@ -151,7 +192,7 @@ export function createReadTools(): any[] {
   return [
     {
       name: "get_note",
-      description: "Get a note and its content by ID. Optional regex search to extract pattern matches from content. HTML-AWARE: Searches directly on HTML content for text notes (no HTML stripping), enabling HTML structure patterns and precise coordinate mapping for search_and_replace operations.",
+      description: "Get a note and its content by ID. ⚠️ CRITICAL: When user asks to extract specific information like URLs, phone numbers, emails, dates, or find specific patterns, you MUST use the searchPattern parameter with appropriate regex patterns. Don't return the full note content - use the search functionality to extract exactly what was requested.",
       inputSchema: {
         type: "object",
         properties: {
@@ -159,13 +200,19 @@ export function createReadTools(): any[] {
             type: "string",
             description: "ID of the note to retrieve",
           },
-          regexPattern: {
+          searchPattern: {
             type: "string",
-            description: "Optional regex pattern to search for in content. When provided, returns regexSearch object instead of content. HTML-AWARE: For text notes, searches HTML content directly (enables patterns like <span class='highlight'>content</span>). For code/mermaid notes, searches plain text content.",
+            description: "REQUIRED when user requests extracting specific information. Use the regex pattern provided by the user or create appropriate regex patterns for what they want to extract (URLs, emails, phone numbers, dates, etc.).",
           },
-          regexFlags: {
+          useRegex: {
+            type: "boolean",
+            description: "Whether to use regex patterns (default: true). Set to false for simple text matching.",
+            default: true
+          },
+          searchFlags: {
             type: "string",
-            description: "Optional regex flags (g, i, m, s, u, y). Defaults to 'g' for global search",
+            description: "Search options. Use 'g' to find all matches (recommended for extraction), 'i' for case-insensitive. Defaults to 'g'.",
+            default: "g"
           },
         },
         required: ["noteId"],

@@ -16,7 +16,8 @@ import {
   handleCreateNoteRequest,
   handleUpdateNoteRequest,
   handleDeleteNoteRequest,
-  handleGetNoteRequest
+  handleGetNoteRequest,
+  handleSearchReplaceNoteRequest
 } from "./modules/noteHandler.js";
 import {
   handleSearchNotesRequest
@@ -100,6 +101,9 @@ class TriliumServer {
 
           case "get_note":
             return await handleGetNoteRequest(request.params.arguments, this.axiosInstance, this);
+
+          case "search_and_replace_note":
+            return await handleSearchReplaceNoteRequest(request.params.arguments, this.axiosInstance, this);
 
           // Search and listing operations
           case "search_notes":
