@@ -18,7 +18,7 @@ export function createWriteTools(): any[] {
         properties: {
           parentNoteId: {
             type: "string",
-            description: "ID of the parent note",
+            description: "ID of the parent note. ⚠️ IMPORTANT: When creating child notes for special note types, ensure proper requirements:\n• RENDER parents: child must be type='code', mime='text/html' (HTML content for rendering)\n• CALENDAR parents: child must have #startDate, #endDate, #startTime, #endTime labels\n• BOARD parents: child must have #status label (e.g., 'To Do', 'In Progress', 'Done')\n• Missing required labels/relations will cause child notes to not display properly",
             default: "root"
           },
           title: {
@@ -28,11 +28,11 @@ export function createWriteTools(): any[] {
           type: {
             type: "string",
             enum: ["text", "code", "render", "search", "relationMap", "book", "noteMap", "mermaid", "webView"],
-            description: "Type of note (aligned with TriliumNext ETAPI specification)",
+            description: "Type of note (aligned with TriliumNext ETAPI specification). ⚠️ SPECIAL TYPES REQUIRE CHILD NOTES:\n• RENDER: Creates empty container - requires child HTML code note with ~renderNote relation\n• CALENDAR (template): Creates empty container - requires child notes with date/time labels\n• BOARD (template): Creates empty container - requires child notes with #status labels\n• All other types can contain content directly",
           },
           content: {
             type: "string",
-            description: "Content of the note (optional). Content requirements by note type: TEXT notes require HTML content (plain text auto-wrapped in <p> tags, e.g., '<p>Hello world</p>', '<strong>bold</strong>'); CODE/MERMAID notes require plain text ONLY (HTML tags rejected, e.g., 'def fibonacci(n):'); ⚠️ OMIT CONTENT for: 1) WEBVIEW notes (use #webViewSrc label instead), 2) Container templates (Board, Calendar, Grid View, List View, Table, Geo Map), 3) System notes: RENDER (create child HTML note with type='code' and mime='text/html', then link with ~renderNote relation), SEARCH (queries in search properties), RELATION_MAP (visual maps), NOTE_MAP (visual hierarchies), BOOK (container notes) - these must be EMPTY to work properly. When omitted, note will be created with empty content."
+            description: "Content of the note (optional). Content requirements by note type: TEXT notes require HTML content (plain text auto-wrapped in <p> tags, e.g., '<p>Hello world</p>', '<strong>bold</strong>'); CODE/MERMAID notes require plain text ONLY (HTML tags rejected, e.g., 'def fibonacci(n):'); ⚠️ OMIT CONTENT for: 1) WEBVIEW notes (use #webViewSrc label instead), 2) Container templates (Board, Calendar, Grid View, List View, Table, Geo Map), 3) System notes: RENDER, SEARCH, RELATION_MAP, NOTE_MAP, BOOK - these must be EMPTY to work properly. When omitted, note will be created with empty content.\n\n📋 WORKFLOW FOR SPECIAL NOTE TYPES:\n• RENDER notes: Create empty → create child HTML code note → add ~renderNote relation to child\n• CALENDAR/BOARD/GRID/LIST/TABLE/GEO templates: Create empty with ~template relation → add child notes with proper labels\n• TEXT SNIPPET templates: Create with ~template relation + content\n• Most other types: Add content directly during creation"
           },
           mime: {
             type: "string",
@@ -40,7 +40,7 @@ export function createWriteTools(): any[] {
           },
           attributes: {
             type: "array",
-            description: "Optional attributes to create with the note (labels and relations). Enables one-step note creation with metadata. Labels use #tag format (e.g., 'important', 'project'), relations connect to other notes (e.g., template relations use human-readable names like 'Board', 'Calendar', 'Text Snippet' which are automatically translated to system note IDs). ⚠️ TEMPLATE RESTRICTIONS: Container templates (Board, Calendar, Grid View, List View, Table, Geo Map) MUST be empty notes - add content as child notes.",
+            description: "Optional attributes to create with the note (labels and relations). Enables one-step note creation with metadata. ⚠️ CRITICAL: Always add template relations during create_note when possible!\n\n📋 TEMPLATE RELATIONS (add during create_note):\n• ~template = 'Board' (kanban task boards)\n• ~template = 'Calendar' (calendar event displays)\n• ~template = 'Grid View' (grid layouts)\n• ~template = 'List View' (list layouts)\n• ~template = 'Table' (table structures)\n• ~template = 'Geo Map' (geographic maps)\n• ~template = 'Text Snippet' (reusable text)\n\n⚠️ SPECIAL CASES requiring separate steps:\n• ~renderNote = '<noteId>' (RENDER notes - requires existing child note ID)\n• Custom relations pointing to specific notes (use note IDs after creation)\n\n📋 LABELS & OTHER RELATIONS:\n• Labels: #tag format (e.g., #important, #project)\n• Relations: ~connection format (e.g., ~author, ~publisher)\n• Template relations use human-readable names (auto-translated to system IDs)\n\n⚠️ TEMPLATE RESTRICTIONS: Container templates MUST be empty notes - add content as child notes",
             items: {
               type: "object",
               properties: {
@@ -340,7 +340,7 @@ export function createWriteAttributeTools(): any[] {
   return [
     {
       name: "manage_attributes",
-      description: "Manage note attributes with write operations (create, update, delete). Create labels (#tags), template relations (~template), update existing attributes, and organize notes with metadata. IMPORTANT: This tool only provides write access - use read_attributes to view existing attributes. Relations require values pointing to existing notes (e.g., template relations use human-readable names like 'Board', 'Calendar' which are automatically translated to system note IDs; author relations use target note titles or IDs). UPDATE LIMITATIONS: For labels, only value and position can be updated. For relations, only position can be updated. The isInheritable property cannot be changed via update - delete and recreate to modify inheritability. Supports single operations and efficient batch creation for better performance.",
+      description: "Manage note attributes with write operations (create, update, delete). Create labels (#tags), template relations (~template), update existing attributes, and organize notes with metadata. ⚠️ PRIORITY: Use create_note with attributes parameter for template relations when possible - only use this tool for post-creation modifications or complex scenarios.\n\n✅ BEST PRACTICE: Most template relations (~template = 'Board', 'Calendar', etc.) should be added during create_note\n❌ USE THIS TOOL FOR: ~renderNote relations, custom note-to-note relations, post-creation label updates\n\nIMPORTANT: This tool only provides write access - use read_attributes to view existing attributes. Relations require values pointing to existing notes (e.g., template relations use human-readable names like 'Board', 'Calendar' which are automatically translated to system note IDs; author relations use target note titles or IDs). UPDATE LIMITATIONS: For labels, only value and position can be updated. For relations, only position can be updated. The isInheritable property cannot be changed via update - delete and recreate to modify inheritability. Supports single operations and efficient batch creation for better performance.",
       inputSchema: {
         type: "object",
         properties: {
