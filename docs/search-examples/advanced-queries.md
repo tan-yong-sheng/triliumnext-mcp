@@ -25,7 +25,7 @@ Trilium supports regex searches using the `%=` operator. This is now supported i
 ### 74) Regex on Note Title
 - Composed query: Find notes with titles starting with "Project" and ending with "2024"
 ```
-note.title %= '^Project.*2024$'
+note.title %= '^Project.*2024
 ```
 - Search Structure
 ```json
@@ -45,7 +45,7 @@ note.content %= '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}'
 ```json
 {
   "searchCriteria": [
-    {"property": "content", "type": "noteProperty", "op": "regex", "value": "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\\.\\\\.[a-zA-Z]{2,}"}
+    {"property": "content", "type": "noteProperty", "op": "regex", "value": "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"}
   ]
 }
 ```
