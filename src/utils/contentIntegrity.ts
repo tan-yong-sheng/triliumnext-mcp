@@ -133,8 +133,7 @@ export function createEnhancedUpdateNoteResponse(
  */
 export async function validateContentForUpdate(
   rawContent: string,
-  type: NoteType,
-  currentContent?: string
+  type: NoteType
 ): Promise<{
   isValid: boolean;
   processedContent: string;

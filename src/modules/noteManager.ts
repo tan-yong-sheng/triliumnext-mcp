@@ -286,16 +286,15 @@ export async function handleCreateNote(
   }
 
   // Process content to ETAPI format
-  if (typeof rawContent !== 'string') {
-    throw new Error("Content must be a string");
-  }
+  // Content is optional - if not provided, default to empty string
+  const content = rawContent || "";
 
   // Extract template relation for content validation
   const templateRelation = extractTemplateRelation(attributes);
 
   // Validate content with template-aware rules
   const contentValidation = await validateContentForNoteType(
-    rawContent,
+    content,
     type as NoteType,
     undefined,
     templateRelation
@@ -522,9 +521,8 @@ export async function handleUpdateNote(
     }
 
     // Step 6: Process and update content based on mode
-    if (typeof finalContent !== 'string') {
-      throw new Error("Content must be a string");
-    }
+    // Content is optional - if not provided, default to empty string
+    finalContent = finalContent || "";
 
     let processedContent: string;
 
