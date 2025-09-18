@@ -164,7 +164,33 @@ towers #book AND note.labelCount > 3
 
 ## Relation Search Examples
 
-Relations in TriliumNext allow connecting notes to other notes. The MCP supports searching by relations using the `~` syntax.
+Relations in TriliumNext allow connecting notes to other notes. The MCP supports searching by relations using the `~` syntax with automatic property enhancement.
+
+### Relation Property Auto-Enhancement
+
+The MCP automatically enhances relation searches to ensure proper TriliumNext syntax:
+
+- **Auto-enhancement**: When you search for `~author = "Tolkien"`, the system automatically converts this to `~author.title = "Tolkien"`
+- **Note ID detection**: For template relations and system relations, if the value matches a note ID pattern, it uses `.noteId` suffix
+- **Smart defaults**: User-friendly behavior that "just works" for most common cases
+
+**Example:**
+```json
+// User provides:
+{"property": "author", "type": "relation", "op": "=", "value": "Tolkien"}
+
+// System generates:
+~author.title = 'Tolkien'
+```
+
+**Template relations:**
+```json
+// User provides:
+{"property": "template", "type": "relation", "op": "=", "value": "Board"}
+
+// System generates:
+~template.title = 'Board'
+```
 
 ### 31) Basic Relation Search - Find notes with author relation
 - Composed query: Find all notes that have an "author" relation

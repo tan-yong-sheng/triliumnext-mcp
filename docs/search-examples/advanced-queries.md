@@ -60,13 +60,12 @@ TriliumNext supports different note types and MIME types that can be searched us
 - **text**: Regular text notes (default type)
 - **code**: Code notes with syntax highlighting
 - **mermaid**: Mermaid diagram notes
-- **canvas**: Canvas/drawing notes (Excalidraw)
 - **book**: Book/folder notes (containers)
-- **image**: Image notes
-- **file**: File attachment notes
-- **search**: Saved search notes
-- **relationMap**: Relation map notes
 - **render**: Render notes
+- **search**: Search notes
+- **relationMap**: Relation map notes
+- **noteMap**: Note map notes
+- **webView**: Web view notes
 
 ### MIME Type Search Reference
 - **JavaScript**: `text/javascript`
@@ -126,22 +125,7 @@ note.type = 'mermaid'
 ```
 - Use case: Find all Mermaid diagram notes
 
-### 79) Find Canvas/Drawing Notes
-- Composed query
-```
-note.type = 'canvas'
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "canvas"}
-  ]
-}
-```
-- Use case: Find all canvas/Excalidraw drawing notes
-
-### 80) Find Book/Folder Notes
+### 79) Find Book/Folder Notes
 - Composed query
 ```
 note.type = 'book'
@@ -221,21 +205,21 @@ note.type = 'code' AND note.mime = 'text/x-typescript'
 ```
 - Use case: Find JavaScript, Python, or TypeScript code notes
 
-### 85) Find Visual Note Types (Canvas OR Mermaid)
+### 85) Find Visual Note Types (RelationMap OR Mermaid)
 - Composed query
 ```
-~(note.type = 'canvas' OR note.type = 'mermaid')
+~(note.type = 'relationMap' OR note.type = 'mermaid')
 ```
 - Search Structure
 ```json
 {
   "searchCriteria": [
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "canvas", "logic": "OR"},
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "relationMap", "logic": "OR"},
     {"property": "type", "type": "noteProperty", "op": "=", "value": "mermaid"}
   ]
 }
 ```
-- Use case: Find all visual diagram notes (canvas drawings or Mermaid diagrams)
+- Use case: Find all visual diagram notes (relation maps or Mermaid diagrams)
 
 ### 86) Find Content with Specific Note Type
 - Composed query
@@ -303,21 +287,20 @@ note.type != 'text'
 ```
 - Use case: Find all specialized note types (excluding regular text notes)
 
-### 90) Find Image and File Attachments
+### 90) Find Non-Text Notes
 - Composed query
 ```
-~(note.type = 'image' OR note.type = 'file')
+note.type != 'text'
 ```
 - Search Structure
 ```json
 {
   "searchCriteria": [
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "image", "logic": "OR"},
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "file"}
+    {"property": "type", "type": "noteProperty", "op": "!=", "value": "text"}
   ]
 }
 ```
-- Use case: Find all attachment notes (images and files)
+- Use case: Find all specialized note types (excluding regular text notes)
 
 ---
 
@@ -420,8 +403,8 @@ TriliumNext supports two types of negation operators with different semantics: `
 ### 54) Smart Date Search (TriliumNext Feature)
 - TriliumNext native query
 ```
-#dateNote >= TODAY-30
+note.dateCreated >= TODAY-30
 ```
-- Finds notes with dateNote label within last 30 days
-- Supported smart values: NOW ± seconds, TODAY ± days, MONTH ± months, YEAR ± years
-- **Status**: ⚠️ NOT IMPLEMENTED in current MCP search
+- Finds notes created within last 30 days
+- Supported smart values: TODAY ± days, MONTH ± months, YEAR ± years, MONDAY-SUNDAY ± days
+- **Status**: ✅ IMPLEMENTED in current MCP search with noteProperties

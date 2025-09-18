@@ -263,8 +263,7 @@ function isTemplateOrSystemRelation(property: string): boolean {
  */
 function validateNoteType(value: string): string {
   const validNoteTypes = [
-    'text', 'code', 'mermaid', 'canvas', 'book', 'image',
-    'file', 'search', 'relationMap', 'render'
+    'text', 'code', 'render', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView'
   ];
 
   if (!validNoteTypes.includes(value)) {
@@ -307,17 +306,37 @@ function validateISODate(value: string, property: string): string {
   // ISO date formats: YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss.sssZ
   const isoDateRegex = /^\d{4}-\d{2}-\d{2}$/;
   const isoDateTimeRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/;
-  
-  if (!isoDateRegex.test(value) && !isoDateTimeRegex.test(value)) {
-    throw new Error(`Invalid date format for property '${property}'. Must use ISO format: 'YYYY-MM-DDTHH:mm:ss.sssZ' (e.g., '2024-01-01T00:00:00.000Z'). Smart expressions like 'TODAY-7' are not allowed.`);
+
+  // TriliumNext smart date expressions
+  const smartDatePatterns = [
+    /^TODAY([+-]\d+)?$/,           // TODAY, TODAY-7, TODAY+30
+    /^MONTH([+-]\d+)?$/,          // MONTH, MONTH-1, MONTH+1
+    /^YEAR([+-]\d+)?$/,           // YEAR, YEAR+1, YEAR-1
+    /^MONDAY([+-]\d+)?$/,         // MONDAY, MONDAY-1
+    /^TUESDAY([+-]\d+)?$/,        // TUESDAY, TUESDAY+1
+    /^WEDNESDAY([+-]\d+)?$/,      // WEDNESDAY
+    /^THURSDAY([+-]\d+)?$/,       // THURSDAY
+    /^FRIDAY([+-]\d+)?$/,         // FRIDAY
+    /^SATURDAY([+-]\d+)?$/,       // SATURDAY
+    /^SUNDAY([+-]\d+)?$/          // SUNDAY
+  ];
+
+  // Check if it's a valid ISO date, ISO datetime, or smart date expression
+  const isValidISO = isoDateRegex.test(value) || isoDateTimeRegex.test(value);
+  const isValidSmartDate = smartDatePatterns.some(pattern => pattern.test(value.toUpperCase()));
+
+  if (!isValidISO && !isValidSmartDate) {
+    throw new Error(`Invalid date format for property '${property}'. Must use ISO format: 'YYYY-MM-DDTHH:mm:ss.sssZ' (e.g., '2024-01-01T00:00:00.000Z') or TriliumNext smart expressions like 'TODAY-7', 'MONTH-1', 'YEAR+1'.`);
   }
-  
-  // Additional validation: check if the date is actually valid
-  const dateObj = new Date(value);
-  if (isNaN(dateObj.getTime())) {
-    throw new Error(`Invalid date value for property '${property}': '${value}'. Please provide a valid ISO date.`);
+
+  // For ISO dates, check if the date is actually valid
+  if (isValidISO) {
+    const dateObj = new Date(value);
+    if (isNaN(dateObj.getTime())) {
+      throw new Error(`Invalid date value for property '${property}': '${value}'. Please provide a valid ISO date.`);
+    }
   }
-  
+
   return value;
 }
 
