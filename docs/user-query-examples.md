@@ -92,6 +92,14 @@ This document provides simple examples of natural language queries you can try w
 - "Get all dates mentioned in note ABC123"
 - "Search for specific patterns in note XYZ789"
 
+### Search and Replace Operations
+- "Replace all occurrences of 'old company name' with 'new company name' in note ABC123"
+- "Find and fix typos: change 'occurence' to 'occurrence' across the entire note"
+- "Update all instances of 'http://' to 'https://' in my configuration note"
+- "Replace old phone numbers with new format throughout the contact list"
+- "Change all dates from '2024' to '2025' in the project timeline note"
+- "Update broken image links from old path to new path"
+
 ## Attribute Management
 
 ### Viewing Attributes

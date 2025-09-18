@@ -169,12 +169,6 @@ function filterFlagsForMode(flags: string, useRegex: boolean): string {
   return Array.from(validFlags).join('');
 }
 
-/**
- * Execute regex search on content (legacy function for backward compatibility)
- */
-function executeRegexSearch(content: string, pattern: string, flags: string = 'g'): RegexMatch[] {
-  return executeUnifiedSearch(content, pattern, true, flags);
-}
 
 /**
  * Execute search and replace on content
