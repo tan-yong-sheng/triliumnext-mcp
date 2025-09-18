@@ -157,14 +157,8 @@ export async function validateContentForUpdate(
 
     case 'code':
     case 'mermaid':
-      // For code/mermaid notes, reject HTML content
-      if (isLikelyHtml(contentString)) {
-        return {
-          isValid: false,
-          processedContent: contentString,
-          error: `${type} notes require plain text only, but HTML content was detected. Remove HTML tags and use plain text format.`
-        };
-      }
+      // Allow both plain text and HTML content for code/mermaid notes
+      // HTML validation removed to support more flexible content
       break;
 
     case 'render':

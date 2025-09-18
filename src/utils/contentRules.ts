@@ -56,7 +56,7 @@ export function getNoteTypeContentRules(noteType: NoteType): ContentRules {
         requiresHtml: false,
         description: "Content must be empty - render notes display HTML content from child notes via ~renderNote relation",
         examples: [""],
-        errorMessage: "Render notes must be empty. Create a child code note with type='code' and mime='application/x-html' containing your HTML, then link it with ~renderNote='child-note-title' relation."
+        errorMessage: "Render notes must be empty. Create a child code note with type='code' and mime='text/html' containing your HTML, then link it with ~renderNote='child-note-title' relation."
       };
 
     case 'code':
@@ -64,9 +64,9 @@ export function getNoteTypeContentRules(noteType: NoteType): ContentRules {
         allowContent: true,
         enforceEmpty: false,
         requiresHtml: false,
-        description: "Plain text only (no HTML tags)",
-        examples: ["def fibonacci(n):", "console.log('hello');"],
-        errorMessage: "Code notes require plain text only. HTML tags are not allowed."
+        description: "Plain text or HTML content allowed",
+        examples: ["def fibonacci(n):", "console.log('hello');", "<div>HTML code example</div>"],
+        errorMessage: "Code notes accept both plain text and HTML content."
       };
 
     case 'mermaid':
@@ -74,9 +74,9 @@ export function getNoteTypeContentRules(noteType: NoteType): ContentRules {
         allowContent: true,
         enforceEmpty: false,
         requiresHtml: false,
-        description: "Plain text only (Mermaid diagram syntax)",
-        examples: ["graph TD; A-->B", "sequenceDiagram; A->B: Hello"],
-        errorMessage: "Mermaid notes require plain text diagram syntax only. HTML tags are not allowed."
+        description: "Plain text or HTML content allowed (Mermaid diagram syntax)",
+        examples: ["graph TD; A-->B", "sequenceDiagram; A->B: Hello", "<div>HTML with Mermaid</div>"],
+        errorMessage: "Mermaid notes accept both plain text and HTML content."
       };
 
     case 'webView':
@@ -298,9 +298,7 @@ export async function validateContentForNoteType(
   // Type-specific validation
   switch (noteType) {
     case 'text':
-    case 'render':
-    case 'webView':
-      // HTML required for these types
+      // HTML required for text notes
       if (rules.requiresHtml && !isLikelyHtml(textContent)) {
         // Auto-wrap plain text in HTML
         const wrappedContent = `<p>${textContent}</p>`;
@@ -314,16 +312,8 @@ export async function validateContentForNoteType(
 
     case 'code':
     case 'mermaid':
-      // Plain text required for code/mermaid notes
-      if (rules.requiresHtml === false && isLikelyHtml(textContent)) {
-        return {
-          valid: false,
-          content,
-          error: `${noteType} notes require plain text only, but HTML content was detected. ` +
-                 `Remove HTML tags and use plain text format. ` +
-                 `Expected format: ${rules.examples.join(', ')}`
-        };
-      }
+      // Allow both plain text and HTML content for code/mermaid notes
+      // HTML validation removed to support more flexible content
       break;
 
   }
