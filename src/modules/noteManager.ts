@@ -262,8 +262,9 @@ export async function handleCreateNote(
 ): Promise<NoteCreateResponse> {
   const { parentNoteId, title, type, content: rawContent, mime, attributes, forceCreate = false } = args;
 
-  if (!parentNoteId || !title || !type || !rawContent) {
-    throw new Error("parentNoteId, title, type, and content are required for create operation.");
+  // Validate required parameters
+  if (!parentNoteId || !title || !type) {
+    throw new Error("parentNoteId, title, and type are required for create operation.");
   }
 
   // Check for duplicate title in the same directory (unless forceCreate is true)

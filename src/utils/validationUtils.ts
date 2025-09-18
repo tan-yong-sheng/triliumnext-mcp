@@ -31,7 +31,7 @@ export const manageAttributesSchema = z.object({
 export const createNoteSchema = z.object({
   parentNoteId: z.string().min(1, 'Parent note ID cannot be empty'),
   title: z.string().min(1, 'Title cannot be empty'),
-  type: z.enum(['text', 'code', 'render', 'file', 'image', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView']),
+  type: z.enum(['text', 'code', 'render', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView']),
   content: z.string().optional(),
   mime: z.string().optional(),
   attributes: z.array(attributeSchema).optional(),
@@ -47,7 +47,7 @@ export const searchNotesSchema = z.object({
 export const updateNoteSchema = z.object({
   noteId: z.string().min(1, 'Note ID cannot be empty'),
   title: z.string().min(1, 'Title cannot be empty').optional(),
-  type: z.enum(['text', 'code', 'render', 'file', 'image', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView']).optional(),
+  type: z.enum(['text', 'code', 'render', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView']).optional(),
   content: z.string().optional(),
   mime: z.string().optional(),
   revision: z.boolean().optional(),
