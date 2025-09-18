@@ -192,7 +192,7 @@ export function createReadTools(): any[] {
   return [
     {
       name: "get_note",
-      description: "Get a note and its content by ID. Perfect for when someone wants to see what's in a note, extract specific information, or prepare for search and replace operations. Getting the full content lets you see the context and create better regex patterns for extraction or replacement. For extracting information from multiple notes, first use search_notes to find relevant notes, then use get_note with searchPattern to extract specific patterns from each note.",
+      description: "Get a note and its content by ID. Perfect for when someone wants to see what's in a note, extract specific information, or prepare for search and replace operations. Getting the full content lets you see the context and extract information accurately. For extracting information from multiple notes: use search_notes to find relevant notes, then use get_note (with useRegex=false for LLM analysis, or useRegex=true for simple pattern matching).",
       inputSchema: {
         type: "object",
         properties: {
@@ -206,7 +206,7 @@ export function createReadTools(): any[] {
           },
           useRegex: {
             type: "boolean",
-            description: "Whether to use regex patterns for searchPattern. Set to true for extracting URLs, emails, dates, or any pattern-based information.",
+            description: "Whether to use regex patterns for searchPattern. Set to true for simple pattern matching, or false to let LLM read and analyze full content for more accurate extraction (recommended for complex cases like URLs, emails with context).",
             default: false
           },
           searchFlags: {
@@ -215,7 +215,7 @@ export function createReadTools(): any[] {
             default: "gi"
           },
         },
-        required: ["noteId", "useRegex"],
+        required: ["noteId"],
       }
     },
     {
