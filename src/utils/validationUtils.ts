@@ -253,7 +253,4 @@ export function validateLogicOperator(logic: unknown): 'AND' | 'OR' {
     throw new Error(`Invalid logic operator: ${logic}. Must be 'AND' or 'OR'`);
   }
   return logic;
-}}. Must be 'AND' or 'OR'`);
-  }
-  return logic;
 }

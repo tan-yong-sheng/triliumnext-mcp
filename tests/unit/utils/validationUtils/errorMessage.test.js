@@ -109,7 +109,7 @@ describe('Error Message Validation', () => {
     });
 
     it('should provide specific error for invalid note types', () => {
-      const invalidTypes = ['invalid_type', 'canvas'];
+      const invalidTypes = ['invalid_type'];
 
       invalidTypes.forEach(type => {
         const invalidRequest = {

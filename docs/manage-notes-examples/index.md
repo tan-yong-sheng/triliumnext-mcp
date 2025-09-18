@@ -4,13 +4,32 @@ This guide provides a complete reference for creating and managing notes in Tril
 
 ## Overview
 
-The `create_note` and `update_note` tools use a simplified model where the `content` parameter is a single string. The server intelligently processes this string based on the note's `type`.
+The `create_note` and `update_note` tools use a simplified string-based interface for content. While the internal TypeScript interfaces support more complex structures, the MCP tools expose a streamlined string-based API that's easier to use.
 
-- **String-based Content**: The `content` parameter accepts a single string, not a complex object.
-- **Smart Content Processing**: For `text` notes, the server auto-detects Markdown, HTML, or plain text.
+- **String-based Content**: The `content` parameter accepts a single string for all note types.
+- **Smart Content Processing**: For `text` notes, the server auto-detects Markdown, HTML, or plain text and processes accordingly.
 - **Hash Validation**: `update_note` requires an `expectedHash` (the `blobId` from `get_note`) to prevent overwriting concurrent changes.
 - **Update Modes**: `update_note` requires a `mode` parameter (`'overwrite'` or `'append'`) to specify how content should be updated.
 - **Attribute Management**: Create notes with labels and relations in a single step for better performance.
+
+## Internal vs External Content Interfaces
+
+### MCP Tool Interface (What Users See)
+```json
+{
+  "content": "string"  // Simple string for all note types
+}
+```
+
+### Internal Processing (Server-Side)
+```typescript
+interface ContentItem {
+  type: 'text';
+  content: string;
+}
+```
+
+The server automatically converts the simple string input to the appropriate internal structure based on the note type.
 
 ## Tool Interfaces
 
@@ -42,13 +61,17 @@ The `create_note` and `update_note` tools use a simplified model where the `cont
 
 ## Content Processing Rules
 
-| Note Type | Content Format | Processing Rules |
-|---|---|---|
-| **`text`** | String | Auto-detects format: Markdown is converted to HTML, plain text is wrapped in `<p>` tags, and HTML is passed through. |
-| **`code`** | String | Plain text only. HTML tags will be rejected. `mime` type is required. |
-| **`mermaid`**| String | Plain text only. Mermaid diagram syntax. |
-| **`book`** | String | Content is optional. Can be an empty string `""`. |
-| **Other Types**| String | Content is generally optional or follows HTML/text rules. |
+| Note Type | Input Format | Processing Rules | Examples |
+|---|---|---|---|
+| **`text`** | String | Auto-detects format: Markdown → HTML, plain text → `<p>` tags, HTML → passed through | `"# Hello"` → `<h1>Hello</h1>` |
+| **`code`** | String | Plain text only. HTML tags rejected. `mime` type required. | `"console.log('hi')"` with `mime: "text/javascript"` |
+| **`mermaid`**| String | Plain text only. Mermaid diagram syntax. Auto-detected. | `"graph TD; A-->B"` |
+| **`book`** | String | Optional. Can be empty string `""` or HTML content. | `""` or `"<h1>Folder</h1>"` |
+| **`render`** | String | HTML/JS content for custom rendering. | `"<div>Custom HTML</div>"` |
+| **`search`** | String | Trilium search query syntax. | `"note.title = 'project'"` |
+| **`relationMap`** | String | Optional. Can be empty. | `""` |
+| **`noteMap`** | String | Optional. Can be empty. | `""` |
+| **`webView`** | String | URL or HTML for web content. | `"https://example.com"` |
 
 ---
 
@@ -97,6 +120,38 @@ The `create_note` and `update_note` tools use a simplified model where the `cont
 }
 ```
 
+### Creating Different Note Types
+
+#### Render Note
+```json
+{
+  "parentNoteId": "root",
+  "title": "Custom Widget",
+  "type": "render",
+  "content": "<div id='widget'>Hello from custom HTML!</div>"
+}
+```
+
+#### Search Note
+```json
+{
+  "parentNoteId": "root",
+  "title": "All Project Notes",
+  "type": "search",
+  "content": "note.parents.title = 'Projects' AND #project"
+}
+```
+
+#### WebView Note
+```json
+{
+  "parentNoteId": "root",
+  "title": "Documentation",
+  "type": "webView",
+  "content": "https://docs.example.com"
+}
+```
+
 ### Updating a Note (Safe Workflow)
 
 **1. Get the note's current state and hash:**
@@ -134,4 +189,30 @@ get_note({ noteId: "abc123", includeContent: true })
 ### Conflict Detection
 If you try to update a note with a stale `expectedHash`, the operation will fail with a conflict error. This prevents you from accidentally overwriting changes made by another process. To resolve this, you must call `get_note` again to get the latest hash and then retry your update.
 
+## Content Type Safety
+
+The server enforces content type safety to ensure data integrity:
+
+### Text Notes
+- **Auto-conversion**: Markdown and plain text are converted to HTML
+- **HTML validation**: Invalid HTML is corrected automatically
+- **Example**: `"Hello world"` → `"<p>Hello world</p>"`
+
+### Code Notes
+- **Plain text only**: HTML content is rejected with clear error messages
+- **MIME required**: Must specify appropriate MIME type
+- **Example**: `"console.log('hi')"` with `mime: "text/javascript"`
+
+### Other Types
+- **Flexible**: Accept appropriate content formats based on type
+- **Empty allowed**: Most types can have empty content `""`
+
+For detailed error handling and content validation rules, see the individual tool documentation.
+
+## Related Documentation
+
+- **[Note Type Reference](./note-type-reference.md)** - Detailed information about supported note types
+- **[Template Relations Guide](./template-guide.md)** - Working with built-in templates
+- **[Attribute Management Guide](./attribute-management-guide.md)** - Managing labels and relations
+- **[Search and Replace Guide](./search-and-replace-guide.md)** - Advanced content editing
 ```

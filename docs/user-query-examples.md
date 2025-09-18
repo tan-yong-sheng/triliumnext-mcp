@@ -49,7 +49,6 @@ This document provides simple examples of natural language queries you can try w
 
 ### By Note Type
 - "Find all my code notes"
-- "Show me canvas/drawing notes"
 - "Find Mermaid diagram notes"
 - "List all book/folder notes"
 

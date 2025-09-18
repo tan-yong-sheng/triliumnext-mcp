@@ -4,11 +4,11 @@ This document provides comprehensive information about the note types supported 
 
 ## Overview
 
-The TriliumNext MCP server supports a wide range of note types for search operations, aligning with the TriliumNext ETAPI specification. For creation, a specific subset of these types is supported to ensure reliability.
+The TriliumNext MCP server currently supports **9 note types** for both search and creation operations. These types have been carefully selected to ensure reliability and stability with the current TriliumNext ETAPI implementation.
 
-## Note Creation Support
+## Supported Note Types (Search & Creation)
 
-The `create_note` tool supports the following **9 note types**:
+The following **9 note types** are fully supported for both search and creation operations:
 
 1.  **`text`** - Rich text notes with smart format detection (Markdown, HTML, plain text).
 2.  **`code`** - Code snippets with syntax highlighting. Requires a `mime` type.
@@ -20,15 +20,85 @@ The `create_note` tool supports the following **9 note types**:
 8.  **`mermaid`** - Mermaid diagram notes.
 9.  **`webView`** - Notes for embedding web content.
 
-**Note**: While `file` and `image` note types exist in Trilium, their creation via the MCP is temporarily disabled to ensure system stability.
+## Type Support Matrix
 
-## Search-Only Note Types
+| Type | Search | Create | Description | MIME Type Support |
+|------|--------|--------|-------------|-------------------|
+| `text` | ✅ | ✅ | Rich text with smart format detection | Not applicable |
+| `code` | ✅ | ✅ | Code with syntax highlighting | Required (e.g., `text/javascript`) |
+| `render` | ✅ | ✅ | Custom HTML/JS rendering | Optional |
+| `search` | ✅ | ✅ | Saved search queries | Optional |
+| `relationMap` | ✅ | ✅ | Relationship visualization | Optional |
+| `book` | ✅ | ✅ | Folders/containers | Optional |
+| `noteMap` | ✅ | ✅ | Visual mapping layouts | Optional |
+| `mermaid` | ✅ | ✅ | Mermaid diagram syntax | `text/vnd.mermaid` |
+| `webView` | ✅ | ✅ | Web content embedding | Optional |
 
-In addition to the creatable types, the following types can be found via `search_notes` but not created:
+## Currently Unsupported Types
 
--   **`file`**: File attachments and documents.
--   **`image`**: Image files.
--   **`canvas`**: Excalidraw drawing notes.
+The following note types exist in TriliumNext but are **not supported** by the MCP server:
+
+- **`file`**: File attachments and documents (ETAPI upload limitations)
+- **`image`**: Image files (ETAPI upload limitations)
+- **`canvas`**: Excalidraw drawing notes (currently not yet supported)
+- **`shortcut`**: Navigation shortcuts (deprecated in ETAPI)
+- **`doc`**: Document containers (deprecated in ETAPI)
+- **`contentWidget`**: Interactive widgets (deprecated in ETAPI)
+- **`launcher`**: Application launchers (deprecated in ETAPI)
+
+**Note**: These types are excluded due to either ETAPI limitations, stability concerns, or deprecation in the current TriliumNext version.
+
+## Search Examples
+
+Find notes by type using the `search_notes` tool:
+
+```json
+{
+  "searchCriteria": [
+    {
+      "property": "type",
+      "type": "noteProperty",
+      "op": "=",
+      "value": "text"
+    }
+  ]
+}
+```
+
+### Find All Code Notes with Specific MIME Type
+```json
+{
+  "searchCriteria": [
+    {
+      "property": "type",
+      "type": "noteProperty",
+      "op": "=",
+      "value": "code",
+      "logic": "AND"
+    },
+    {
+      "property": "mime",
+      "type": "noteProperty",
+      "op": "=",
+      "value": "text/javascript"
+    }
+  ]
+}
+```
+
+### Find All Template-Based Notes
+```json
+{
+  "searchCriteria": [
+    {
+      "property": "template.title",
+      "type": "relation",
+      "op": "=",
+      "value": "Board"
+    }
+  ]
+}
+```
 
 ## Template Relations
 
