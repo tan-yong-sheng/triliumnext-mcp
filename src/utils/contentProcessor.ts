@@ -110,7 +110,7 @@ function isValidUrl(url: string): boolean {
 export async function processContentArray(content: string, noteType?: string): Promise<ProcessedContent> {
   if (!content || content.trim() === '') {
     // Return empty content for note types that allow it
-    if (noteType && ['book', 'search', 'relationMap', 'noteMap'].includes(noteType)) {
+    if (noteType && ['book', 'render', 'search', 'relationMap', 'noteMap'].includes(noteType)) {
       return { content: '' };
     }
 
