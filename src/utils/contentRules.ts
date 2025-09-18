@@ -268,8 +268,17 @@ export async function validateContentForNoteType(
   // Get template-aware content rules
   const rules = getTemplateContentRules(noteType, templateRelation);
 
-  // Check if content is allowed at all
-  if (!rules.allowContent) {
+  // Special handling for container templates: empty content is always valid
+  if (!textContent && rules.enforceEmpty) {
+    return {
+      valid: true,
+      content: "",
+      corrected: false
+    };
+  }
+
+  // Check if content is allowed at all (only for non-empty content)
+  if (!rules.allowContent && textContent) {
     return {
       valid: false,
       content,

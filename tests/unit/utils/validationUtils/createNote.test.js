@@ -469,4 +469,303 @@ describe('Create Note Validation', () => {
     });
   });
 
+  describe('Container Template Content Validation', () => {
+    const containerTemplates = ['Board', 'Calendar', 'Grid View', 'List View', 'Table', 'Geo Map'];
+
+    describe('Empty Content Acceptance', () => {
+      containerTemplates.forEach(template => {
+        it(`should accept empty content for ${template} template`, () => {
+          const validRequest = {
+            parentNoteId: 'root',
+            title: `Test ${template}`,
+            type: 'book',
+            content: '',
+            attributes: [
+              { type: 'relation', name: 'template', value: template, position: 10 }
+            ]
+          };
+
+          const result = safeValidate(createNoteSchema, validRequest);
+          assert.strictEqual(result.success, true);
+          assert.ok(result.data);
+          assert.strictEqual(result.data.type, 'book');
+          assert.strictEqual(result.data.content, '');
+
+          // Verify template relation is properly validated
+          const templateAttr = result.data.attributes.find(attr =>
+            attr.name === 'template' && attr.value === template
+          );
+          assert.ok(templateAttr, `Template relation for ${template} should be present`);
+        });
+      });
+    });
+
+    describe('Whitespace Content Handling', () => {
+      containerTemplates.forEach(template => {
+        it(`should handle whitespace-only content as empty for ${template} template`, () => {
+          const validRequest = {
+            parentNoteId: 'root',
+            title: `Test ${template}`,
+            type: 'book',
+            content: '   \n\t  ',  // Various whitespace
+            attributes: [
+              { type: 'relation', name: 'template', value: template, position: 10 }
+            ]
+          };
+
+          const result = safeValidate(createNoteSchema, validRequest);
+          assert.strictEqual(result.success, true);
+          assert.ok(result.data);
+        });
+      });
+    });
+
+    describe('Template Relation Validation', () => {
+      it('should validate template relation with proper structure', () => {
+        const validRequest = {
+          parentNoteId: 'root',
+          title: 'Test Board',
+          type: 'book',
+          content: '',
+          attributes: [
+            {
+              type: 'relation',
+              name: 'template',
+              value: 'Board',
+              position: 10,
+              isInheritable: false
+            }
+          ]
+        };
+
+        const result = safeValidate(createNoteSchema, validRequest);
+        assert.strictEqual(result.success, true);
+        assert.ok(result.data);
+
+        const templateAttr = result.data.attributes[0];
+        assert.strictEqual(templateAttr.type, 'relation');
+        assert.strictEqual(templateAttr.name, 'template');
+        assert.strictEqual(templateAttr.value, 'Board');
+        assert.strictEqual(templateAttr.position, 10);
+        assert.strictEqual(templateAttr.isInheritable, false);
+      });
+
+      it('should accept template relation with default position', () => {
+        const validRequest = {
+          parentNoteId: 'root',
+          title: 'Test Calendar',
+          type: 'book',
+          content: '',
+          attributes: [
+            {
+              type: 'relation',
+              name: 'template',
+              value: 'Calendar'
+              // No position specified - should default
+            }
+          ]
+        };
+
+        const result = safeValidate(createNoteSchema, validRequest);
+        assert.strictEqual(result.success, true);
+        assert.ok(result.data);
+      });
+    });
+  });
+
+  describe('Regular Note Type Content Validation', () => {
+    it('should require HTML content for text notes', () => {
+      const validRequest = {
+        parentNoteId: 'root',
+        title: 'Text Note',
+        type: 'text',
+        content: '<p>This is valid HTML content</p>'
+      };
+
+      const result = safeValidate(createNoteSchema, validRequest);
+      assert.strictEqual(result.success, true);
+      assert.ok(result.data);
+      assert.strictEqual(result.data.type, 'text');
+    });
+
+    it('should accept plain text content for text notes', () => {
+      const validRequest = {
+        parentNoteId: 'root',
+        title: 'Text Note',
+        type: 'text',
+        content: 'Plain text content'
+      };
+
+      const result = safeValidate(createNoteSchema, validRequest);
+      assert.strictEqual(result.success, true);
+      assert.ok(result.data);
+    });
+
+    it('should accept empty content for text notes', () => {
+      const validRequest = {
+        parentNoteId: 'root',
+        title: 'Empty Text Note',
+        type: 'text',
+        content: ''
+      };
+
+      const result = safeValidate(createNoteSchema, validRequest);
+      assert.strictEqual(result.success, true);
+      assert.ok(result.data);
+    });
+
+    it('should accept both plain text and HTML for code notes', () => {
+      const plainTextRequest = {
+        parentNoteId: 'root',
+        title: 'Code Note',
+        type: 'code',
+        content: 'console.log("Hello World");',
+        mime: 'text/javascript'
+      };
+
+      const htmlRequest = {
+        parentNoteId: 'root',
+        title: 'Code Note',
+        type: 'code',
+        content: '<div>HTML example with code</div>',
+        mime: 'text/html'
+      };
+
+      const plainResult = safeValidate(createNoteSchema, plainTextRequest);
+      const htmlResult = safeValidate(createNoteSchema, htmlRequest);
+
+      assert.strictEqual(plainResult.success, true);
+      assert.strictEqual(htmlResult.success, true);
+    });
+
+    it('should accept empty content for code notes', () => {
+      const validRequest = {
+        parentNoteId: 'root',
+        title: 'Empty Code Note',
+        type: 'code',
+        content: '',
+        mime: 'text/plain'
+      };
+
+      const result = safeValidate(createNoteSchema, validRequest);
+      assert.strictEqual(result.success, true);
+      assert.ok(result.data);
+    });
+  });
+
+  describe('Template Attribute Edge Cases', () => {
+    it('should handle template relation with case variations', () => {
+      const caseVariations = [
+        { value: 'board', description: 'lowercase' },
+        { value: 'BOARD', description: 'uppercase' },
+        { value: 'Board', description: 'title case' },
+        { value: ' board ', description: 'with spaces' }
+      ];
+
+      caseVariations.forEach(({ value, description }) => {
+        const request = {
+          parentNoteId: 'root',
+          title: 'Test Board',
+          type: 'book',
+          content: '',
+          attributes: [
+            { type: 'relation', name: 'template', value: value, position: 10 }
+          ]
+        };
+
+        const result = safeValidate(createNoteSchema, request);
+        assert.strictEqual(result.success, true, `Should accept ${description} template value`);
+        assert.ok(result.data);
+      });
+    });
+
+    it('should handle multiple attributes with template relation', () => {
+      const validRequest = {
+        parentNoteId: 'root',
+        title: 'Complex Board',
+        type: 'book',
+        content: '',
+        attributes: [
+          { type: 'label', name: 'project', value: 'Website Redesign', position: 20 },
+          { type: 'relation', name: 'template', value: 'Board', position: 10 },
+          { type: 'label', name: 'priority', value: 'high', position: 30 }
+        ]
+      };
+
+      const result = safeValidate(createNoteSchema, validRequest);
+      assert.strictEqual(result.success, true);
+      assert.ok(result.data);
+      assert.strictEqual(result.data.attributes.length, 3);
+    });
+
+    it('should validate attribute position ordering', () => {
+      const validRequest = {
+        parentNoteId: 'root',
+        title: 'Ordered Attributes',
+        type: 'book',
+        content: '',
+        attributes: [
+          { type: 'label', name: 'first', value: '1', position: 10 },
+          { type: 'relation', name: 'template', value: 'Board', position: 5 },
+          { type: 'label', name: 'last', value: '2', position: 15 }
+        ]
+      };
+
+      const result = safeValidate(createNoteSchema, validRequest);
+      assert.strictEqual(result.success, true);
+      assert.ok(result.data);
+
+      // Verify all attributes are present with correct positions
+      const attributes = result.data.attributes;
+      assert.strictEqual(attributes.length, 3);
+
+      const templateAttr = attributes.find(attr => attr.name === 'template');
+      assert.strictEqual(templateAttr.position, 5);
+    });
+  });
+
+  describe('Content Type Edge Cases', () => {
+    it('should handle Unicode and special characters in content', () => {
+      const validRequest = {
+        parentNoteId: 'root',
+        title: 'Unicode Content',
+        type: 'text',
+        content: 'Hello 世界 🌟 Special chars: &<>"\' and emoji 😀'
+      };
+
+      const result = safeValidate(createNoteSchema, validRequest);
+      assert.strictEqual(result.success, true);
+      assert.ok(result.data);
+    });
+
+    it('should handle very long content strings', () => {
+      const longContent = 'x'.repeat(10000); // 10KB content
+
+      const validRequest = {
+        parentNoteId: 'root',
+        title: 'Long Content',
+        type: 'text',
+        content: longContent
+      };
+
+      const result = safeValidate(createNoteSchema, validRequest);
+      assert.strictEqual(result.success, true);
+      assert.ok(result.data);
+      assert.strictEqual(result.data.content.length, 10000);
+    });
+
+    it('should handle content with HTML entities', () => {
+      const validRequest = {
+        parentNoteId: 'root',
+        title: 'HTML Entities',
+        type: 'text',
+        content: '&lt;div&gt;Hello &amp; World&lt;/div&gt;'
+      };
+
+      const result = safeValidate(createNoteSchema, validRequest);
+      assert.strictEqual(result.success, true);
+      assert.ok(result.data);
+    });
+  });
+
 });

@@ -30,7 +30,6 @@ export interface NoteOperation {
   includeContent?: boolean;
   attributes?: Attribute[];
   expectedHash?: string;
-  forceCreate?: boolean;
   // Search parameters
   searchPattern?: string;
   useRegex?: boolean;
@@ -47,7 +46,6 @@ export interface NoteCreateResponse {
   duplicateNoteId?: string;
   choices?: {
     skip: string;
-    createAnyway: string;
     updateExisting: string;
   };
   nextSteps?: string;
@@ -261,29 +259,26 @@ export async function handleCreateNote(
   args: NoteOperation,
   axiosInstance: any
 ): Promise<NoteCreateResponse> {
-  const { parentNoteId, title, type, content: rawContent, mime, attributes, forceCreate = false } = args;
+  const { parentNoteId, title, type, content: rawContent, mime, attributes } = args;
 
   // Validate required parameters
   if (!parentNoteId || !title || !type) {
     throw new Error("parentNoteId, title, and type are required for create operation.");
   }
 
-  // Check for duplicate title in the same directory (unless forceCreate is true)
-  if (!forceCreate) {
-    const duplicateCheck = await checkDuplicateTitleInDirectory(parentNoteId, title, axiosInstance);
-    if (duplicateCheck.found) {
-      return {
-        message: `Found existing note with title "${title}" in this directory. Please choose how to proceed:`,
-        duplicateFound: true,
-        duplicateNoteId: duplicateCheck.duplicateNoteId,
-        choices: {
-          skip: "Skip creation - do nothing",
-          createAnyway: "Create anyway - create duplicate note with same title (set forceCreate: true)",
-          updateExisting: "Update existing - replace content of existing note with new content"
-        },
-        nextSteps: `Please specify your choice by calling create_note again with your preferred action. To update the existing note, use update_note with noteId: ${duplicateCheck.duplicateNoteId}`
-      };
-    }
+  // Check for duplicate title in the same directory
+  const duplicateCheck = await checkDuplicateTitleInDirectory(parentNoteId, title, axiosInstance);
+  if (duplicateCheck.found) {
+    return {
+      message: `Found existing note with title "${title}" in this directory. Please choose how to proceed:`,
+      duplicateFound: true,
+      duplicateNoteId: duplicateCheck.duplicateNoteId,
+      choices: {
+        skip: "Skip creation - do nothing",
+        updateExisting: "Update existing - replace content of existing note with new content"
+      },
+      nextSteps: `Please specify your choice by calling create_note again with a different title, or use update_note with noteId: ${duplicateCheck.duplicateNoteId}`
+    };
   }
 
   // Process content to ETAPI format
@@ -293,10 +288,33 @@ export async function handleCreateNote(
   // Extract template relation for content validation
   const templateRelation = extractTemplateRelation(attributes);
 
+  // Auto-correct note type for container templates
+  let correctedType = type;
+  if (templateRelation) {
+    const cleanedTemplateRelation = templateRelation ? templateRelation.trim() : '';
+
+    // List of container templates that require 'book' type
+    const containerTemplates = [
+      'board', '_template_board',
+      'grid view', '_template_grid_view',
+      'list view', '_template_list_view',
+      'geo map', '_template_geo_map',
+      'calendar', '_template_calendar'
+    ];
+
+    const isContainerTemplate = cleanedTemplateRelation &&
+      containerTemplates.includes(cleanedTemplateRelation.toLowerCase());
+
+    if (isContainerTemplate && type !== 'book') {
+      logVerbose("handleCreateNote", `Auto-correcting note type from '${type}' to 'book' for ${templateRelation} template`);
+      correctedType = 'book';
+    }
+  }
+
   // Validate content with template-aware rules
   const contentValidation = await validateContentForNoteType(
     content,
-    type as NoteType,
+    correctedType as NoteType,
     undefined,
     templateRelation
   );
@@ -313,7 +331,7 @@ export async function handleCreateNote(
   const validatedContent = contentValidation.content;
 
   // Process content to ETAPI format
-  const processed = await processContentArray(validatedContent, type);
+  const processed = await processContentArray(validatedContent, correctedType);
   if (processed.error) {
     throw new Error(`Content processing error: ${processed.error}`);
   }
@@ -324,7 +342,7 @@ export async function handleCreateNote(
   const noteData: any = {
     parentNoteId,
     title,
-    type,
+    type: correctedType,
     content: processedContent
   };
 
@@ -349,11 +367,90 @@ export async function handleCreateNote(
     }
   }
 
+  // Clean up dummy notes for Board template
+  // Check both original template name and translated template ID, with space trimming
+  const cleanedTemplateRelation = templateRelation ? templateRelation.trim() : '';
+  const isBoardTemplate = cleanedTemplateRelation && (
+    cleanedTemplateRelation.toLowerCase() === 'board' ||
+    cleanedTemplateRelation.toLowerCase() === '_template_board'
+  );
+
+  // Add debug logging
+  logVerbose("handleCreateNote", `Template debug - original templateRelation: "${templateRelation}", cleaned: "${cleanedTemplateRelation}", isBoardTemplate: ${isBoardTemplate}`);
+
+  if (isBoardTemplate) {
+    try {
+      logVerbose("handleCreateNote", `Board template detected, cleaning up dummy notes for ${noteId}`);
+      await cleanupBoardDummyNotes(noteId, axiosInstance);
+      logVerbose("handleCreateNote", `Successfully cleaned up dummy notes for Board ${noteId}`);
+    } catch (cleanupError) {
+      logVerboseError("handleCreateNote", cleanupError);
+      // Non-critical error, don't fail the entire operation
+    }
+  } else {
+    logVerbose("handleCreateNote", `Not a Board template, skipping cleanup (templateRelation: "${templateRelation}")`);
+  }
+
   return {
     noteId: noteId,
     message: `Created note: ${noteId}`,
     duplicateFound: false
   };
+}
+
+/**
+ * Clean up dummy notes created by Board template
+ * Board templates automatically create 3 dummy kanban column notes
+ */
+async function cleanupBoardDummyNotes(
+  boardNoteId: string,
+  axiosInstance: any
+): Promise<void> {
+  try {
+    logVerbose("cleanupBoardDummyNotes", `Starting cleanup for Board note ${boardNoteId}`);
+
+    // Search for immediate children of the board note
+    const searchParams: SearchOperation = {
+      searchCriteria: [
+        {
+          property: "parents.noteId",
+          op: "=",
+          value: boardNoteId,
+          logic: "AND"
+        }
+      ]
+    };
+
+    // Use the searchManager to find child notes
+    const { handleSearchNotes } = await import('./searchManager.js');
+    const searchResults = await handleSearchNotes(searchParams, axiosInstance);
+
+    if (searchResults.results && searchResults.results.length > 0) {
+      logVerbose("cleanupBoardDummyNotes", `Found ${searchResults.results.length} child notes to evaluate`);
+
+      // Delete each child note
+      for (const childNote of searchResults.results) {
+        try {
+          logVerbose("cleanupBoardDummyNotes", `Deleting dummy child note: ${childNote.noteId} (${childNote.title})`);
+
+          // Use internal delete function
+          await handleDeleteNote({ noteId: childNote.noteId }, axiosInstance);
+
+          logVerbose("cleanupBoardDummyNotes", `Successfully deleted dummy child note: ${childNote.noteId}`);
+        } catch (deleteError) {
+          logVerboseError("cleanupBoardDummyNotes", new Error(`Failed to delete dummy child note ${childNote.noteId}: ${deleteError}`));
+          // Continue with other notes even if one fails
+        }
+      }
+
+      logVerbose("cleanupBoardDummyNotes", `Completed cleanup for Board note ${boardNoteId}`);
+    } else {
+      logVerbose("cleanupBoardDummyNotes", `No child notes found for Board note ${boardNoteId}`);
+    }
+  } catch (error) {
+    logVerboseError("cleanupBoardDummyNotes", error);
+    // Non-critical error, don't fail the entire operation
+  }
 }
 
 /**
