@@ -288,11 +288,12 @@ export async function handleCreateNote(
   // Extract template relation for content validation
   const templateRelation = extractTemplateRelation(attributes);
 
+  // Clean template relation for consistent processing
+  const cleanedTemplateRelation = templateRelation ? templateRelation.trim() : '';
+
   // Auto-correct note type for container templates
   let correctedType = type;
   if (templateRelation) {
-    const cleanedTemplateRelation = templateRelation ? templateRelation.trim() : '';
-
     // List of container templates that require 'book' type
     const containerTemplates = [
       'board', '_template_board',
@@ -367,30 +368,7 @@ export async function handleCreateNote(
     }
   }
 
-  // Clean up dummy notes for Board template
-  // Check both original template name and translated template ID, with space trimming
-  const cleanedTemplateRelation = templateRelation ? templateRelation.trim() : '';
-  const isBoardTemplate = cleanedTemplateRelation && (
-    cleanedTemplateRelation.toLowerCase() === 'board' ||
-    cleanedTemplateRelation.toLowerCase() === '_template_board'
-  );
-
-  // Add debug logging
-  logVerbose("handleCreateNote", `Template debug - original templateRelation: "${templateRelation}", cleaned: "${cleanedTemplateRelation}", isBoardTemplate: ${isBoardTemplate}`);
-
-  if (isBoardTemplate) {
-    try {
-      logVerbose("handleCreateNote", `Board template detected, cleaning up dummy notes for ${noteId}`);
-      await cleanupBoardDummyNotes(noteId, axiosInstance);
-      logVerbose("handleCreateNote", `Successfully cleaned up dummy notes for Board ${noteId}`);
-    } catch (cleanupError) {
-      logVerboseError("handleCreateNote", cleanupError);
-      // Non-critical error, don't fail the entire operation
-    }
-  } else {
-    logVerbose("handleCreateNote", `Not a Board template, skipping cleanup (templateRelation: "${templateRelation}")`);
-  }
-
+  
   return {
     noteId: noteId,
     message: `Created note: ${noteId}`,
@@ -398,60 +376,6 @@ export async function handleCreateNote(
   };
 }
 
-/**
- * Clean up dummy notes created by Board template
- * Board templates automatically create 3 dummy kanban column notes
- */
-async function cleanupBoardDummyNotes(
-  boardNoteId: string,
-  axiosInstance: any
-): Promise<void> {
-  try {
-    logVerbose("cleanupBoardDummyNotes", `Starting cleanup for Board note ${boardNoteId}`);
-
-    // Search for immediate children of the board note
-    const searchParams: SearchOperation = {
-      searchCriteria: [
-        {
-          property: "parents.noteId",
-          op: "=",
-          value: boardNoteId,
-          logic: "AND"
-        }
-      ]
-    };
-
-    // Use the searchManager to find child notes
-    const { handleSearchNotes } = await import('./searchManager.js');
-    const searchResults = await handleSearchNotes(searchParams, axiosInstance);
-
-    if (searchResults.results && searchResults.results.length > 0) {
-      logVerbose("cleanupBoardDummyNotes", `Found ${searchResults.results.length} child notes to evaluate`);
-
-      // Delete each child note
-      for (const childNote of searchResults.results) {
-        try {
-          logVerbose("cleanupBoardDummyNotes", `Deleting dummy child note: ${childNote.noteId} (${childNote.title})`);
-
-          // Use internal delete function
-          await handleDeleteNote({ noteId: childNote.noteId }, axiosInstance);
-
-          logVerbose("cleanupBoardDummyNotes", `Successfully deleted dummy child note: ${childNote.noteId}`);
-        } catch (deleteError) {
-          logVerboseError("cleanupBoardDummyNotes", new Error(`Failed to delete dummy child note ${childNote.noteId}: ${deleteError}`));
-          // Continue with other notes even if one fails
-        }
-      }
-
-      logVerbose("cleanupBoardDummyNotes", `Completed cleanup for Board note ${boardNoteId}`);
-    } else {
-      logVerbose("cleanupBoardDummyNotes", `No child notes found for Board note ${boardNoteId}`);
-    }
-  } catch (error) {
-    logVerboseError("cleanupBoardDummyNotes", error);
-    // Non-critical error, don't fail the entire operation
-  }
-}
 
 /**
  * Create attributes for a note (helper function)
