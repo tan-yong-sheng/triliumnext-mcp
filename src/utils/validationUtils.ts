@@ -194,7 +194,11 @@ export function validateTemplateRelation(templateName: unknown): string {
   const validTemplates = ['Calendar', 'Board', 'Text Snippet', 'Grid View', 'List View', 'Table', 'Geo Map'];
 
   if (typeof templateName !== 'string' || !validTemplates.includes(templateName)) {
-    throw new Error(`Invalid template: ${templateName}. Must be one of: ${validTemplates.join(', ')}`);
+    throw new Error(
+      `Invalid template: ${templateName}. Must be one of: ${validTemplates.join(', ')}. ` +
+      `Template relations must link to note IDs. For built-in templates, use their note ID (e.g., "_template_grid_view"). ` +
+      `For custom templates, use the actual note ID.`
+    );
   }
 
   return templateName;

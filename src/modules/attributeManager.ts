@@ -6,6 +6,7 @@
 import { AxiosInstance } from 'axios';
 import axios from 'axios';
 import { logVerbose, logVerboseApi, logVerboseAxiosError } from "../utils/verboseUtils.js";
+import { validateAndTranslateTemplate, createTemplateRelationError } from "../utils/templateMapper.js";
 
 export interface Attribute {
   type: "label" | "relation";
@@ -95,12 +96,30 @@ async function create_single_attribute(
       };
     }
 
+    // Translate template names to note IDs for template relations
+    let processedValue = attribute.value || "";
+    if (attribute.type === "relation" && attribute.name === "template" && attribute.value) {
+      try {
+        processedValue = validateAndTranslateTemplate(attribute.value);
+        logVerbose("create_single_attribute", `Translated template relation`, {
+          from: attribute.value,
+          to: processedValue
+        });
+      } catch (error) {
+        return {
+          success: false,
+          message: createTemplateRelationError(attribute.value),
+          errors: [error instanceof Error ? error.message : 'Template validation failed']
+        };
+      }
+    }
+
     // Prepare attribute data for ETAPI
     const attributeData = {
       noteId: noteId,
       type: attribute.type,
       name: attribute.name,
-      value: attribute.value || "",
+      value: processedValue,
       position: attribute.position || 10,
       isInheritable: attribute.isInheritable || false
     };
@@ -153,11 +172,26 @@ async function create_batch_attributes(
         return null;
       }
 
+      // Translate template names to note IDs for template relations
+      let processedValue = attribute.value || "";
+      if (attribute.type === "relation" && attribute.name === "template" && attribute.value) {
+        try {
+          processedValue = validateAndTranslateTemplate(attribute.value);
+          logVerbose("create_batch_attributes", `Translated template relation`, {
+            from: attribute.value,
+            to: processedValue
+          });
+        } catch (error) {
+          errors.push(createTemplateRelationError(attribute.value));
+          return null;
+        }
+      }
+
       const attributeData = {
         noteId: noteId,
         type: attribute.type,
         name: attribute.name,
-        value: attribute.value || "",
+        value: processedValue,
         position: attribute.position || 10,
         isInheritable: attribute.isInheritable || false
       };

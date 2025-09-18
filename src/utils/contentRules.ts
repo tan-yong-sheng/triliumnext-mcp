@@ -31,6 +31,9 @@ const CONTAINER_TEMPLATES = [
   'Geo Map'     // Geographic maps
 ];
 
+// Import template translation utilities
+import { isBuiltinTemplate } from "./templateMapper.js";
+
 /**
  * Get content rules for a note type (without considering templates)
  */
@@ -170,7 +173,7 @@ export function getTemplateContentRules(
     : templateRelation?.value;
 
   // Check if this is a container template that must be empty (overrides base rules)
-  if (noteType === 'book' && templateValue && CONTAINER_TEMPLATES.includes(templateValue)) {
+  if (noteType === 'book' && templateValue && isBuiltinTemplate(templateValue) && CONTAINER_TEMPLATES.includes(templateValue)) {
     return {
       ...baseRules,
       allowContent: false,

@@ -1,4 +1,5 @@
 import { logVerboseInput, logVerboseOutput, logVerboseTransform } from "../utils/verboseUtils.js";
+import { translateTemplateNameToId, isBuiltinTemplate } from "../utils/templateMapper.js";
 
 // Unified SearchCriteria interface for all search types
 interface SearchCriteria {
@@ -224,6 +225,13 @@ function enhanceRelationProperty(name: string, op: string, value?: string): stri
   // For exists/not_exists operators, don't add suffix
   if (op === 'exists' || op === 'not_exists' || !value) {
     return name;
+  }
+
+  // Translate built-in template names to note IDs
+  if (isTemplateOrSystemRelation(name) && isBuiltinTemplate(value)) {
+    const translatedValue = translateTemplateNameToId(value);
+    logVerboseTransform("searchQueryBuilder", value, translatedValue, `Translated template name`);
+    return `${name}.noteId`;
   }
 
   // Auto-detect noteId patterns and apply appropriate suffix

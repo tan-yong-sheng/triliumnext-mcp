@@ -7,6 +7,7 @@ import { processContentArray } from '../utils/contentProcessor.js';
 import { logVerbose, logVerboseError, logVerboseApi } from '../utils/verboseUtils.js';
 import { getContentRequirements, validateContentForNoteType, extractTemplateRelation } from '../utils/contentRules.js';
 import { SearchOperation } from './searchManager.js';
+import { validateAndTranslateTemplate, createTemplateRelationError } from '../utils/templateMapper.js';
 
 export interface Attribute {
   type: 'label' | 'relation';
@@ -364,11 +365,26 @@ async function createNoteAttributes(
   axiosInstance: any
 ): Promise<void> {
   const attributePromises = attributes.map(async (attr) => {
+    // Translate template names to note IDs for template relations
+    let processedValue = attr.value || '';
+    if (attr.type === "relation" && attr.name === "template" && attr.value) {
+      try {
+        processedValue = validateAndTranslateTemplate(attr.value);
+        logVerbose("createNoteAttributes", `Translated template relation`, {
+          from: attr.value,
+          to: processedValue
+        });
+      } catch (error) {
+        logVerboseError("createNoteAttributes", error);
+        throw new Error(createTemplateRelationError(attr.value));
+      }
+    }
+
     const attributeData = {
       noteId: noteId,
       type: attr.type,
       name: attr.name,
-      value: attr.value || '',
+      value: processedValue,
       position: attr.position || 10,
       isInheritable: attr.isInheritable || false
     };

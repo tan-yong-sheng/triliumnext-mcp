@@ -40,7 +40,7 @@ export function createWriteTools(): any[] {
           },
           attributes: {
             type: "array",
-            description: "Optional attributes to create with the note (labels and relations). Enables one-step note creation with metadata. Labels use #tag format (e.g., 'important', 'project'), relations connect to other notes (e.g., template relations use 'Board', 'Calendar', 'Text Snippet'). ⚠️ TEMPLATE RESTRICTIONS: Container templates (Board, Calendar, Grid View, List View, Table, Geo Map) MUST be empty notes - add content as child notes.",
+            description: "Optional attributes to create with the note (labels and relations). Enables one-step note creation with metadata. Labels use #tag format (e.g., 'important', 'project'), relations connect to other notes (e.g., template relations use human-readable names like 'Board', 'Calendar', 'Text Snippet' which are automatically translated to system note IDs). ⚠️ TEMPLATE RESTRICTIONS: Container templates (Board, Calendar, Grid View, List View, Table, Geo Map) MUST be empty notes - add content as child notes.",
             items: {
               type: "object",
               properties: {
@@ -340,7 +340,7 @@ export function createWriteAttributeTools(): any[] {
   return [
     {
       name: "manage_attributes",
-      description: "Manage note attributes with write operations (create, update, delete). Create labels (#tags), template relations (~template), update existing attributes, and organize notes with metadata. IMPORTANT: This tool only provides write access - use read_attributes to view existing attributes. Relations require values pointing to existing notes (e.g., template relations use 'Board', 'Calendar'; author relations use target note titles or IDs). UPDATE LIMITATIONS: For labels, only value and position can be updated. For relations, only position can be updated. The isInheritable property cannot be changed via update - delete and recreate to modify inheritability. Supports single operations and efficient batch creation for better performance.",
+      description: "Manage note attributes with write operations (create, update, delete). Create labels (#tags), template relations (~template), update existing attributes, and organize notes with metadata. IMPORTANT: This tool only provides write access - use read_attributes to view existing attributes. Relations require values pointing to existing notes (e.g., template relations use human-readable names like 'Board', 'Calendar' which are automatically translated to system note IDs; author relations use target note titles or IDs). UPDATE LIMITATIONS: For labels, only value and position can be updated. For relations, only position can be updated. The isInheritable property cannot be changed via update - delete and recreate to modify inheritability. Supports single operations and efficient batch creation for better performance.",
       inputSchema: {
         type: "object",
         properties: {
@@ -370,7 +370,7 @@ export function createWriteAttributeTools(): any[] {
                 },
                 value: {
                   type: "string",
-                  description: "Attribute value: REQUIRED for relations (relations must point to existing notes - use template names like 'Board', 'Calendar', 'Text Snippet' or target note IDs/titles like 'Tolkien' or 'abc123def'), optional for labels (e.g., status labels like 'In Progress', priority labels like 'High'). Relations always need values since they connect notes together."
+                  description: "Attribute value: REQUIRED for relations (relations must point to existing notes - use human-readable template names like 'Board', 'Calendar', 'Text Snippet' which are automatically translated to system note IDs, or use target note IDs/titles like 'Tolkien' or 'abc123def' for custom relations), optional for labels (e.g., status labels like 'In Progress', priority labels like 'High'). Relations always need values since they connect notes together."
                 },
                 position: {
                   type: "number",
