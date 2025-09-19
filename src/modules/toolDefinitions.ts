@@ -77,7 +77,7 @@ export function createWriteTools(): any[] {
     },
     {
       name: "update_note",
-      description: "Update note with support for title-only updates, content overwrite, or content append. ⚠️ REQUIRED: ALWAYS call get_note first to obtain current hash. MODE SELECTION: Use 'append' when user wants to add/insert content (e.g., 'append to note', 'add to the end', 'insert content', 'add more content', 'continue writing', 'add to bottom'). Use 'overwrite' when replacing entire content (e.g., 'replace content', 'overwrite note', 'update the whole note', 'completely replace'). TITLE-ONLY: Efficient title changes without content modification. PREVENTS: Overwriting changes made by other users (hash mismatch) or content type violations. ONLY use when user explicitly requests note update. WORKFLOW: get_note → review content → update_note with returned hash",
+      description: "Update note with support for title-only updates, content operations, note type changes, and MIME type updates. ⚠️ REQUIRED: ALWAYS call get_note first to obtain current hash and validate current note type. MODE SELECTION: Use 'append' when adding content, 'overwrite' when replacing content, or title-only for efficient title changes. TYPE CHANGES: Convert between note types (e.g., 'text' to 'code') with automatic validation for template compatibility and content requirements. MIME UPDATES: Change content type for code notes (e.g., JavaScript to Python). PREVENTS: Overwriting changes made by other users (hash mismatch) or invalid type conversions. WORKFLOW: get_note → review current state → update_note with hash",
       inputSchema: {
         type: "object",
         properties: {
@@ -87,16 +87,16 @@ export function createWriteTools(): any[] {
           },
           title: {
             type: "string",
-            description: "New title for the note. If provided alone (without content), performs efficient title-only update without affecting note content or blobId."
+            description: "New title for the note. If provided alone (without content, type, or mime), performs efficient title-only update without affecting note content or blobId."
           },
           type: {
             type: "string",
             enum: ["text", "code", "render", "search", "relationMap", "book", "noteMap", "mermaid", "webView"],
-            description: "Type of note (aligned with TriliumNext ETAPI specification). This determines content validation requirements. Required when updating content, optional for title-only updates."
+            description: "NEW: Change note type with validation (e.g., convert 'text' to 'code' note). ⚠️ IMPORTANT: Type changes are validated for template compatibility - notes with ~template='Board' must remain type='book', ~template='Calendar' must remain type='book', etc. Content compatibility is also validated (e.g., HTML content may not be suitable for code notes). Use this when converting between different note formats (e.g., changing a text note to a code note for better syntax highlighting, or converting a generic note to a Mermaid diagram). Optional - omit if not changing note type."
           },
           mime: {
             type: "string",
-            description: "MIME type for code/file/image notes. Helps with syntax highlighting and content type identification."
+            description: "NEW: Update MIME type for code notes (e.g., change 'text/javascript' to 'text/x-python'). Only valid for code-type notes. Use this when switching programming languages or content types. Optional - omit if not changing MIME type."
           },
           content: {
             type: "string",
