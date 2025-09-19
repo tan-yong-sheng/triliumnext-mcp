@@ -1,6 +1,7 @@
 To fix
-- for create attributes, perhaps we should read_attributes or search_notes for attribute first to make sure the attribute is not created before? Should we? If not, it will create duplicate label or relation, such as `~template='Grid View' ~template='List View'`... Never create_attribute if that attribute already exists
-- for read_attributes, perhaps we add list_attributes so that it's easier to manage board note, as we could know the user-created attributes...
+- 
+
+- perhaps we add list_attributes so that it's easier to manage board note, as we could know the user-created attributes... (created list_attributes) but a bit hard to orchestrate such workflow
 - for create_note function, delete all notes under Board note only during creation process
 - ability to update_note for calendar note, Board note, or
 
