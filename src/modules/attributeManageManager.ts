@@ -1,44 +1,26 @@
 /**
- * Attribute Manager Module
+ * Attribute Manage Manager Module
  * Handles CRUD operations for note attributes (labels and relations)
  */
 
 import { AxiosInstance } from 'axios';
 import axios from 'axios';
-import { logVerbose, logVerboseApi, logVerboseAxiosError } from "../utils/verboseUtils.js";
-import { validateAndTranslateTemplate, createTemplateRelationError } from "../utils/templateMapper.js";
-import { cleanAttributeName, generateCleaningMessage } from "../utils/attributeNameCleaner.js";
+import { logVerbose, logVerboseApi, logVerboseAxiosError } from '../utils/verboseUtils.js';
+import {
+  ManageAttributesParams,
+  Attribute,
+  AttributeOperationResult
+} from '../types/attributeTypes.js';
+import {
+  check_attribute_exists,
+  validate_attribute,
+  format_attributes_for_display,
+  generate_attribute_cleaning_message,
+  translate_template_relation
+} from '../utils/attributeUtils.js';
 
-export interface Attribute {
-  type: "label" | "relation";
-  name: string;
-  value?: string;
-  position?: number;
-  isInheritable?: boolean;
-}
-
-export interface ReadAttributesParams {
-  noteId: string;
-}
-
-export interface ManageAttributesParams {
-  noteId: string;
-  operation: "create" | "update" | "delete" | "batch_create";
-  attributes: Attribute[];
-}
-
-export interface AttributeOperationResult {
-  success: boolean;
-  message: string;
-  attributes?: Attribute[];
-  errors?: string[];
-  summary?: {
-    total: number;
-    labels: number;
-    relations: number;
-    noteId: string;
-  };
-}
+// Re-export types for convenience
+export type { ManageAttributesParams, Attribute, AttributeOperationResult };
 
 /**
  * Manage note attributes with write operations (create, update, delete)
@@ -79,40 +61,6 @@ export async function manage_attributes(
 }
 
 /**
- * Check if an attribute already exists on a note
- */
-async function check_attribute_exists(
-  noteId: string,
-  attribute: Attribute,
-  axiosInstance: AxiosInstance
-): Promise<{exists: boolean, existingAttribute?: Attribute, allAttributes?: Attribute[]}> {
-  try {
-    const response = await axiosInstance.get(`/notes/${noteId}`);
-    const existingAttributes: Attribute[] = response.data.attributes.map((attr: any) => ({
-      type: attr.type,
-      name: attr.name,
-      value: attr.value,
-      position: attr.position,
-      isInheritable: attr.isInheritable
-    }));
-
-    // Find matching attribute by name and type
-    const matchingAttribute = existingAttributes.find(
-      attr => attr.name === attribute.name && attr.type === attribute.type
-    );
-
-    return {
-      exists: !!matchingAttribute,
-      existingAttribute: matchingAttribute,
-      allAttributes: existingAttributes
-    };
-  } catch (error) {
-    // If we can't read attributes, assume it doesn't exist and let the create operation handle the error
-    return { exists: false };
-  }
-}
-
-/**
  * Create a single attribute on a note
  */
 async function create_single_attribute(
@@ -144,7 +92,7 @@ async function create_single_attribute(
 
       // Add cleaning information if name was corrected
       if (validation.cleaningResult && validation.cleaningResult.wasCleaned) {
-        message += `\n\n🔧 **Note**: Attribute name was auto-corrected from "${validation.cleaningResult.originalName}" to "${attributeToUse.name}"`;
+        message += `\n\n${generate_attribute_cleaning_message(attributeToUse, validation.cleaningResult)}`;
       }
 
       return {
@@ -159,21 +107,13 @@ async function create_single_attribute(
     }
 
     // Translate template names to note IDs for template relations
-    let processedValue = attributeToUse.value || "";
-    if (attributeToUse.type === "relation" && attributeToUse.name === "template" && attributeToUse.value) {
-      try {
-        processedValue = validateAndTranslateTemplate(attributeToUse.value);
-        logVerbose("create_single_attribute", `Translated template relation`, {
-          from: attributeToUse.value,
-          to: processedValue
-        });
-      } catch (error) {
-        return {
-          success: false,
-          message: createTemplateRelationError(attributeToUse.value),
-          errors: [error instanceof Error ? error.message : 'Template validation failed']
-        };
-      }
+    const templateTranslation = translate_template_relation(attributeToUse);
+    if (!templateTranslation.success) {
+      return {
+        success: false,
+        message: templateTranslation.error!,
+        errors: [templateTranslation.error!]
+      };
     }
 
     // Prepare attribute data for ETAPI
@@ -181,7 +121,7 @@ async function create_single_attribute(
       noteId: noteId,
       type: attributeToUse.type,
       name: attributeToUse.name,
-      value: processedValue,
+      value: templateTranslation.value,
       position: attributeToUse.position || 10,
       isInheritable: attributeToUse.isInheritable || false
     };
@@ -195,7 +135,7 @@ async function create_single_attribute(
     // Build success message with cleaning information
     let successMessage = `Successfully created ${attributeToUse.type} '${attributeToUse.name}' on note ${noteId}`;
     if (validation.cleaningResult && validation.cleaningResult.wasCleaned) {
-      successMessage += `\n\n${generateCleaningMessage([validation.cleaningResult])}`;
+      successMessage += `\n\n${generate_attribute_cleaning_message(attributeToUse, validation.cleaningResult)}`;
     }
 
     return {
@@ -322,25 +262,17 @@ async function create_batch_attributes(
       const attributeToUse = validation.cleanedAttribute || attribute;
 
       // Translate template names to note IDs for template relations
-      let processedValue = attributeToUse.value || "";
-      if (attributeToUse.type === "relation" && attributeToUse.name === "template" && attributeToUse.value) {
-        try {
-          processedValue = validateAndTranslateTemplate(attributeToUse.value);
-          logVerbose("create_batch_attributes", `Translated template relation`, {
-            from: attributeToUse.value,
-            to: processedValue
-          });
-        } catch (error) {
-          errors.push(createTemplateRelationError(attributeToUse.value));
-          return null;
-        }
+      const templateTranslation = translate_template_relation(attributeToUse);
+      if (!templateTranslation.success) {
+        errors.push(templateTranslation.error!);
+        return null;
       }
 
       const attributeData = {
         noteId: noteId,
         type: attributeToUse.type,
         name: attributeToUse.name,
-        value: processedValue,
+        value: templateTranslation.value,
         position: attributeToUse.position || 10,
         isInheritable: attributeToUse.isInheritable || false
       };
@@ -423,7 +355,7 @@ async function update_attribute(
 
       // Add cleaning information if name was corrected
       if (cleaningResult.wasCleaned) {
-        message += `\n\n🔧 **Note**: Attribute name was auto-corrected from "${cleaningResult.originalName}" to "${attributeToUse.name}"`;
+        message += `\n\n${generate_attribute_cleaning_message(attributeToUse, cleaningResult)}`;
       }
 
       return {
@@ -476,7 +408,7 @@ async function update_attribute(
     // Build success message with cleaning information
     let successMessage = `Successfully updated ${attributeToUse.type} '${attributeToUse.name}' on note ${noteId}`;
     if (cleaningResult.wasCleaned) {
-      successMessage += `\n\n${generateCleaningMessage([cleaningResult])}`;
+      successMessage += `\n\n${generate_attribute_cleaning_message(attributeToUse, cleaningResult)}`;
     }
 
     return {
@@ -531,7 +463,7 @@ async function delete_attribute(
 
       // Add cleaning information if name was corrected
       if (cleaningResult.wasCleaned) {
-        message += `\n\n🔧 **Note**: Attribute name was auto-corrected from "${cleaningResult.originalName}" to "${attributeToUse.name}"`;
+        message += `\n\n${generate_attribute_cleaning_message(attributeToUse, cleaningResult)}`;
       }
 
       return {
@@ -546,7 +478,7 @@ async function delete_attribute(
     // Build success message with cleaning information
     let successMessage = `Successfully deleted ${attributeToUse.type} '${attributeToUse.name}' from note ${noteId}`;
     if (cleaningResult.wasCleaned) {
-      successMessage += `\n\n${generateCleaningMessage([cleaningResult])}`;
+      successMessage += `\n\n${generate_attribute_cleaning_message(attributeToUse, cleaningResult)}`;
     }
 
     return {
@@ -562,92 +494,5 @@ async function delete_attribute(
   }
 }
 
-/**
- * Validate attribute data with auto-correction
- */
-function validate_attribute(attribute: Attribute): { valid: boolean; errors: string[]; cleanedAttribute?: Attribute; cleaningResult?: any } {
-  const errors: string[] = [];
-
-  // Validate type
-  if (!["label", "relation"].includes(attribute.type)) {
-    errors.push("Attribute type must be either 'label' or 'relation'");
-  }
-
-  // Clean attribute name first
-  const cleaningResult = cleanAttributeName(attribute.name, attribute.type);
-  const cleanedAttribute = {
-    ...attribute,
-    name: cleaningResult.cleanedName
-  };
-
-  // Validate name (using cleaned name)
-  if (!cleanedAttribute.name || typeof cleanedAttribute.name !== 'string' || cleanedAttribute.name.trim() === '') {
-    errors.push("Attribute name is required and must be a non-empty string");
-  }
-
-  // Validate position
-  if (attribute.position !== undefined && (typeof attribute.position !== 'number' || attribute.position < 1)) {
-    errors.push("Attribute position must be a positive number");
-  }
-
-  // Validate value for relations
-  if (attribute.type === "relation" && (!attribute.value || attribute.value.trim() === '')) {
-    errors.push("Relation attributes require a value");
-  }
-
-  // Validate isInheritable
-  if (attribute.isInheritable !== undefined && typeof attribute.isInheritable !== 'boolean') {
-    errors.push("isInheritable must be a boolean value");
-  }
-
-  return {
-    valid: errors.length === 0,
-    errors,
-    cleanedAttribute: cleaningResult.wasCleaned ? cleanedAttribute : undefined,
-    cleaningResult: cleaningResult.wasCleaned ? cleaningResult : undefined
-  };
-}
-
-/**
- * Read all attributes for a note (labels and relations)
- * This function provides read-only access to note attributes
- */
-export async function read_attributes(
-  params: ReadAttributesParams,
-  axiosInstance: AxiosInstance
-): Promise<AttributeOperationResult> {
-  try {
-    const response = await axiosInstance.get(`/notes/${params.noteId}`);
-
-    const attributes: Attribute[] = response.data.attributes.map((attr: any) => ({
-      type: attr.type,
-      name: attr.name,
-      value: attr.value,
-      position: attr.position,
-      isInheritable: attr.isInheritable
-    }));
-
-    // Separate labels and relations for better organization
-    const labels = attributes.filter(attr => attr.type === 'label');
-    const relations = attributes.filter(attr => attr.type === 'relation');
-
-    return {
-      success: true,
-      message: `Retrieved ${attributes.length} attributes for note ${params.noteId} (${labels.length} labels, ${relations.length} relations)`,
-      attributes,
-      // Add structured summary for easier parsing
-      summary: {
-        total: attributes.length,
-        labels: labels.length,
-        relations: relations.length,
-        noteId: params.noteId
-      }
-    };
-  } catch (error) {
-    return {
-      success: false,
-      message: `Failed to retrieve attributes: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      errors: [error instanceof Error ? error.message : 'Unknown error']
-    };
-  }
-}
+// Import the cleanAttributeName function (re-export from utility)
+import { cleanAttributeName } from '../utils/attributeNameCleaner.js';

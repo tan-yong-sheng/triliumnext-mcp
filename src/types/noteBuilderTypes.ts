@@ -3,7 +3,7 @@
  * Simplified interfaces for easy note creation with string content
  */
 
-import { Attribute } from './contentTypes.js';
+import { Attribute } from './attributeTypes.js';
 import type { NoteType } from '../modules/noteManager.js';
 
 /**
