@@ -8,6 +8,7 @@ import { logVerbose, logVerboseError, logVerboseApi } from '../utils/verboseUtil
 import { getContentRequirements, validateContentForNoteType, extractTemplateRelation } from '../utils/contentRules.js';
 import { SearchOperation } from './searchManager.js';
 import { validateAndTranslateTemplate, createTemplateRelationError } from '../utils/templateMapper.js';
+import { cleanAttributeName, generateCleaningMessage } from '../utils/attributeNameCleaner.js';
 
 export interface Attribute {
   type: 'label' | 'relation';
@@ -359,8 +360,16 @@ export async function handleCreateNote(
   if (attributes && attributes.length > 0) {
     try {
       logVerbose("handleCreateNote", `Creating ${attributes.length} attributes for note ${noteId}`, attributes);
-      await createNoteAttributes(noteId, attributes, axiosInstance);
+      const attributeResult = await createNoteAttributes(noteId, attributes, axiosInstance);
       logVerbose("handleCreateNote", `Successfully created all attributes for note ${noteId}`);
+
+      // Add cleaning information to response if any corrections were made
+      if (attributeResult.cleaningResults && attributeResult.cleaningResults.length > 0) {
+        const cleaningMessage = generateCleaningMessage(attributeResult.cleaningResults);
+        if (cleaningMessage) {
+          response.data.attributeCleaningMessage = cleaningMessage;
+        }
+      }
     } catch (attributeError) {
       const errorMsg = `Note created but attributes failed to apply: ${attributeError instanceof Error ? attributeError.message : attributeError}`;
       logVerboseError("handleCreateNote", attributeError);
@@ -384,40 +393,56 @@ async function createNoteAttributes(
   noteId: string,
   attributes: Attribute[],
   axiosInstance: any
-): Promise<void> {
+): Promise<{ results: any[]; cleaningResults: any[] }> {
+  const cleaningResults: any[] = [];
+
   const attributePromises = attributes.map(async (attr) => {
+    // Clean attribute name first
+    const cleaningResult = cleanAttributeName(attr.name, attr.type);
+    if (cleaningResult.wasCleaned) {
+      cleaningResults.push(cleaningResult);
+    }
+
+    // Use cleaned attribute name
+    const cleanedAttr = {
+      ...attr,
+      name: cleaningResult.cleanedName
+    };
+
     // Translate template names to note IDs for template relations
-    let processedValue = attr.value || '';
-    if (attr.type === "relation" && attr.name === "template" && attr.value) {
+    let processedValue = cleanedAttr.value || '';
+    if (cleanedAttr.type === "relation" && cleanedAttr.name === "template" && cleanedAttr.value) {
       try {
-        processedValue = validateAndTranslateTemplate(attr.value);
+        processedValue = validateAndTranslateTemplate(cleanedAttr.value);
         logVerbose("createNoteAttributes", `Translated template relation`, {
-          from: attr.value,
+          from: cleanedAttr.value,
           to: processedValue
         });
       } catch (error) {
         logVerboseError("createNoteAttributes", error);
-        throw new Error(createTemplateRelationError(attr.value));
+        throw new Error(createTemplateRelationError(cleanedAttr.value));
       }
     }
 
     const attributeData = {
       noteId: noteId,
-      type: attr.type,
-      name: attr.name,
+      type: cleanedAttr.type,
+      name: cleanedAttr.name,
       value: processedValue,
-      position: attr.position || 10,
-      isInheritable: attr.isInheritable || false
+      position: cleanedAttr.position || 10,
+      isInheritable: cleanedAttr.isInheritable || false
     };
 
     logVerboseApi("POST", `/attributes`, attributeData);
     const response = await axiosInstance.post(`/attributes`, attributeData);
-    logVerbose("createNoteAttributes", `Created ${attr.type} '${attr.name}' for note ${noteId}`, response.data);
+    logVerbose("createNoteAttributes", `Created ${cleanedAttr.type} '${cleanedAttr.name}' for note ${noteId}`, response.data);
     return response;
   });
 
   const results = await Promise.all(attributePromises);
   logVerbose("createNoteAttributes", `Successfully created ${results.length} attributes for note ${noteId}`);
+
+  return { results, cleaningResults };
 }
 
 /**
