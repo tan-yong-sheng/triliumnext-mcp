@@ -3,7 +3,7 @@
  * Handles CRUD operations for TriliumNext notes
  */
 
-import { processContentArray } from '../utils/contentProcessor.js';
+import { prepareContentForApi } from '../utils/contentProcessor.js';
 import { logVerbose, logVerboseError, logVerboseApi } from '../utils/verboseUtils.js';
 import { getContentRequirements, validateContentForNoteType, extractTemplateRelation, getTemplateContentRules } from '../utils/contentRules.js';
 import { SearchOperation } from './searchManager.js';
@@ -428,7 +428,7 @@ export async function handleCreateNote(
   const validatedContent = contentValidation.content;
 
   // Process content to ETAPI format
-  const processed = await processContentArray(validatedContent, correctedType);
+  const processed = await prepareContentForApi(validatedContent, correctedType);
   if (processed.error) {
     throw new Error(`Content processing error: ${processed.error}`);
   }
@@ -819,7 +819,7 @@ Please modify the content to be compatible with type "${newType}" or keep the cu
 
     if (mode === 'append') {
       // For append mode, get current content and append new content
-      const newProcessed = await processContentArray(finalContent, currentNote.data.type);
+      const newProcessed = await prepareContentForApi(finalContent, currentNote.data.type);
       if (newProcessed.error) {
         throw new Error(`New content processing error: ${newProcessed.error}`);
       }
@@ -828,7 +828,7 @@ Please modify the content to be compatible with type "${newType}" or keep the cu
       processedContent = currentContent.data + newProcessed.content;
     } else if (mode === 'overwrite') {
       // For overwrite mode, replace entire content
-      const processed = await processContentArray(finalContent, currentNote.data.type);
+      const processed = await prepareContentForApi(finalContent, currentNote.data.type);
       if (processed.error) {
         throw new Error(`Content processing error: ${processed.error}`);
       }

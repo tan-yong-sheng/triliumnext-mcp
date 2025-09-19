@@ -4,9 +4,9 @@
  * Built on top of search functionality with title-based search only
  */
 
-import { buildSearchQuery } from "./searchQueryBuilder.js";
-import { SearchOperation } from "./searchManager.js";
-import { logVerboseInput } from "../utils/verboseUtils.js";
+import { buildSearchQuery } from "../search/query/queryBuilder.js";
+import { SearchOperation } from "../search/searchManager.js";
+import { logVerboseInput } from "../shared/index.js";
 
 export interface ResolveNoteOperation {
   noteName: string;

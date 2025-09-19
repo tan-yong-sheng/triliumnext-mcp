@@ -105,19 +105,12 @@ function isValidUrl(url: string): boolean {
 
 
 /**
- * Process string content into ETAPI-compatible format
+ * Prepare and validate content for ETAPI submission
  */
-export async function processContentArray(content: string, noteType?: string): Promise<ProcessedContent> {
+export async function prepareContentForApi(content: string, noteType?: string): Promise<ProcessedContent> {
   if (!content || content.trim() === '') {
-    // Return empty content for note types that allow it
-    if (noteType && ['book', 'render', 'search', 'relationMap', 'noteMap'].includes(noteType)) {
-      return { content: '' };
-    }
-
-    return {
-      content: '',
-      error: 'Content is required for this note type'
-    };
+    // Return empty content for all note types (content is optional)
+    return { content: '' };
   }
 
   // Process content

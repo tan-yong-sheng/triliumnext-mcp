@@ -4,7 +4,7 @@
  */
 
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
-import { handleListAttributes } from "./attributeListManager.js";
+import { handleListAttributes } from "./operations/attributeList.js";
 
 /**
  * Handle list_attributes tool requests

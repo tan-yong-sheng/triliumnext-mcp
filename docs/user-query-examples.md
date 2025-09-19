@@ -90,6 +90,7 @@ This document provides simple examples of natural language queries you can try w
 - "Extract phone numbers from the meeting notes"
 - "Get all dates mentioned in note ABC123"
 - "Search for specific patterns in note XYZ789"
+- "For the notes i have created or modified on the past 30 days, extract all url links that i have put into"
 
 ### Search and Replace Operations
 - "Replace all occurrences of 'old company name' with 'new company name' in note ABC123"
@@ -100,6 +101,13 @@ This document provides simple examples of natural language queries you can try w
 - "Update broken image links from old path to new path"
 
 ## Attribute Management
+
+## Special Note Type & Template Management
+- "Create a render note called 'Ecommerce homepage' where it display an ecommerce homepage"
+- "Create a calendar note, where on 20 Sep 2025  i have a task called 'Happy Moment'"
+- "Create a Kanban planner called 'Planner', and mention that i have a task called 'Hello world' which is in Progress"
+
+4. Web search what is happening today in Malaysia, then update it to the calendar note in trilium note
 
 ### Viewing Attributes
 - "Show me all attributes on my project note"

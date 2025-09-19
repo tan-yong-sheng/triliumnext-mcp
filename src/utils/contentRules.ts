@@ -307,9 +307,9 @@ export async function validateContentForNoteType(
   // Type-specific validation
   switch (noteType) {
     case 'text':
-      // HTML required for text notes
-      if (rules.requiresHtml && !isLikelyHtml(textContent)) {
-        // Auto-wrap plain text in HTML
+      // HTML required for text notes, but empty content is valid
+      if (rules.requiresHtml && !isLikelyHtml(textContent) && textContent.length > 0) {
+        // Auto-wrap plain text in HTML (but only if there's actual content)
         const wrappedContent = `<p>${textContent}</p>`;
         return {
           valid: true,

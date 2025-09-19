@@ -5,10 +5,10 @@
 
 import { AxiosInstance } from 'axios';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
-import { PermissionChecker } from '../../utils/permissionUtils.js';
+import { PermissionChecker } from '../shared/index.js';
 import { manage_attributes, ManageAttributesParams, AttributeOperationResult } from './attributeManageManager.js';
-import { Attribute, format_attributes_for_display } from '../../utils/attributeUtils.js';
-import { ManageAttributesRequest } from '../../types/attributeTypes.js';
+import { Attribute, format_attributes_for_display } from '../shared/index.js';
+import { ManageAttributesRequest } from '../shared/index.js';
 
 /**
  * Handle manage_attributes MCP request

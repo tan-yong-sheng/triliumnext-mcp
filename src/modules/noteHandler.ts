@@ -12,7 +12,7 @@ import {
   handleDeleteNote,
   handleGetNote,
   handleSearchReplaceNote
-} from "./noteManager.js";
+} from "./notes/noteManager.js";
 
 /**
  * Handle create_note tool requests

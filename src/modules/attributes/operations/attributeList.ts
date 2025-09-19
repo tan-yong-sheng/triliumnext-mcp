@@ -3,8 +3,8 @@
  * Handles attribute listing operations using search_notes internally
  */
 
-import { handleSearchNotes } from '../searchManager.js';
-import { logVerbose, logVerboseInput, logVerboseOutput } from '../../utils/verboseUtils.js';
+import { handleSearchNotes } from '../../search/searchManager.js';
+import { logVerbose, logVerboseInput, logVerboseOutput } from '../../shared/index.js';
 
 // Interface for ListAttributesOperation
 export interface ListAttributesOperation {

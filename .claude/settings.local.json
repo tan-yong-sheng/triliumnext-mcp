@@ -13,7 +13,10 @@
       "Bash(npm run test)",
       "Bash(node:*)",
       "Bash(npm test)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run check:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": [],

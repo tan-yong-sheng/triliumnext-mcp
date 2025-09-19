@@ -5,19 +5,20 @@
 
 import { AxiosInstance } from 'axios';
 import axios from 'axios';
-import { logVerbose, logVerboseApi, logVerboseAxiosError } from '../../utils/verboseUtils.js';
+import { logVerbose, logVerboseApi, logVerboseAxiosError } from '../shared/index.js';
 import {
   ManageAttributesParams,
   Attribute,
   AttributeOperationResult
-} from '../../types/attributeTypes.js';
+} from '../shared/index.js';
 import {
   check_attribute_exists,
   validate_attribute,
   format_attributes_for_display,
   generate_attribute_cleaning_message,
   translate_template_relation
-} from '../../utils/attributeUtils.js';
+} from '../shared/index.js';
+import { cleanAttributeName } from '../shared/index.js';
 
 // Re-export types for convenience
 export type { ManageAttributesParams, Attribute, AttributeOperationResult };
@@ -650,5 +651,3 @@ async function delete_attribute(
   }
 }
 
-// Import the cleanAttributeName function (re-export from utility)
-import { cleanAttributeName } from '../../utils/attributeNameCleaner.js';

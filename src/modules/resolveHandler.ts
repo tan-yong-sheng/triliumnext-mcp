@@ -3,7 +3,7 @@
  * Handles resolve_note_id tool requests with permission validation
  */
 
-import { handleResolveNoteId, ResolveNoteOperation } from "./resolveManager.js";
+import { handleResolveNoteId, ResolveNoteOperation } from "./resolve/resolveManager.js";
 
 export async function handleResolveNoteRequest(args: any, permissionChecker: any, axiosInstance: any): Promise<any> {
   // Permission check
