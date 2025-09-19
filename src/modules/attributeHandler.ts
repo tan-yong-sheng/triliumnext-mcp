@@ -272,6 +272,39 @@ function format_attribute_response(
         text: `📋 Error details:\n${result.errors.map((err: string, i: number) => `${i + 1}. ${err}`).join('\n')}`
       });
     }
+
+    // Add specific guidance for common errors
+    if (result.errors && result.errors.some(err => err.includes("already exists"))) {
+      content.push({
+        type: "text",
+        text: `💡 **Attribute Already Exists**
+
+The attribute you're trying to create already exists on this note. Here are your options:
+
+1. **Update the existing attribute** (recommended):
+   - Use operation: "update" instead of "create"
+   - Only the value and position can be updated for labels
+   - Only the position can be updated for relations
+
+2. **Delete and recreate** (for inheritable changes):
+   - First delete with operation: "delete"
+   - Then recreate with operation: "create"
+   - Use this when you need to change the 'isInheritable' property
+
+3. **View current attributes**:
+   - Use read_attributes to see all existing attributes
+   - Check current values, positions, and inheritable settings
+
+📋 **Example update operation**:
+\`\`\`
+{
+  "noteId": "${noteId}",
+  "operation": "update",
+  "attributes": [{"type": "label", "name": "your_attribute", "value": "new_value"}]
+}
+\`\`\``
+      });
+    }
   }
 
   // Add attribute data for successful operations
@@ -300,6 +333,29 @@ function format_attribute_response(
       content.push({
         type: "text",
         text: `🎯 Template relation detected: ${templateRelations[0].value}\nNote: Template functionality depends on the target note existing in your Trilium instance.`
+      });
+    }
+  }
+
+  // Add guidance for batch operations with conflicts
+  if (result.success && operation === "batch_create" && result.errors && result.errors.length > 0) {
+    const hasConflicts = result.errors.some(err => err.includes("Skipping duplicate") || err.includes("already exist"));
+    if (hasConflicts) {
+      content.push({
+        type: "text",
+        text: `⚠️ **Batch Operation Summary**
+
+Some attributes were skipped due to conflicts (already existing). This is normal behavior for batch operations:
+
+✅ **Successfully created**: ${result.attributes?.length || 0} attributes
+❌ **Skipped duplicates**: ${result.errors?.filter(err => err.includes("Skipping duplicate") || err.includes("already exist")).length || 0} attributes
+
+💡 **To manage skipped attributes**:
+- Use \`read_attributes\` to view current attributes
+- Use \`update\` operation to modify existing attributes
+- Use \`delete\` operation to remove unwanted attributes first
+
+This approach prevents accidental overwrites while allowing partial success for batch operations.`
       });
     }
   }
@@ -379,5 +435,11 @@ export function get_attributes_help(): string {
 - Template relations require the target note to exist in your Trilium instance
 - Position values control display order (lower numbers appear first)
 - Use read_attributes to view existing attributes before making changes
+
+🛡️ **Validation & Conflict Handling**:
+- Create operations now validate against existing attributes to prevent duplicates
+- If an attribute already exists, you'll get detailed error messages with guidance
+- Batch operations skip duplicates and continue with valid attributes
+- Use "update" to modify existing attributes, "create" for new ones only
 `;
 }

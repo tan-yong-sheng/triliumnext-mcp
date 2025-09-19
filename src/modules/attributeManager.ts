@@ -78,6 +78,40 @@ export async function manage_attributes(
 }
 
 /**
+ * Check if an attribute already exists on a note
+ */
+async function check_attribute_exists(
+  noteId: string,
+  attribute: Attribute,
+  axiosInstance: AxiosInstance
+): Promise<{exists: boolean, existingAttribute?: Attribute, allAttributes?: Attribute[]}> {
+  try {
+    const response = await axiosInstance.get(`/notes/${noteId}`);
+    const existingAttributes: Attribute[] = response.data.attributes.map((attr: any) => ({
+      type: attr.type,
+      name: attr.name,
+      value: attr.value,
+      position: attr.position,
+      isInheritable: attr.isInheritable
+    }));
+
+    // Find matching attribute by name and type
+    const matchingAttribute = existingAttributes.find(
+      attr => attr.name === attribute.name && attr.type === attribute.type
+    );
+
+    return {
+      exists: !!matchingAttribute,
+      existingAttribute: matchingAttribute,
+      allAttributes: existingAttributes
+    };
+  } catch (error) {
+    // If we can't read attributes, assume it doesn't exist and let the create operation handle the error
+    return { exists: false };
+  }
+}
+
+/**
  * Create a single attribute on a note
  */
 async function create_single_attribute(
@@ -93,6 +127,23 @@ async function create_single_attribute(
         success: false,
         message: "Attribute validation failed",
         errors: validation.errors
+      };
+    }
+
+    // Check if attribute already exists
+    const existenceCheck = await check_attribute_exists(noteId, attribute, axiosInstance);
+    if (existenceCheck.exists && existenceCheck.existingAttribute) {
+      const existing = existenceCheck.existingAttribute;
+      const availableAttrs = existenceCheck.allAttributes?.map((attr: any) => `${attr.type}:${attr.name}`).join(', ') || 'none';
+
+      return {
+        success: false,
+        message: `Attribute '${attribute.name}' of type '${attribute.type}' already exists on note ${noteId}. Available attributes: ${availableAttrs}`,
+        errors: [
+          "Attribute already exists",
+          `Existing ${attribute.type} '${attribute.name}' has value: ${existing.value || 'none'}, position: ${existing.position || 'default'}, inheritable: ${existing.isInheritable || false}`,
+          "To modify the existing attribute, use operation: 'update' instead of 'create'"
+        ]
       };
     }
 
@@ -145,6 +196,63 @@ async function create_single_attribute(
 }
 
 /**
+ * Validate batch attributes for conflicts and duplicates
+ */
+async function validate_batch_attributes(
+  noteId: string,
+  attributes: Attribute[],
+  axiosInstance: AxiosInstance
+): Promise<{
+  conflicts: Array<{attribute: Attribute, existingAttribute: Attribute}>;
+  validAttributes: Attribute[];
+  allExistingAttributes: Attribute[];
+}> {
+  try {
+    // Get all existing attributes once
+    const response = await axiosInstance.get(`/notes/${noteId}`);
+    const existingAttributes: Attribute[] = response.data.attributes.map((attr: any) => ({
+      type: attr.type,
+      name: attr.name,
+      value: attr.value,
+      position: attr.position,
+      isInheritable: attr.isInheritable
+    }));
+
+    const conflicts: Array<{attribute: Attribute, existingAttribute: Attribute}> = [];
+    const validAttributes: Attribute[] = [];
+
+    // Check each new attribute against existing ones
+    for (const attribute of attributes) {
+      const existingMatch = existingAttributes.find(
+        attr => attr.name === attribute.name && attr.type === attribute.type
+      );
+
+      if (existingMatch) {
+        conflicts.push({
+          attribute,
+          existingAttribute: existingMatch
+        });
+      } else {
+        validAttributes.push(attribute);
+      }
+    }
+
+    return {
+      conflicts,
+      validAttributes,
+      allExistingAttributes: existingAttributes
+    };
+  } catch (error) {
+    // If we can't read attributes, assume no conflicts and proceed
+    return {
+      conflicts: [],
+      validAttributes: attributes,
+      allExistingAttributes: []
+    };
+  }
+}
+
+/**
  * Create multiple attributes in batch
  */
 async function create_batch_attributes(
@@ -160,11 +268,32 @@ async function create_batch_attributes(
     };
   }
 
+  // Validate batch for conflicts first
+  const batchValidation = await validate_batch_attributes(noteId, attributes, axiosInstance);
+
   const results: Attribute[] = [];
   const errors: string[] = [];
 
-  // Create attributes in parallel for better performance
-  const promises = attributes.map(async (attribute) => {
+  // Add conflict warnings if any
+  if (batchValidation.conflicts.length > 0) {
+    const conflictMessages = batchValidation.conflicts.map(({attribute, existingAttribute}) => {
+      return `Skipping duplicate ${attribute.type} '${attribute.name}' (already exists with value: ${existingAttribute.value || 'none'})`;
+    });
+    errors.push(...conflictMessages);
+  }
+
+  // If all attributes are conflicts, return early
+  if (batchValidation.validAttributes.length === 0) {
+    return {
+      success: false,
+      message: `All ${attributes.length} attributes already exist on note ${noteId}`,
+      errors,
+      attributes: []
+    };
+  }
+
+  // Create only valid (non-conflicting) attributes in parallel
+  const promises = batchValidation.validAttributes.map(async (attribute) => {
     try {
       const validation = validate_attribute(attribute);
       if (!validation.valid) {
@@ -212,7 +341,7 @@ async function create_batch_attributes(
 
   await Promise.all(promises);
 
-  if (errors.length === attributes.length) {
+  if (errors.length === batchValidation.validAttributes.length) {
     return {
       success: false,
       message: "All attribute creation operations failed",
@@ -221,11 +350,21 @@ async function create_batch_attributes(
   }
 
   const successCount = results.length;
+  const validCount = batchValidation.validAttributes.length;
+  const conflictCount = batchValidation.conflicts.length;
   const totalCount = attributes.length;
+
+  let message = `Created ${successCount}/${validCount} valid attributes successfully`;
+  if (conflictCount > 0) {
+    message += ` (${conflictCount} skipped due to conflicts, ${totalCount} total requested)`;
+  }
+  if (errors.length > 0) {
+    message += ` with ${errors.length} errors`;
+  }
 
   return {
     success: successCount > 0,
-    message: `Created ${successCount}/${totalCount} attributes successfully${errors.length > 0 ? ` with ${errors.length} errors` : ''}`,
+    message,
     attributes: results,
     errors: errors.length > 0 ? errors : undefined
   };
