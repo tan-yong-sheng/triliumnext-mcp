@@ -24,6 +24,7 @@ import {
 } from "./modules/searchHandler.js";
 import { handleResolveNoteRequest } from "./modules/resolveHandler.js";
 import { handleManageAttributes, handleReadAttributes } from "./modules/attributeHandler.js";
+import { handleListAttributesRequest } from "./modules/attributeListHandler.js";
 
 const TRILIUM_API_URL = process.env.TRILIUM_API_URL;
 const TRILIUM_API_TOKEN = process.env.TRILIUM_API_TOKEN;
@@ -117,6 +118,9 @@ class TriliumServer {
 
           case "manage_attributes":
             return await handleManageAttributes(request.params.arguments as any, this.axiosInstance, this);
+
+          case "list_attributes":
+            return await handleListAttributesRequest(request.params.arguments as any, this.axiosInstance, this);
 
           default:
             throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${request.params.name}`);

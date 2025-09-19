@@ -324,6 +324,33 @@ export function createReadAttributeTools(): any[] {
         },
         required: ["noteId"]
       }
+    },
+    {
+      name: "list_attributes",
+      description: "List attributes from note hierarchy using search_notes internally. Explore attributes across immediate hierarchy (parents and children) or full hierarchy (ancestors and descendants). Returns comprehensive attribute information including note context, attribute details, and hierarchy relationships. Perfect for understanding template usage, label patterns, and relation networks across your note structure.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          noteId: {
+            type: "string",
+            description: "Anchor note ID for hierarchy navigation"
+          },
+          hierarchyLevel: {
+            type: "string",
+            enum: ["immediate", "all"],
+            description: "Hierarchy navigation depth: 'immediate' (direct parents and children only) or 'all' (include ancestors and descendants)",
+            default: "immediate"
+          },
+          limit: {
+            type: "number",
+            description: "Maximum number of results to return",
+            default: 50,
+            minimum: 1,
+            maximum: 200
+          }
+        },
+        required: ["noteId"]
+      }
     }
   ];
 }
