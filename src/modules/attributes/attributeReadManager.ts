@@ -4,8 +4,8 @@
  */
 
 import { AxiosInstance } from 'axios';
-import { ReadAttributesParams, Attribute, AttributeOperationResult } from '../types/attributeTypes.js';
-import { logVerbose } from '../utils/verboseUtils.js';
+import { ReadAttributesParams, Attribute, AttributeOperationResult } from '../../types/attributeTypes.js';
+import { logVerbose } from '../../utils/verboseUtils.js';
 
 // Re-export types for convenience
 export type { ReadAttributesParams, Attribute, AttributeOperationResult };

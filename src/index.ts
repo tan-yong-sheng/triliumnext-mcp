@@ -23,9 +23,9 @@ import {
   handleSearchNotesRequest
 } from "./modules/searchHandler.js";
 import { handleResolveNoteRequest } from "./modules/resolveHandler.js";
-import { handleManageAttributes } from "./modules/attributeManageHandler.js";
-import { handleReadAttributes } from "./modules/attributeReadHandler.js";
-import { handleListAttributesRequest } from "./modules/attributeListHandler.js";
+import { handleManageAttributes } from "./modules/attributes/attributeManageHandler.js";
+import { handleReadAttributes } from "./modules/attributes/attributeReadHandler.js";
+import { handleListAttributesRequest } from "./modules/attributes/attributeListHandler.js";
 
 const TRILIUM_API_URL = process.env.TRILIUM_API_URL;
 const TRILIUM_API_TOKEN = process.env.TRILIUM_API_TOKEN;
