@@ -11,7 +11,9 @@
       "mcp__playwright-mcp__browser_close",
       "mcp__grep_app__searchGitHub",
       "Bash(npm run test)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(npm test)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": [],

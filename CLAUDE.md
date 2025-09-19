@@ -118,6 +118,42 @@ The recent reorganization of validation tests from a 449-line monolithic file in
 3. **Update Documentation** - Sync documentation with code changes
 4. **Build & Validate** - Run `npm run build` to ensure TypeScript compilation success
 
+### Testing Consideration for New Features
+
+**Mandatory Test Assessment**: When implementing new features or capabilities, especially those involving data handling logic or data type validation, you MUST assess whether unit tests or integration tests are needed and justify this assessment to the user.
+
+#### Assessment Criteria:
+- **Data Handling Logic**: Any feature that processes, transforms, validates, or manipulates data requires testing
+- **Data Type Validation**: Features that validate input/output types, enforce schemas, or perform type conversions need comprehensive test coverage
+- **Error Handling**: Code that includes error detection, validation, or exception handling must be tested for both success and failure scenarios
+- **API Integration**: Features that interact with external APIs or services need integration testing
+- **Business Logic**: Complex decision-making logic, conditional flows, or state management requires thorough testing
+- **Security Features**: Authentication, authorization, input sanitization, or security validation must be tested
+
+#### Test Type Selection Guidelines:
+- **Unit Tests**: For isolated functions, utility modules, validation logic, and business rules that can be tested independently
+- **Integration Tests**: For API interactions, multi-step workflows, database operations, and end-to-end feature validation
+- **Edge Case Testing**: For validation functions, error handling, and boundary conditions
+
+#### Justification Requirements:
+Before implementing any new feature, you must:
+1. **Identify Test Requirements**: "This feature requires testing because it involves [data handling/validation/error handling/API integration]"
+2. **Specify Test Types**: "I recommend [unit/integration] tests because [reason]"
+3. **Outline Test Coverage**: "Tests should cover [success scenarios, error conditions, edge cases]"
+
+**Example Justification**:
+```
+This new content validation feature requires comprehensive testing because it:
+1. Handles multiple data types (string processing, type detection)
+2. Includes complex validation logic with error conditions
+3. Performs data transformation (HTML wrapping, content correction)
+4. Has security implications (input sanitization)
+
+I recommend integration tests for the full workflow and unit tests for individual validation functions.
+```
+
+**User Approval**: Test implementation plans must be presented to the user for approval before proceeding with test creation.
+
 **Workflow Guidelines**:
 - **Code First**: Focus on implementing the core functionality in TypeScript
 - **Test Coverage**: Add tests that cover all new functionality, edge cases, and error conditions
@@ -1036,3 +1072,59 @@ const result = await update_note({
 - **All Templates Covered**: Board, Calendar, Text Snippet, Grid View, List View, Table, Geo Map
 - **Best Practices**: Template selection, performance optimization, troubleshooting guide
 - **Advanced Features**: Batch operations, inheritable templates, search integration
+
+### ✅ Container Template Protection Implementation - COMPLETED
+
+**Status**: ✅ **FULLY IMPLEMENTED & TESTED** - Successfully implemented protection for container template notes to prevent unwanted modifications
+
+**Implementation Overview**:
+- **Container Template Detection**: Automatically identifies Board, Calendar, Grid View, List View, Table, and Geo Map template notes
+- **Update Prevention**: Blocks content and title updates on container template notes via `update_note`
+- **Attribute Protection**: Prevents attribute creation, update, deletion, and batch operations on container templates via `manage_attributes`
+- **User Guidance**: Provides comprehensive guidance messages explaining what container templates are and how to work with them correctly
+
+**Protected Container Templates**:
+- **Board** - Kanban/task board layouts for project management
+- **Calendar** - Calendar interfaces for scheduling and events
+- **Grid View** - Grid-based layouts for visual organization
+- **List View** - List-based layouts with filtering capabilities
+- **Table** - Spreadsheet-like table structures for data
+- **Geo Map** - Geographic maps with location markers
+
+**Key Features**:
+- ✅ **Automatic Detection**: Identifies container templates by checking `type: book` + `~template` relation
+- ✅ **Comprehensive Protection**: Protects both note updates and attribute management operations
+- ✅ **Smart User Guidance**: Explains what container templates are and suggests creating child notes instead
+- ✅ **Error Handling**: Graceful failure with actionable error messages and next steps
+- ✅ **Backward Compatibility**: Existing functionality preserved with enhanced safety
+
+**Protection Logic**:
+- **Note Updates**: `update_note` blocks content/title modifications on container templates
+- **Attribute Operations**: `manage_attributes` blocks create, update, delete, and batch_create operations
+- **Template Detection**: Uses `isContainerTemplateNote()` function to identify protected notes
+- **Guidance Messages**: Provides detailed explanations about container template behavior and best practices
+
+**User Experience**:
+- **Clear Error Messages**: Detailed explanations when operations are blocked
+- **Educational Content**: Explains what container templates are and why they need protection
+- **Actionable Guidance**: Suggests creating child notes under container templates
+- **Advanced Options**: Provides instructions for removing template relations if absolutely necessary
+
+**Technical Implementation**:
+- **noteManager.ts**: Added container template detection and protection for `update_note`
+- **attributeManageManager.ts**: Added protection for all attribute management operations
+- **Helper Functions**: `isContainerTemplateNote()` and guidance message generators
+- **Comprehensive Testing**: Full test suite covering all protection scenarios and edge cases
+
+**Files Modified**:
+- `src/modules/noteManager.ts`: Added container template protection for note updates
+- `src/modules/attributes/attributeManageManager.ts`: Added container template protection for attribute operations
+- `tests/integration/container-template-prevention.test.js`: Comprehensive test suite for all protection scenarios
+
+**Test Coverage**:
+- ✅ 19 tests covering Board, Calendar, and regular note scenarios
+- ✅ Tests for both content updates and attribute management prevention
+- ✅ Error handling and user guidance message validation
+- ✅ Edge cases and graceful error handling
+
+This implementation prevents accidental modifications to container template notes while providing clear guidance to users about the correct workflow for working with these specialized note types.

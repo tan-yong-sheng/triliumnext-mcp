@@ -44,6 +44,18 @@ export function cleanAttributeName(
 
   let cleanedName = attributeName.trim();
 
+  // Remove leading label: prefix (common LLM mistake)
+  if (cleanedName.startsWith('label:')) {
+    cleanedName = cleanedName.substring(6).trim();
+    corrections.push(`Removed leading 'label:' prefix`);
+  }
+
+  // Remove leading relation: prefix (common LLM mistake)
+  if (cleanedName.startsWith('relation:')) {
+    cleanedName = cleanedName.substring(9).trim();
+    corrections.push(`Removed leading 'relation:' prefix`);
+  }
+
   // Remove leading # symbol (common LLM mistake for labels)
   if (attributeType === 'label' && cleanedName.startsWith('#')) {
     cleanedName = cleanedName.substring(1).trim();
@@ -129,7 +141,9 @@ export function generateCleaningMessage(cleaningResults: CleaningResult[]): stri
   return `🔧 **Auto-Corrections Applied**\n` +
          `Fixed ${totalCorrections} attribute name(s): ${correctionSummary}\n\n` +
          `💡 **Common LLM Mistakes Fixed**:\n` +
+         `• Attribute names should NOT start with label: or relation: prefixes\n` +
          `• Attribute names should NOT start with # or ~ symbols\n` +
+         `• label: and relation: prefixes are not needed in attribute names\n` +
          `• # symbols are for attribute values in search queries (e.g., #book)\n` +
          `• ~ symbols are for attribute values in search queries (e.g., ~template)\n` +
          `• Attribute names should be plain text (e.g., "startDate", "template")`;
@@ -147,6 +161,8 @@ export function needsCleaning(attributeName: string, attributeType: 'label' | 'r
   }
 
   const trimmed = attributeName.trim();
-  return (attributeType === 'label' && trimmed.startsWith('#')) ||
+  return trimmed.startsWith('label:') ||
+         trimmed.startsWith('relation:') ||
+         (attributeType === 'label' && trimmed.startsWith('#')) ||
          (attributeType === 'relation' && trimmed.startsWith('~'));
 }

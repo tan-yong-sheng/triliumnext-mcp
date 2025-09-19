@@ -30,6 +30,20 @@ describe('Attribute Name Cleaner', () => {
       assert.deepStrictEqual(result.corrections, ['Removed leading \'~\' symbol']);
     });
 
+    it('should remove leading label: prefix from attribute names', () => {
+      const result = cleanAttributeName('label:startDate', 'label');
+      assert.strictEqual(result.cleanedName, 'startDate');
+      assert.strictEqual(result.wasCleaned, true);
+      assert.deepStrictEqual(result.corrections, ['Removed leading \'label:\' prefix']);
+    });
+
+    it('should remove leading relation: prefix from attribute names', () => {
+      const result = cleanAttributeName('relation:template', 'relation');
+      assert.strictEqual(result.cleanedName, 'template');
+      assert.strictEqual(result.wasCleaned, true);
+      assert.deepStrictEqual(result.corrections, ['Removed leading \'relation:\' prefix']);
+    });
+
     it('should not remove trailing # from label names', () => {
       const result = cleanAttributeName('project#', 'label');
       assert.strictEqual(result.cleanedName, 'project#');
@@ -103,6 +117,26 @@ describe('Attribute Name Cleaner', () => {
       assert.deepStrictEqual(result.corrections, ['Removed leading \'#\' symbol']);
     });
 
+    it('should handle multiple corrections in sequence (prefix + symbol)', () => {
+      const result = cleanAttributeName('label:#startDate', 'label');
+      assert.strictEqual(result.cleanedName, 'startDate');
+      assert.strictEqual(result.wasCleaned, true);
+      assert.deepStrictEqual(result.corrections, [
+        'Removed leading \'label:\' prefix',
+        'Removed leading \'#\' symbol'
+      ]);
+    });
+
+    it('should handle multiple corrections in sequence (prefix + symbol for relation)', () => {
+      const result = cleanAttributeName('relation:~template', 'relation');
+      assert.strictEqual(result.cleanedName, 'template');
+      assert.strictEqual(result.wasCleaned, true);
+      assert.deepStrictEqual(result.corrections, [
+        'Removed leading \'relation:\' prefix',
+        'Removed leading \'~\' symbol'
+      ]);
+    });
+
     it('should not remove multiple trailing symbols', () => {
       const result = cleanAttributeName('template~~', 'relation');
       assert.strictEqual(result.cleanedName, 'template~~');
@@ -118,6 +152,16 @@ describe('Attribute Name Cleaner', () => {
 
     it('should return true for names with leading ~', () => {
       assert.strictEqual(needsCleaning('~template', 'relation'), true);
+    });
+
+    it('should return true for names with leading label: prefix', () => {
+      assert.strictEqual(needsCleaning('label:startDate', 'label'), true);
+      assert.strictEqual(needsCleaning('label:endDate', 'relation'), true);
+    });
+
+    it('should return true for names with leading relation: prefix', () => {
+      assert.strictEqual(needsCleaning('relation:template', 'relation'), true);
+      assert.strictEqual(needsCleaning('relation:author', 'label'), true);
     });
 
     it('should return false for names with trailing #', () => {
@@ -199,6 +243,7 @@ describe('Attribute Name Cleaner', () => {
       ];
       const message = generateCleaningMessage(results);
       assert.ok(message.includes('Common LLM Mistakes Fixed'));
+      assert.ok(message.includes('Attribute names should NOT start with label: or relation: prefixes'));
       assert.ok(message.includes('Attribute names should NOT start with # or ~ symbols'));
       assert.ok(message.includes('# symbols are for attribute values in search queries'));
       assert.ok(message.includes('~ symbols are for attribute values in search queries'));
@@ -214,6 +259,17 @@ describe('Attribute Name Cleaner', () => {
       assert.ok(message.includes('Fixed 3 attribute name(s)'));
       assert.ok(message.includes('2× Removed leading \'#\' symbol'));
       assert.ok(message.includes('1× Removed leading \'~\' symbol'));
+    });
+
+    it('should handle prefix corrections in message generation', () => {
+      const results = [
+        { wasCleaned: true, corrections: ['Removed leading \'label:\' prefix'] },
+        { wasCleaned: true, corrections: ['Removed leading \'relation:\' prefix'] }
+      ];
+      const message = generateCleaningMessage(results);
+      assert.ok(message.includes('Fixed 2 attribute name(s)'));
+      assert.ok(message.includes('1× Removed leading \'label:\' prefix'));
+      assert.ok(message.includes('1× Removed leading \'relation:\' prefix'));
     });
   });
 
@@ -265,7 +321,13 @@ describe('Attribute Name Cleaner', () => {
         { input: '~template~', expected: 'template~', type: 'relation' },
         { input: '#project#', expected: 'project#', type: 'label' },
         { input: '#language', expected: 'language', type: 'label' },
-        { input: '~version', expected: 'version', type: 'relation' }
+        { input: '~version', expected: 'version', type: 'relation' },
+        { input: 'label:startDate', expected: 'startDate', type: 'label' },
+        { input: 'label:endDate', expected: 'endDate', type: 'label' },
+        { input: 'relation:template', expected: 'template', type: 'relation' },
+        { input: 'relation:author', expected: 'author', type: 'relation' },
+        { input: 'label:#priority', expected: 'priority', type: 'label' },
+        { input: 'relation:~template', expected: 'template', type: 'relation' }
       ];
 
       testCases.forEach(({ input, expected, type }) => {
@@ -329,6 +391,22 @@ describe('Attribute Name Cleaner', () => {
       const result = cleanAttributeName('#user-name', 'label');
       assert.strictEqual(result.cleanedName, 'user-name');
       assert.strictEqual(result.wasCleaned, true);
+    });
+
+    it('should handle user example case with label: prefixes', () => {
+      const testCases = [
+        { input: 'label:startDate', expected: 'startDate' },
+        { input: 'label:endDate', expected: 'endDate' },
+        { input: 'label:startTime', expected: 'startTime' },
+        { input: 'label:endTime', expected: 'endTime' }
+      ];
+
+      testCases.forEach(({ input, expected }) => {
+        const result = cleanAttributeName(input, 'label');
+        assert.strictEqual(result.cleanedName, expected, `Failed for input: ${input}`);
+        assert.strictEqual(result.wasCleaned, true, `Expected cleaning for input: ${input}`);
+        assert.deepStrictEqual(result.corrections, ['Removed leading \'label:\' prefix']);
+      });
     });
   });
 

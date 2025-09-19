@@ -80,14 +80,7 @@ export async function handleUpdateNoteRequest(
     );
   }
 
-  // Validate that type is provided when content is being updated
-  if (args.content && !args.type) {
-    throw new McpError(
-      ErrorCode.InvalidParams,
-      "Parameter 'type' is required when updating content."
-    );
-  }
-
+  
   try {
     const noteOperation: NoteOperation = {
       noteId: args.noteId,
