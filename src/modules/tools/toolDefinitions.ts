@@ -77,7 +77,7 @@ export function createWriteTools(): any[] {
     },
     {
       name: "update_note",
-      description: "Update note with support for title-only updates, content operations, note type changes, and MIME type updates. ⚠️ REQUIRED: ALWAYS call get_note first to obtain current hash and validate current note type. MODE SELECTION: Use 'append' when adding content, 'overwrite' when replacing content, or title-only for efficient title changes. TYPE CHANGES: Convert between note types (e.g., 'text' to 'code') with automatic validation for template compatibility and content requirements. MIME UPDATES: Change content type for code notes (e.g., JavaScript to Python). PREVENTS: Overwriting changes made by other users (hash mismatch) or invalid type conversions. WORKFLOW: get_note → review current state → update_note with hash",
+      description: "Update note with support for title-only updates, content operations, note type changes, and MIME type updates. ⚠️ **CRITICAL: ONLY use this tool when the user explicitly requests note modification** (e.g., 'update the note', 'change the content', 'modify the title', 'edit this note'). DO NOT use this tool proactively or make assumptions about what should be updated. ⚠️ REQUIRED: ALWAYS call get_note first to obtain current hash and validate current note type. MODE SELECTION: Use 'append' when adding content, 'overwrite' when replacing content, or title-only for efficient title changes. TYPE CHANGES: Convert between note types (e.g., 'text' to 'code') with automatic validation for template compatibility and content requirements. MIME UPDATES: Change content type for code notes (e.g., JavaScript to Python). PREVENTS: Overwriting changes made by other users (hash mismatch) or invalid type conversions. WORKFLOW: get_note → review current state → update_note with hash",
       inputSchema: {
         type: "object",
         properties: {
@@ -122,7 +122,7 @@ export function createWriteTools(): any[] {
     },
     {
       name: "delete_note",
-      description: "Delete a note permanently. ONLY use this tool when the user explicitly requests note deletion (e.g., 'delete the note', 'remove this note', 'delete this permanently'). TRY NOT to use this tool proactively or for automated cleanup. CAUTION: This action cannot be undone and will permanently remove the note and all its content.",
+      description: "Delete a note permanently. ⚠️ **CRITICAL: ONLY use this tool when the user explicitly requests note deletion** (e.g., 'delete the note', 'remove this note', 'delete this permanently', 'get rid of this note'). DO NOT use this tool proactively, for automated cleanup, or make assumptions about what should be deleted. CAUTION: This action cannot be undone and will permanently remove the note and all its content.",
       inputSchema: {
         type: "object",
         properties: {
