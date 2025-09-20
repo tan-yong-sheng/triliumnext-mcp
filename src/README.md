@@ -1,483 +1,175 @@
-# TriliumNext MCP Server Architecture
+# TriliumNext MCP Server - Source Code Architecture
 
-## Overview
+## 🏗️ Architecture Overview
 
-The TriliumNext MCP Server is a Model Context Protocol (MCP) server that provides AI assistants with tools to interact with TriliumNext Notes instances through the External API (ETAPI). The server follows a modular architecture with clear separation of concerns, comprehensive permission management, and robust validation.
+This directory contains the complete source code for the TriliumNext MCP Server, a production-ready implementation following clean architecture principles with modular design patterns.
 
-## Project Structure
-
-```
-triliumnext-mcp/
-├── src/                          # Source code
-│   ├── index.ts                  # Main server entry point
-│   ├── modules/                  # Business logic modules
-│   │   ├── toolDefinitions.ts    # MCP tool schema definitions
-│   │   ├── *Manager.ts           # Business logic managers
-│   │   ├── *Handler.ts           # MCP request handlers
-│   │   └── searchQueryBuilder.ts # Search query builder
-│   ├── types/                    # TypeScript type definitions
-│   └── utils/                    # Utility modules
-│       ├── permissionUtils.ts    # Permission management
-│       ├── validationUtils.ts    # Zod schema validation
-│       ├── verboseUtils.ts      # Verbose formatting
-│       ├── noteFormatter.ts      # Output formatting
-│       ├── contentProcessor.ts   # Content processing utilities
-│       └── noteBuilder.ts        # Note creation helper utilities
-├── tests/                        # Test files (organized by type)
-│   ├── unit/                     # Unit tests
-│   │   └── utils/
-│   │       └── validationUtils/  # Organized validation tests
-│   ├── integration/              # Integration tests
-│   └── e2e/                      # End-to-end tests
-├── docs/                         # Documentation
-│   ├── search-examples/          # Search query examples
-│   ├── create-notes-examples/    # Note creation examples
-│   └── *.md                     # Architecture and user guides
-├── build/                        # Compiled JavaScript output
-├── package.json                  # Project configuration
-├── tsconfig.json                # TypeScript configuration
-├── CLAUDE.md                    # Project memory and documentation
-└── openapi.yaml                  # TriliumNext ETAPI specification
-```
-
-## Core Architecture Patterns
-
-### 1. Modular Design Pattern
-
-The codebase follows a **Manager → Handler → Tool Definition** pattern:
-
-```
-Request Flow:
-MCP Client → Tool Definitions → Handler → Manager → ETAPI
-```
-
-**Managers** (`*Manager.ts`):
-- Core business logic and data processing
-- Direct interaction with Trilium ETAPI
-- No MCP-specific concerns
-
-**Handlers** (`*Handler.ts`):
-- MCP request/response processing
-- Permission validation
-- Input/output formatting
-- Error handling for MCP protocol
-
-**Tool Definitions** (`toolDefinitions.ts`):
-- JSON Schema definitions for MCP tools
-- Permission-based tool availability
-- Dynamic tool generation
-
-### 2. Permission-Based Architecture
-
-Tools are dynamically generated based on environment permissions:
-
-```typescript
-// Permission environment variable examples
-PERMISSIONS="READ"           // Read-only access
-PERMISSIONS="WRITE"          // Write-only access
-PERMISSIONS="READ;WRITE"     // Full access
-```
-
-**Permission Tools Mapping**:
-- **READ**: `search_notes`, `resolve_note_id`, `get_note`, `manage_attributes` (read-only)
-- **WRITE**: `create_note`, `update_note`, `delete_note`, `manage_attributes` (write-only)
-
-### 3. Separation of Concerns
+## 📁 Directory Structure
 
 ```
 src/
-├── index.ts           # MCP server setup and routing (150 lines)
-├── modules/           # Domain-specific modules
-│   ├── toolDefinitions.ts  # Schema definitions
-│   ├── *Manager.ts   # Business logic (no MCP knowledge)
-│   └── *Handler.ts   # MCP protocol handling
-├── types/             # Type definitions and interfaces
-└── utils/             # Reusable utilities
-    ├── permissionUtils.ts  # Permission checking
-    ├── validationUtils.ts  # Type validation
-    └── *Utils.ts     # Helper functions
+├── 📄 index.ts                    # [ENTRY POINT] Server bootstrap (~150 lines)
+├── 📁 modules/                    # [BUSINESS LOGIC] Domain-driven modules
+│   ├── 📁 attributes/             # Attribute management domain
+│   ├── 📁 notes/                   # Note operations domain
+│   ├── 📁 resolve/                 # Note resolution domain
+│   ├── 📁 search/                  # Search functionality domain
+│   ├── 📁 tools/                   # Tool definitions domain
+│   ├── 📁 shared/                  # Shared utilities domain
+│   ├── 📁 types/                   # Type definitions
+│   └── 📁 utils/                   # Core utilities
+├── 📁 types/                      # [PUBLIC TYPES] External type definitions
+└── 📁 utils/                      # [CORE UTILS] Shared utility functions
 ```
 
-## Module Responsibilities
+## 🎯 Design Principles
 
-### Core Server (`src/index.ts`)
+### **1. Clean Architecture**
+```
+External Layers (MCP Protocol)
+    ↓
+Business Logic (Domain Modules)
+    ↓
+Core Utilities (Foundational)
+```
 
-**Purpose**: Lightweight MCP server setup and request routing
+**Key Benefits:**
+- Framework independence (MCP protocol as external concern)
+- Testable business logic (no external dependencies in domain modules)
+- Maintainable codebase (clear separation of concerns)
 
-**Key Responsibilities**:
-- MCP server initialization and configuration
-- Environment variable management
-- Request routing to appropriate handlers
-- Error handling and logging
+### **2. Domain-Driven Design**
+Each module represents a business domain with its own:
+- **Business Logic** (Managers)
+- **Protocol Handling** (Handlers)
+- **Validation Rules** (Validators)
+- **Data Models** (Types)
 
-**Size**: ~150 lines (down from 1400+ lines in monolithic version)
+### **3. Modular Architecture Pattern**
+```
+Request Flow: MCP Client → Tool Definitions → Handler → Manager → ETAPI
+```
 
-### Tool Definitions (`src/modules/toolDefinitions.ts`)
+**Component Responsibilities:**
+- **📋 Tool Definitions**: JSON Schema definitions for MCP protocol
+- **🎯 Handlers**: MCP request/response processing + permission validation
+- **⚙️ Managers**: Business logic + Trilium ETAPI integration
+- **🔧 Utilities**: Cross-cutting concerns (validation, logging, etc.)
 
-**Purpose**: MCP tool schema definitions and permission-based tool generation
+## 🏛️ Layer Architecture
 
-**Key Functions**:
-- `createReadTools()`: Generate READ permission tools
-- `createWriteTools()`: Generate WRITE permission tools
-- `createReadAttributeTools()`: Generate READ-only attribute tools
-- `createWriteAttributeTools()`: Generate WRITE-only attribute tools
-- `generateTools()`: Main tool generation function
+### **Presentation Layer** (`src/`)
+- **`index.ts`**: MCP server bootstrap and routing
+- **Type Safety**: Comprehensive TypeScript types
+- **Configuration**: Environment variable management
 
-**Key Features**:
-- Dynamic tool availability based on permissions
-- JSON Schema compliance for MCP protocol
+### **Application Layer** (`src/modules/`)
+- **Domain Logic**: Business rules and workflows
+- **Use Cases**: CRUD operations, search, resolution
+- **Integration**: Trilium ETAPI communication
 
-### Business Logic Managers (`src/modules/*Manager.ts`)
+### **Infrastructure Layer** (`src/utils/`)
+- **External Services**: HTTP client configuration
+- **Data Persistence**: API integration patterns
+- **Cross-cutting**: Validation, logging, error handling
 
-#### Note Manager (`noteManager.ts`)
-- Note CRUD operations
-- Revision management and hash validation
-- Integration with Trilium ETAPI `/notes` endpoint
-- Template relations support
-
-#### Search Manager (`searchManager.ts`)
-- Unified search query processing
-- Hierarchy navigation support
-- FastSearch optimization logic
-
-#### Attribute Manager (`attributeManager.ts`)
-- Full CRUD operations for labels and relations
-- Batch processing for performance (30-50% improvement)
-- Template relation support
-
-#### Resolve Manager (`resolveManager.ts`)
-- Title-based note resolution
-- Fuzzy matching and prioritization
-- Multiple result handling with user choice workflow
-
-### Request Handlers (`src/modules/*Handler.ts`)
-
-#### Attribute Handler (`attributeHandler.ts`)
-- Operation-specific permission validation
-- Read operations require READ permission
-- Write operations require WRITE permission
-- Error handling and response formatting
-
-#### Note Handler (`noteHandler.ts`)
-- Note operation permissions (READ/WRITE)
-- Revision control and conflict detection
-- Parameter validation and error handling
-
-#### Search Handler (`searchHandler.ts`)
-- Search permission validation (READ)
-- Search criteria processing
-- Result formatting and debugging
-
-#### Resolve Handler (`resolveHandler.ts`)
-- Note resolution permissions (READ)
-- User choice workflow for multiple matches
-- Result prioritization and formatting
-
-### Utility Modules (`src/utils/`)
-
-#### Permission Utils (`permissionUtils.ts`)
-- Permission checking interface and utilities
-- `PermissionChecker` interface for dependency injection
-- Environment variable parsing
-
-#### Validation Utils (`validationUtils.ts`)
-- Comprehensive Zod schema validation
-- Runtime type checking for all MCP parameters
-- 173 test cases covering all validation scenarios
-- Organized into 8 focused test files
-
-#### Verbose Utils (`verboseUtils.ts`)
-- Centralized debug information formatting
-- Response structure standardization
-- Error message formatting
-- 11+ repetitive check elimination
-
-#### Note Formatter (`noteFormatter.ts`)
-- Output formatting for note listings
-- JSON structure standardization
-- Search result formatting
-
-#### Search Query Builder (`searchQueryBuilder.ts`)
-- Converts JSON parameters to Trilium search DSL
-- Boolean logic processing (AND/OR)
-- Parentheses handling and negation operators
-- Critical fix for OR queries with `~` prefix
-
-### Type Definitions (`src/types/`)
-
-**Purpose**: Centralized type definitions and interfaces
-
-**Key Files**:
-- Type definitions for all MCP operations
-- Interface definitions for managers and handlers
-- Enum definitions for note types, operators, and permissions
-
-## Data Flow Architecture
-
-### 1. Tool Request Flow
+## 🔄 Data Flow Architecture
 
 ```
 1. MCP Client Request
-   ↓
-2. Tool Definitions (JSON Schema validation)
-   ↓
-3. Handler (Permission validation + MCP processing)
-   ↓
-4. Manager (Business logic + ETAPI calls)
-   ↓
-5. TriliumNext ETAPI
-   ↓
-6. Response formatting
-   ↓
-7. MCP Client Response
+   ↓ [Route by tool name]
+2. Handler (Permission Check + Input Validation)
+   ↓ [Business Logic Delegation]
+3. Manager (Domain Processing + ETAPI Call)
+   ↓ [Response Transformation]
+4. MCP Client Response
 ```
 
-### 2. Permission Checking Flow
+**Key Flow Characteristics:**
+- **Unidirectional**: Clear request/response flow
+- **Stateless**: Each request handled independently
+- **Validated**: Input validation at multiple layers
+- **Secure**: Permission checks at handler level
 
+## 🛡️ Security Architecture
+
+### **Permission Model**
 ```
-Environment Variables → PermissionChecker → Handler Permission Checks → Tool Availability
+PERMISSIONS="READ;WRITE" → Tool Generation → Runtime Checks
 ```
 
-### 3. Search Query Flow
+**Security Layers:**
+1. **Environment**: Permission configuration
+2. **Tool Generation**: Dynamic tool availability
+3. **Handler Level**: Operation-specific validation
+4. **Manager Level**: Business rule enforcement
 
+### **Input Validation**
 ```
-JSON Parameters → SearchQueryBuilder → Trilium DSL → ETAPI Search → Results → Formatting
+JSON Schema → Zod Validation → Business Rules → API Constraints
 ```
 
-## Key Design Decisions
+**Validation Strategy:**
+- **Schema Level**: MCP protocol compliance
+- **Type Level**: Runtime type safety
+- **Business Level**: Domain-specific rules
+- **API Level**: Trilium constraints
 
-### 1. ES Modules over CommonJS
+## 📊 Architecture Metrics
 
-**Choice**: ES modules (`import/export`) throughout codebase
+| Metric | Value | Description |
+|--------|-------|-------------|
+| **Lines of Code** | ~2,000+ | Well-organized, documented code |
+| **Test Coverage** | 250+ tests | Comprehensive test suite |
+| **Modules** | 6 domains | Clear domain separation |
+| **Files** | 39+ TS files | Organized structure |
+| **Build Time** | < 2s | Fast compilation |
 
-**Rationale**:
-- Modern JavaScript standard
-- Better tooling support
-- Static analysis capabilities
-- Future-proof architecture
+## 🚀 Getting Started
 
-### 2. TypeScript for Type Safety
-
-**Choice**: Strict TypeScript configuration with comprehensive types
-
-**Rationale**:
-- Compile-time error detection
-- Better IDE support and autocomplete
-- Self-documenting code
-- Refactoring safety
-
-### 3. Zod for Runtime Validation
-
-**Choice**: Zod schemas for parameter validation
-
-**Rationale**:
-- Runtime type safety
-- Clear error messages
-- Schema-driven validation
-- Integration with TypeScript types
-
-### 4. Modular Architecture over Monolithic
-
-**Choice**: Separated concerns into specialized modules
-
-**Rationale**:
-- Easier testing and maintenance
-- Better code organization
-- Reduced cognitive load
-- Team development scalability
-
-### 5. Permission-Based Tool Generation
-
-**Choice**: Dynamic tool availability based on permissions
-
-**Rationale**:
-- Principle of least privilege
-- Clear security boundaries
-- Better user experience
-- Flexible deployment options
-
-## API Integration
-
-### TriliumNext ETAPI Integration
-
-**Base URL**: `http://localhost:8080/etapi` (configurable)
-
-**Key Endpoints Used**:
-- `/notes` - Note CRUD operations
-- `/attributes` - Attribute management
-- `/search` - Search operations
-
-**Authentication**:
-- Authorization header with API token
-- Token from `TRILIUM_API_TOKEN` environment variable
-
-### MCP Protocol Integration
-
-**SDK**: `@modelcontextprotocol/sdk` v0.6.0
-
-**Protocol Features**:
-- JSON Schema tool definitions
-- Structured request/response handling
-- Error management
-- Permission-based tool availability
-
-## Configuration and Environment
-
-### Required Environment Variables
-
+### **Quick Start**
 ```bash
-TRILIUM_API_TOKEN    # Authentication token (required)
-TRILIUM_API_URL      # API endpoint (optional, defaults to http://localhost:8080/etapi)
-PERMISSIONS          # Semicolon-separated permissions (optional, defaults to READ;WRITE)
-VERBOSE              # Debug logging (optional, defaults to false)
+# 1. Install dependencies
+npm install
+
+# 2. Configure environment
+cp .env.example .env
+# Edit .env with your Trilium credentials
+
+# 3. Build and run
+npm run build
+npm run inspector  # Test with MCP inspector
 ```
 
-### Build Configuration
+### **Development Workflow**
+```bash
+# Development
+npm run watch          # Watch mode development
 
-**TypeScript**: Strict compilation with ES modules
-**Output**: `build/` directory with executable permissions
-**Testing**: Node.js built-in test runner with TAP output
+# Testing
+npm run test           # Full test suite
+npm run check          # Build + validation
 
-## Security Considerations
+# Deployment
+npm run build         # Production build
+```
 
-### 1. Permission Model
+## 📚 Next Steps
 
-- Granular READ/WRITE permissions
-- Operation-specific permission checks
-- Principle of least privilege
-- No permission escalation
+1. **[Module Architecture](./modules/README.md)** - Deep dive into business domains
+2. **[Type System](./types/README.md)** - Type definitions and interfaces
+3. **[Utility Libraries](./utils/README.md)** - Shared utilities and helpers
+4. **[Testing Guide](../../tests/README.md)** - Testing strategy and patterns
 
-### 2. Input Validation
+## 🤝 Contributing
 
-- Zod schema validation for all parameters
-- Runtime type checking
-- SQL injection prevention
-- XSS protection
+This architecture welcomes contributions that:
+- **Follow established patterns** in the respective domains
+- **Maintain separation of concerns** between layers
+- **Add comprehensive tests** for new functionality
+- **Update documentation** for architectural changes
 
-### 3. API Security
+---
 
-- Token-based authentication
-- HTTPS communication (recommended)
-- No credential logging
-- Secure error messages
-
-## Performance Optimizations
-
-### 1. Batch Processing
-
-- Parallel attribute creation
-- Batch operations for multiple items
-- Efficient memory usage
-
-### 2. FastSearch Integration
-
-- Automatic fastSearch detection
-- Performance-based query optimization
-- Fallback to full search when needed
-
-### 3. Caching Strategies
-
-- Response caching where appropriate
-- Connection pooling via axios
-- Efficient data structures
-
-## Testing Strategy
-
-### 1. Unit Testing
-
-- **Location**: `tests/unit/`
-- **Focus**: Individual functions and modules
-- **Coverage**: 173 test cases for validation utilities
-- **Organization**: By concern, not source structure
-- **Tools**: Node.js built-in test runner, Zod schemas
-
-### 2. Integration Testing
-
-- **Location**: `tests/integration/`
-- **Focus**: Multi-module workflows and API integration
-- **Environment**: Real TriliumNext instances
-- **Scenarios**: Complete business processes
-
-### 3. End-to-End Testing
-
-- **Location**: `tests/e2e/`
-- **Focus**: Complete system from user perspective
-- **Scope**: MCP protocol, real user workflows
-- **Environment**: Production-like setup
-
-## Testing Standards
-
-Each test type has specific standards documented in their respective README files:
-
-- **Unit Testing**: `tests/unit/README.md` - Isolated function testing
-- **Integration Testing**: `tests/integration/README.md` - Multi-component workflows
-- **E2E Testing**: `tests/e2e/README.md` - Complete system validation
-
-## Extensibility
-
-### 1. Adding New Tools
-
-1. Define tool schema in `toolDefinitions.ts`
-2. Create handler in appropriate `*Handler.ts` file
-3. Implement business logic in `*Manager.ts`
-4. Add validation schemas in `validationUtils.ts`
-5. Update documentation and tests
-
-### 2. Adding New Permissions
-
-1. Update `permissionUtils.ts`
-2. Modify tool generation functions
-3. Update handler permission checks
-4. Test permission combinations
-
-### 3. Adding New Search Features
-
-1. Extend `searchQueryBuilder.ts`
-2. Update validation schemas
-3. Add documentation examples
-4. Test with actual Trilium instances
-
-## Recent Enhancements
-
-### Test Organization (Completed)
-- **Reorganized** 449-line monolithic test file into 8 focused files
-- **Created** organized folder structure in `tests/unit/utils/validationUtils/`
-- **Maintained** 100% test coverage (173 tests passing)
-- **Added** comprehensive documentation for each test type
-
-### Validation System (Completed)
-- **Implemented** comprehensive Zod schema validation
-- **Added** 25+ test cases for edge cases and error conditions
-- **Organized** validation tests by concern
-- **Created** centralized error handling and formatting
-
-### Template Relations (Completed)
-- **Implemented** one-step template relation creation
-- **Added** support for all built-in TriliumNext templates
-- **Optimized** performance with parallel processing
-- **Created** comprehensive examples and documentation
-
-## Future Enhancements
-
-### Phase 2: Enhanced Features
-- Webhook support for real-time updates
-- Advanced search operators
-- Caching layer for improved performance
-- Plugin system for extensibility
-
-### Additional Testing
-- Performance benchmarking
-- Load testing with concurrent users
-- Security penetration testing
-- Cross-platform compatibility testing
-
-## Documentation Resources
-
-- **CLAUDE.md**: Project memory and implementation details
-- **src/README.md**: This architecture documentation
-- **docs/search-examples/**: Search query examples and patterns
-- **docs/create-notes-examples/**: Note creation and attribute management examples
-- **API Reference**: Based on `openapi.yaml` specification
-- **Testing Standards**: Individual README files in each test directory
-
-This architecture provides a solid foundation for scalable, maintainable, and secure TriliumNext MCP server development while maintaining flexibility for future enhancements.
+**Architecture Version**: v2.0 (Modular Refactoring Complete)
+**Maintainers**: TriliumNext MCP Team
