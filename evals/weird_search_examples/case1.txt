@@ -1,0 +1,27 @@
+Source: docs\search-examples\02-content-and-properties.md
+
+
+(Question: why != , isn't it not_exists for op params,
+but the trilium search dsl is correct...)
+
+
+4)  Show me all notes that their titles do not equal "Backup"
+
+**Trilium DSL query:**
+```
+note.title != 'Backup'
+```
+- Search Structure
+```json
+{
+  "searchCriteria": [
+    {
+      "property": "title",
+      "type": "noteProperty",
+      "op": "!=",
+      "value": "Backup",
+      "logic": "AND"
+    }
+  ]
+}
+```

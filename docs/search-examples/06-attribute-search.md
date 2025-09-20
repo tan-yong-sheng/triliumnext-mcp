@@ -1,14 +1,10 @@
-# Attribute and Relation Search Examples
+# Attribute Search Examples
 
 This document covers searches using attributes (labels and relations) and their combinations with other search criteria.
 
----
-
-## Attribute Search Examples
-
 Trilium supports searching by attributes (labels and relations) using the `#` and `~` syntax. These examples show how to combine keyword search with attribute filtering.
 
-### Attribute Search Reference
+### Label and Relation Search Reference
 - `#label`: Search for notes with a specific label
 - `#!label`: Search for notes WITHOUT a specific label
 - `#label = value`: Search for notes with label set to specific value
@@ -18,22 +14,9 @@ Trilium supports searching by attributes (labels and relations) using the `#` an
 - `~relation.property`: Search relations by target note properties
 - `~relation *=* value`: String operators for relation searches
 
-### 21) Book Label Search
-- Composed query: Find all notes with "book" label
-```
-#book
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "book", "type": "label", "op": "exists"}
-  ]
-}
-```
-- Use case: Find all book-related notes
+---
 
-### 22) Combined Keyword and Attribute Search
+1) Combined Keyword and Attribute Search
 - Composed query: Find notes containing "tolkien" with book label
 ```
 tolkien #book
@@ -48,7 +31,7 @@ tolkien #book
 }
 ```
 
-### 23) Cross-Type OR Logic - Book OR Author Label
+3) Cross-Type OR Logic - Book OR Author Label
 - Composed query: Find notes containing "towers" with book OR author label
 ```
 towers ~(#book OR #author)
@@ -63,9 +46,9 @@ towers ~(#book OR #author)
   ]
 }
 ```
-- Use case: Find notes about "towers" that are either books or authored content
 
-### 24) Genre Contains Search
+
+4) Genre Contains Search
 - Composed query: Find notes with genre containing "fan"
 ```
 #genre *=* fan
@@ -79,7 +62,8 @@ towers ~(#book OR #author)
 }
 ```
 
-### 25) Numeric Range Search
+
+5) Numeric Range Search
 - Composed query: Find books published in the 1950s
 ```
 #book #publicationYear >= 1950 #publicationYear < 1960
@@ -95,7 +79,7 @@ towers ~(#book OR #author)
 }
 ```
 
-### 26) Combined Attributes Search - TriliumNext Pattern
+6) Combined Attributes Search - TriliumNext Pattern
 - Composed query: Find Tolkien books
 ```
 #author=Tolkien limit 10
@@ -111,7 +95,8 @@ towers ~(#book OR #author)
 ```
 - Use case: Attribute-based searches with limit
 
-### 27) Multiple OR Attributes with Values
+
+7) Multiple OR Attributes with Values
 - Composed query: Find notes with genre fantasy OR science fiction
 ```
 ~(#genre = 'fantasy' OR #genre = 'science fiction')
@@ -127,7 +112,8 @@ towers ~(#book OR #author)
 ```
 - Use case: Find notes in either of two specific genres
 
-### 28) Mixed Label and Note Properties OR Logic
+
+8) Mixed Label and Note Properties OR Logic
 - Composed query: Find archived notes OR text notes
 ```
 ~(note.isArchived = true OR note.type = 'text')
@@ -141,9 +127,9 @@ towers ~(#book OR #author)
   ]
 }
 ```
-- Use case: Find notes that are either archived or text type
 
-### 29) Mixed Attributes AND Note Properties Cross-Type Query
+
+9) Mixed Attributes AND Note Properties Cross-Type Query
 - Composed query: Find book notes with high label count
 ```
 towers #book AND note.labelCount > 3
@@ -158,9 +144,7 @@ towers #book AND note.labelCount > 3
   ]
 }
 ```
-- Use case: Find well-tagged book notes about towers
 
----
 
 ## Relation Search Examples
 

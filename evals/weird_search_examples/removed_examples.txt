@@ -1,0 +1,106 @@
+
+10) Find notes with many children (folders/books)
+- Composed query
+```
+note.childrenCount >= 10
+```
+- Search Structure
+```json
+{
+  "searchCriteria": [
+    {"property": "childrenCount", "type": "noteProperty", "op": ">=", "value": "10"}
+  ]
+}
+```
+- Use case: Find folder-like notes that contain many sub-notes
+
+### 42) Find large content notes
+- Composed query
+```
+note.contentSize > 50000
+```
+- Search Structure
+```json
+{
+  "searchCriteria": [
+    {"property": "contentSize", "type": "noteProperty", "op": ">", "value": "50000"}
+  ]
+}
+```
+- Use case: Find notes with substantial content (larger than 50KB)
+
+
+
+
+### 43) Find notes with many revisions
+- Composed query
+```
+note.revisionCount >= 5
+```
+- Search Structure
+```json
+{
+  "searchCriteria": [
+    {"property": "revisionCount", "type": "noteProperty", "op": ">=", "value": "5"}
+  ]
+}
+```
+- Use case: Find frequently edited notes with many revision history
+
+
+
+10) Combined note properties search
+
+**Trilium DSL query:**
+```
+note.type = 'text' AND note.labelCount > 0 AND note.isArchived = false
+```
+
+**Search Structure**
+```json
+{
+  "searchCriteria": [
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "text", "logic": "AND"},
+    {"property": "labelCount", "type": "noteProperty", "op": ">", "value": "0", "logic": "AND"},
+    {"property": "isArchived", "type": "noteProperty", "op": "=", "value": "false"}
+  ]
+}
+```
+- Use case: Find active text notes that have been labeled/tagged
+
+
+12) Find notes without labels
+
+- Composed query
+```
+kubernetes note.type = 'text' AND note.labelCount >= 2 AND note.contentSize > 1000
+```
+- Search Structure combining text search and note properties
+```json
+{
+  "text": "kubernetes",
+  "searchCriteria": [
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "text", "logic": "AND"},
+    {"property": "labelCount", "type": "noteProperty", "op": ">=", "value": "2", "logic": "AND"},
+    {"property": "contentSize", "type": "noteProperty", "op": ">", "value": "1000"}
+  ]
+}
+```
+- Use case: Find substantial, well-tagged text notes about kubernetes
+
+### 46) Find notes without labels
+- Composed query
+```
+note.labelCount = 0
+```
+- Search Structure
+```json
+{
+  "searchCriteria": [
+    {"property": "labelCount", "type": "noteProperty", "op": "=", "value": "0"}
+  ]
+}
+```
+- Use case: Find untagged notes that might need organization
+
+---

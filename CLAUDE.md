@@ -185,7 +185,7 @@ npm run build
 
 ## Project Overview
 
-This is a Model Context Protocol (MCP) server for TriliumNext Notes that provides tools to interact with Trilium Notes instances through the MCP framework. The server allows AI assistants to search, read, create, update, and delete notes in TriliumNext through its External API (ETAPI).
+This is a Model Context Protocol (MCP) server for Trilium Notes that provides tools to interact with Trilium Notes instances through the MCP framework. The server allows AI assistants to search, read, create, update, and delete notes in Trilium Note through its External API (ETAPI).
 
 ## Key Architecture
 
@@ -218,7 +218,7 @@ This is a Model Context Protocol (MCP) server for TriliumNext Notes that provide
 ## Environment Variables
 
 Required environment variables for operation:
-- `TRILIUM_API_TOKEN` (required): Authentication token from TriliumNext settings
+- `TRILIUM_API_TOKEN` (required): Authentication token from Trilium Note settings
 - `TRILIUM_API_URL` (optional): API endpoint, defaults to `http://localhost:8080/etapi`
 - `PERMISSIONS` (optional): Semicolon-separated permissions, defaults to `READ;WRITE`
 - `VERBOSE` (optional): Debug logging, defaults to `false`
@@ -358,7 +358,7 @@ This follows the principle of least privilege and provides clean separation betw
 - **Unified search architecture**:
   - `search_notes`: Comprehensive search with unified `searchCriteria` structure including hierarchy navigation support
 - **Smart fastSearch logic**: Automatically uses `fastSearch=true` ONLY when ONLY text parameter is provided (no searchCriteria or limit), `fastSearch=false` for all other scenarios
-- **FastSearch compatibility**: TriliumNext's fastSearch mode does not support `limit` clauses - these automatically disable fastSearch
+- **FastSearch compatibility**: Trilium Note's fastSearch mode does not support `limit` clauses - these automatically disable fastSearch
 
 ### Query Builder System
 - **Structured → DSL**: `searchQueryBuilder.ts` converts JSON parameters to Trilium search strings
@@ -437,7 +437,7 @@ This prevents breaking changes to the core search functionality.
 
 ### Template-Based Note Types
 
-TriliumNext supports specialized note types through templates:
+Trilium Note supports specialized note types through templates:
 
 - **Calendar Notes**: `type: book` + `~template=Calendar`
 - **Task Board Notes**: `type: book` + `~template=Board`

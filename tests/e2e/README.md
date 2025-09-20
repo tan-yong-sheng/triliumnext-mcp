@@ -58,49 +58,6 @@ TRILIUM_API_URL=http://localhost:8080/etapi
 TRILIUM_API_TOKEN=production-grade-token
 PERMISSIONS=READ;WRITE
 VERBOSE=false
-
-# TriliumNext Instance
-# Running with realistic data and configuration
-# Database with test user accounts
-# Real file system for attachments
-
-# MCP Client Simulation
-# Claude AI client simulation
-# Real MCP protocol messages
-# Actual tool calls and responses
-```
-
-### Docker-Based Test Environment
-```yaml
-# docker-compose.e2e.yml
-version: '3.8'
-services:
-  triliumnext:
-    image: triliumnext/server:latest
-    environment:
-      - TRILIUM_DATA_DIR=/data
-    volumes:
-      - trilium_data:/data
-    ports:
-      - "8080:8080"
-
-  mcp-server:
-    build: .
-    environment:
-      - TRILIUM_API_URL=http://triliumnext:8080/etapi
-      - TRILIUM_API_TOKEN=${TEST_API_TOKEN}
-    depends_on:
-      - triliumnext
-
-  test-runner:
-    build:
-      context: .
-      dockerfile: Dockerfile.test
-    volumes:
-      - ./tests/e2e:/app/tests/e2e
-    depends_on:
-      - mcp-server
-      - triliumnext
 ```
 
 ## Test Patterns

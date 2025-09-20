@@ -1,0 +1,17 @@
+failing and removed from  docs\search-examples\02-content-and-properties.md
+
+10) Show me notes that have more than five labels.
+
+**Trilium DSL query:**
+```
+note.labelCount > 5
+```
+
+**Search Structure**
+```json
+{
+  "searchCriteria": [
+    {"property": "labelCount", "type": "noteProperty", "op": ">", "value": "5"}
+  ]
+}
+```

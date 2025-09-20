@@ -1,60 +1,7 @@
-# Advanced Search Examples
-
-This document covers advanced search patterns including regex searches, note type and MIME type filtering, and complex OR logic expressions.
-
----
-
-## Regex Search Examples
-
-Trilium supports regex searches using the `%=` operator. This is now supported in the MCP.
-
-### 73) Regex on Labels
-- Composed query: Find books published in the 1900s
-```
-#publicationYear %= '19[0-9]{2}'
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "publicationYear", "type": "label", "op": "regex", "value": "19[0-9]{2}"}
-  ]
-}
-```
-
-### 74) Regex on Note Title
-- Composed query: Find notes with titles starting with "Project" and ending with "2024"
-```
-note.title %= '^Project.*2024
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "title", "type": "noteProperty", "op": "regex", "value": "^Project.*2024$"}
-  ]
-}
-```
-
-### 75) Regex on Note Content
-- Composed query: Find notes containing an email address in the content.
-```
-note.content %= '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}'
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "content", "type": "noteProperty", "op": "regex", "value": "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"}
-  ]
-}
-```
-
----
 
 ## Note Type and MIME Type Search Examples
 
-TriliumNext supports different note types and MIME types that can be searched using the unified searchCriteria structure. These examples show how to find specific note types and filter by MIME types for code notes.
+Trilium Note supports different note types and MIME types that can be searched. These examples show how to find specific note types and filter by MIME types for code notes.
 
 ### Note Type Search Reference
 - **text**: Regular text notes (default type)
@@ -80,7 +27,51 @@ TriliumNext supports different note types and MIME types that can be searched us
 - **Mermaid**: `text/vnd.mermaid`
 - **JSON**: `application/json`
 
-### 76) Find All Text Notes
+1) Show me all notes that are code snippets.
+
+**Trilium DSL query:**
+```
+note.type = 'code'
+```
+
+**Search Structure**
+```json
+{
+  "searchCriteria": [
+    {
+      "property": "type",
+      "type": "noteProperty",
+      "op": "=",
+      "value": "code",
+      "logic": "AND"
+    }
+  ]
+}
+```
+
+9) Show me all folder notes / Show me all collection notes
+
+**Trilium DSL query:**
+```
+note.type = 'book'
+```
+
+**Search Structure**
+```json
+{
+  "searchCriteria": [
+    {
+      "property": "type",
+      "type": "noteProperty",
+      "op": "=",
+      "value": "book",
+      "logic": "AND"
+    }
+  ]
+}
+```
+
+2) Find All Text Notes
 - Composed query
 ```
 note.type = 'text'
@@ -301,110 +292,3 @@ note.type != 'text'
 }
 ```
 - Use case: Find all specialized note types (excluding regular text notes)
-
----
-
-## Negation Operator Examples
-
-TriliumNext supports two types of negation operators with different semantics: `not_exists` (finds notes WITHOUT a property) and `!=` (finds notes WITH a property but excluding specific values).
-
-### 91) Find Notes Without a Specific Label (not_exists)
-- Composed query: Find all notes that do NOT have the "private" label
-```
-#!private
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "private", "type": "label", "op": "not_exists"}
-  ]
-}
-```
-- Use case: Find all notes that are not tagged as private
-- **Key distinction**: This finds notes that completely lack the "private" label
-
-### 92) Find Notes Without Label but With Another Label
-- Composed query: Find notes that are not private but are important
-```
-#!private #important
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "private", "type": "label", "op": "not_exists", "logic": "AND"},
-    {"property": "important", "type": "label", "op": "exists"}
-  ]
-}
-```
-- Use case: Find important notes that are not tagged as private
-
-### 93) Find Notes With Label But Excluding Specific Value (!=)
-- Composed query: Find notes with status label but status is not "completed"
-```
-#status #status != 'completed'
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "status", "type": "label", "op": "exists", "logic": "AND"},
-    {"property": "status", "type": "label", "op": "!=", "value": "completed"}
-  ]
-}
-```
-- Use case: Find notes that have a status but are not completed
-- **Key distinction**: This only finds notes that HAVE the "status" label, excluding those with value "completed"
-
-### 94) Find Notes Without Collection Label (not_exists)
-- Composed query: Find all notes that are not part of any collection
-```
-#!collection
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "collection", "type": "label", "op": "not_exists"}
-  ]
-}
-```
-- Use case: Find standalone notes not organized into collections
-
-### 95) Mixed Negation - Label and Note Property
-- Composed query: Find non-book notes that are not archived
-```
-#!book note.isArchived = false
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "book", "type": "label", "op": "not_exists", "logic": "AND"},
-    {"property": "isArchived", "type": "noteProperty", "op": "=", "value": "false"}
-  ]
-}
-```
-- Use case: Find active notes that are not book containers
-
----
-
-## Regex Search Examples (From TriliumNext Docs)
-- TriliumNext native query
-```
-#publicationYear %= '19[0-9]{2}'
-```
-- Finds labels matching regex pattern for years 1900-1999
-- **Note**: Our MCP now supports the regex operator `%=`.
-- **Status**: ✅ IMPLEMENTED in current MCP search
-
-
-### 54) Smart Date Search (TriliumNext Feature)
-- TriliumNext native query
-```
-note.dateCreated >= TODAY-30
-```
-- Finds notes created within last 30 days
-- Supported smart values: TODAY ± days, MONTH ± months, YEAR ± years, MONDAY-SUNDAY ± days
-- **Status**: ✅ IMPLEMENTED in current MCP search with noteProperties

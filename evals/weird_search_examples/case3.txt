@@ -1,0 +1,18 @@
+Source: removed from docs\search-examples\03-hierarchy-search.md
+
+4) Advanced date combinations with other properties (ISO dates)
+- Composed query
+```
+note.type = 'text' AND note.dateCreated >= '2024-11-20' AND note.labelCount > 0
+```
+- Search Structure combining dates with other properties
+```json
+{
+  "searchCriteria": [
+    {"property": "type", "type": "noteProperty", "op": "=", "value": "text", "logic": "AND"},
+    {"property": "dateCreated", "type": "noteProperty", "op": ">=", "value": "2024-11-20T00:00:00.000Z", "logic": "AND"},
+    {"property": "labelCount", "type": "noteProperty", "op": ">", "value": "0"}
+  ]
+}
+```
+- Use case: Find well-tagged text notes created in the last month using exact ISO dates
