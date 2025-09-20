@@ -3,7 +3,7 @@
  * Handles note type content rules, template validation, and content processing
  */
 
-import type { NoteType, Attribute } from '../modules/noteManager.js';
+import type { NoteType, Attribute } from '../modules/notes/noteManager.js';
 
 /**
  * Content rules for different note types and templates

@@ -8,7 +8,7 @@ import { logVerbose, logVerboseError, logVerboseApi } from '../../../utils/verbo
 import { validateContentForNoteType, extractTemplateRelation } from '../../../utils/contentRules.js';
 import { validateAndTranslateTemplate, createTemplateRelationError } from '../../../utils/templateMapper.js';
 import { cleanAttributeName, generateCleaningMessage } from '../../../utils/attributeNameCleaner.js';
-import { SearchOperation } from '../../searchManager.js';
+import { SearchOperation } from '../../search/searchManager.js';
 import { Attribute, NoteOperation, NoteCreateResponse } from '../noteManager.js';
 
 /**

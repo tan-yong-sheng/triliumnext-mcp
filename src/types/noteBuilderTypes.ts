@@ -4,7 +4,7 @@
  */
 
 import { Attribute } from './attributeTypes.js';
-import type { NoteType } from '../modules/noteManager.js';
+import type { NoteType } from '../modules/notes/noteManager.js';
 
 /**
  * Simplified note creation interface

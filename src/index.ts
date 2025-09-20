@@ -11,18 +11,18 @@ import {
 import axios from "axios";
 
 // Import modular components
-import { generateTools } from "./modules/toolDefinitions.js";
+import { generateTools } from "./modules/tools/toolDefinitions.js";
 import {
   handleCreateNoteRequest,
   handleUpdateNoteRequest,
   handleDeleteNoteRequest,
   handleGetNoteRequest,
   handleSearchReplaceNoteRequest
-} from "./modules/noteHandler.js";
+} from "./modules/notes/noteHandler.js";
 import {
   handleSearchNotesRequest
-} from "./modules/searchHandler.js";
-import { handleResolveNoteRequest } from "./modules/resolveHandler.js";
+} from "./modules/search/searchHandler.js";
+import { handleResolveNoteRequest } from "./modules/resolve/resolveHandler.js";
 import { handleManageAttributes } from "./modules/attributes/attributeManageHandler.js";
 import { handleReadAttributes } from "./modules/attributes/attributeReadHandler.js";
 import { handleListAttributesRequest } from "./modules/attributes/attributeListHandler.js";

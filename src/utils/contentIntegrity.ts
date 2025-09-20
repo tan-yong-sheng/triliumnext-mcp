@@ -3,7 +3,7 @@
  * Handles hash validation, conflict detection, and content integrity checks
  */
 
-import type { NoteType, Attribute } from '../modules/noteManager.js';
+import type { NoteType, Attribute } from '../modules/notes/noteManager.js';
 import { getContentRequirements } from './contentRules.js';
 
 /**

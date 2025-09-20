@@ -4,7 +4,7 @@
  */
 
 import { SimpleNoteInput, CreateNoteParams } from '../types/noteBuilderTypes.js';
-import type { NoteType } from '../modules/noteManager.js';
+import type { NoteType } from '../modules/notes/noteManager.js';
 
 /**
  * Build note parameters with string content
