@@ -43,7 +43,7 @@ describe('Search Query Builder Module', () => {
       assert.strictEqual(result, 'search term limit 5');
     });
 
-    it('should add universal match condition for searchCriteria only', () => {
+    it('should build search criteria only query without universal match', () => {
       const result = buildSearchQuery({
         searchCriteria: [
           {
@@ -55,7 +55,8 @@ describe('Search Query Builder Module', () => {
         ]
       });
 
-      assert.ok(result.includes('note.noteId != \'\''));
+      // Universal match condition was removed as it's incorrect per TriliumNext docs
+      assert.ok(!result.includes('note.noteId != \'\''));
       assert.ok(result.includes('note.title *=* \'test\''));
     });
   });
@@ -568,7 +569,7 @@ describe('Search Query Builder Module', () => {
       assert.ok(result.includes('~('));
     });
 
-    it('should ignore logic on last criteria', () => {
+    it('should create OR group when any criteria has OR logic', () => {
       const result = buildSearchQuery({
         searchCriteria: [
           {
@@ -582,13 +583,16 @@ describe('Search Query Builder Module', () => {
             type: 'label',
             op: '=',
             value: 'active',
-            logic: 'OR'  // This should be ignored
+            logic: 'OR'  // This creates OR group for all criteria
           }
         ]
       });
 
-      // Should not have OR grouping since last item logic is ignored
-      assert.ok(!result.includes('~('));
+      // Should have OR grouping since any OR logic creates group for all criteria
+      assert.ok(result.includes('~('));
+      assert.ok(result.includes('#project'));
+      assert.ok(result.includes('#status = \'active\''));
+      assert.ok(result.includes('OR'));
     });
 
     it('should handle single criteria groups', () => {

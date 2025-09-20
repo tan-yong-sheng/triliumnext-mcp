@@ -5,7 +5,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert';
-import { handleCreateNote } from '../../build/modules/noteManager.js';
+import { handleCreateNote } from '../../build/modules/notes/noteManager.js';
 
 /**
  * Enhanced mock axios instance that simulates realistic Trilium behavior

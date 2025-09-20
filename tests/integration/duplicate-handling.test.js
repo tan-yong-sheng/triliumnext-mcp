@@ -13,7 +13,7 @@ const mockAxios = {
 };
 
 // Import the functions we want to test
-import { handleCreateNote } from '../../build/modules/noteManager.js';
+import { handleCreateNote } from '../../build/modules/notes/noteManager.js';
 
 async function testDuplicateHandling() {
   console.log('Testing duplicate title handling...\n');

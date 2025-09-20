@@ -46,11 +46,12 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
   // Build main query
   let query = queryParts.join(' ');
 
-  // If only searchCriteria were provided (no text), add universal match condition for ETAPI compatibility
+  // Build final query combining text and search criteria
   const validSearchExpressions = searchExpressions.filter(expr => expr.trim() !== '');
-  if (!params.text && validSearchExpressions.length > 0) {
-    // For ETAPI compatibility, we need a base search condition when only using searchCriteria
-    query = `note.noteId != '' ${validSearchExpressions.join(' ')}`;
+  if (validSearchExpressions.length > 0) {
+    // Combine text (if exists) with search criteria
+    const textPart = params.text ? [params.text] : [];
+    query = [...textPart, ...validSearchExpressions].join(' ');
   } else if (query.trim() === '') {
     // No search criteria provided at all - this will trigger the validation error in index.ts
     query = '';
@@ -73,41 +74,37 @@ export function buildSearchQuery(params: SearchStructuredParams): string {
  * Enables previously impossible cross-type OR operations
  */
 function buildUnifiedSearchExpressions(searchCriteria: SearchCriteria[]): string[] {
-  const expressions: string[] = [];
-  let currentGroup: string[] = [];
-  let groupLogic: 'AND' | 'OR' = 'AND'; // Default to AND as per TriliumNext behavior
+  if (searchCriteria.length === 0) {
+    return [];
+  }
 
-  for (let i = 0; i < searchCriteria.length; i++) {
-    const criteria = searchCriteria[i];
-    const query = buildSearchCriteriaQuery(criteria);
+  // Simple approach: if any item has OR logic, put everything in one OR group
+  // This handles the common case where users want "A OR B OR C..."
+  const hasOrLogic = searchCriteria.some(criteria => criteria.logic === 'OR');
 
-    if (!query) continue; // Skip invalid criteria
+  if (hasOrLogic) {
+    // Build OR group with all non-empty queries
+    const orQueries = searchCriteria
+      .map(criteria => buildSearchCriteriaQuery(criteria))
+      .filter(query => query.trim() !== '');
 
-    // Auto-clean: Ignore logic on last item (no next item to combine with)
-    const effectiveLogic = (i === searchCriteria.length - 1) ? undefined : criteria.logic;
-
-    // If this is the first item in a group, or continuing the same logic
-    if (currentGroup.length === 0 || !effectiveLogic || effectiveLogic === groupLogic) {
-      currentGroup.push(query);
-      if (effectiveLogic) {
-        groupLogic = effectiveLogic;
-      }
-    } else {
-      // Logic changed, finalize current group
-      expressions.push(finalizeGroup(currentGroup, groupLogic));
-
-      // Start new group
-      currentGroup = [query];
-      groupLogic = effectiveLogic;
+    if (orQueries.length === 0) {
+      return [];
     }
-  }
 
-  // Finalize the last group
-  if (currentGroup.length > 0) {
-    expressions.push(finalizeGroup(currentGroup, groupLogic));
-  }
+    if (orQueries.length === 1) {
+      return orQueries;
+    }
 
-  return expressions;
+    return [`~(${orQueries.join(' OR ')})`];
+  } else {
+    // All AND logic - join with spaces
+    const andQueries = searchCriteria
+      .map(criteria => buildSearchCriteriaQuery(criteria))
+      .filter(query => query.trim() !== '');
+
+    return andQueries.length > 0 ? [andQueries.join(' ')] : [];
+  }
 }
 
 /**

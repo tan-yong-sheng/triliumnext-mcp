@@ -7,7 +7,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert';
 
 // Import required modules
-const { handleUpdateNote } = await import('../../build/modules/noteManager.js');
+const { handleUpdateNote } = await import('../../build/modules/notes/noteManager.js');
 const { manage_attributes } = await import('../../build/modules/attributes/attributeManageManager.js');
 
 // Mock axios instance for testing

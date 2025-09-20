@@ -4,9 +4,7 @@ This document covers content searches (title and content), note property searche
 
 ---
 
-## Content Search Examples
-
-### 11) Title contains "Tolkien"
+1) Show me all notes with 'n8n' in the title.
 - Composed query
 ```
 note.title *=* 'Tolkien'

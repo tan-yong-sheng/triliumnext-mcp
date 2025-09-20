@@ -1,7 +1,0 @@
-      await assert.rejects(
-        async () => await handleCreateNote({
-          title: 'Test Note',
-          type: 'text'
-        } as any, mockAxios),
-        /parentNoteId, title, and type are required/
-      );
