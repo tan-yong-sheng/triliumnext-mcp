@@ -1,11 +1,13 @@
 To fix
-- need to double check if update_note won't trigger unless user explicitly requested it... Because i ask it to search something yet it return to me that it want to help me to update something...
 
-- render note keeps failing to be created
+- move C:\Users\tys\Documents\Coding\triliumnext-mcp\src\types to src\modules\types
+- move C:\Users\tys\Documents\Coding\triliumnext-mcp\src\utils to src\modules\utils
 
-- perhaps we add list_attributes so that it's easier to manage board note, as we could know the user-created attributes... (created list_attributes) but a bit hard to orchestrate such workflow
-- for create_note function, delete all notes under Board note only during creation process
-- ability to update_note for calendar note, Board note, or
+- when i say update_note, either try to resolve_note_id or perform search if that note exists or not... Never start with create_note... Or should we perform search_note at current directory for similar notes whenever before we perform create_note or update_note?
+
+- ability to update_note for calendar note, Board note,
+
+- render note keeps failing to be created (if using gemini-2.0-flash, but it successfully executed with better model)
 
 
 - introduce offset & limit with cache, so that we could save token while not sending same requests again and again to the server... 

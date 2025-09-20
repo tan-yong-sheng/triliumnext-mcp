@@ -13,11 +13,6 @@ import {
   handleGetNote,
   handleSearchReplaceNote
 } from "./noteManager.js";
-import {
-  extractNoteNameFromId,
-  searchForSimilarNotes,
-  generateRecoveryMessage
-} from "../../utils/noteRecovery.js";
 
 /**
  * Handle create_note tool requests
@@ -85,7 +80,7 @@ export async function handleUpdateNoteRequest(
     );
   }
 
-
+  
   try {
     const noteOperation: NoteOperation = {
       noteId: args.noteId,
@@ -107,33 +102,6 @@ export async function handleUpdateNoteRequest(
       }]
     };
   } catch (error) {
-    // Check if this is a 404 error (note not found)
-    if ((error as any).response?.status === 404 || (error as Error)?.message?.includes('not found')) {
-      // Extract potential note name from the failed noteId
-      const potentialName = extractNoteNameFromId(args.noteId);
-
-      // Search for similar notes
-      const searchResults = await searchForSimilarNotes(potentialName, axiosInstance);
-
-      // Generate helpful recovery message with update context
-      const recoveryMessage = generateRecoveryMessage(
-        args.noteId,
-        searchResults,
-        {
-          title: args.title,
-          content: args.content,
-          type: args.type
-        }
-      );
-
-      return {
-        content: [{
-          type: "text",
-          text: recoveryMessage
-        }]
-      };
-    }
-
     if (error instanceof McpError) {
       throw error;
     }
