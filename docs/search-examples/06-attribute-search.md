@@ -3,8 +3,8 @@
 This document covers searches using attributes (labels and relations) and their combinations with other search criteria.
 
 Trilium supports searching by attributes (labels and relations) using the `#` and `~` syntax. These examples show how to combine keyword search with attribute filtering.
-
-### Label and Relation Search Reference
+ 
+**Label and Relation Search Reference**
 - `#label`: Search for notes with a specific label
 - `#!label`: Search for notes WITHOUT a specific label
 - `#label = value`: Search for notes with label set to specific value
@@ -16,320 +16,123 @@ Trilium supports searching by attributes (labels and relations) using the `#` an
 
 ---
 
-1) Combined Keyword and Attribute Search
-- Composed query: Find notes containing "tolkien" with book label
+## Part 1: Label Search
+
+Labels in Trilium Note is a simple key-value text attribute assigned to a note that provides metadata for organization, categorizes notes, for example, you can add a #genre="sci-fi" label to a book note for categorization
+
+1) User query: "Show me notes that are labeled as 'collection'."
+
+**Trilium DSL query:**
 ```
-tolkien #book
+#collection
 ```
-- Search Structure
+
+**Search Structure:**
 ```json
 {
-  "text": "tolkien",
   "searchCriteria": [
-    {"property": "book", "type": "label", "op": "exists"}
+    {
+      "property": "collection",
+      "type": "label",
+      "logic": "AND"
+    }
   ]
 }
 ```
 
-3) Cross-Type OR Logic - Book OR Author Label
-- Composed query: Find notes containing "towers" with book OR author label
+2) User query: "Show me notes titled 'Study' that are labeled as collection"
+
+**Trilium DSL query:**
 ```
-towers ~(#book OR #author)
+#collection note.title = 'Study'
 ```
-- Search Structure
+
+**Search Structure:**
 ```json
 {
-  "text": "towers",
   "searchCriteria": [
-    {"property": "book", "type": "label", "op": "exists", "logic": "OR"},
-    {"property": "author", "type": "label", "op": "exists"}
+    {
+      "property": "title",
+      "type": "noteProperty",
+      "op": "=",
+      "value": "Study",
+      "logic": "AND"
+    },
+    {
+      "property": "collection",
+      "type": "label",
+      "op": "exists",
+      "logic": "AND"
+    }
   ]
 }
 ```
 
+3) User query: "search notes with label status equal to 'In Progress'."
 
-4) Genre Contains Search
-- Composed query: Find notes with genre containing "fan"
+**Trilium DSL query:**
 ```
-#genre *=* fan
+#status = 'In Progress'
 ```
-- Search Structure
+
+**Search Structure:**
 ```json
 {
   "searchCriteria": [
-    {"property": "genre", "type": "label", "op": "contains", "value": "fan"}
+    {
+      "property": "status",
+      "type": "label",
+      "op": "=",
+      "value": "In Progress",
+      "logic": "AND"
+    }
   ]
 }
 ```
 
+## Part 2: Relation Search Examples
 
-5) Numeric Range Search
-- Composed query: Find books published in the 1950s
+Relations in Trilium Note allow connecting notes to other notes. The MCP supports searching by relations using the `~` syntax with automatic property enhancement.
+
+4) User query: "Show me all the notes that have a template relation."
+
+**Trilium DSL query:**
 ```
-#book #publicationYear >= 1950 #publicationYear < 1960
+~template
 ```
-- Search Structure
+
+**Search Structure:**
 ```json
 {
   "searchCriteria": [
-    {"property": "book", "type": "label", "op": "exists", "logic": "AND"},
-    {"property": "publicationYear", "type": "label", "op": ">=", "value": "1950", "logic": "AND"},
-    {"property": "publicationYear", "type": "label", "op": "<", "value": "1960"}
+    {
+      "property": "template",
+      "type": "relation",
+      "op": "exists",
+      "logic": "AND"
+    }
   ]
 }
 ```
 
-6) Combined Attributes Search - TriliumNext Pattern
-- Composed query: Find Tolkien books
+5) User query: "Show me all the notes that are linked to the 'Grid View' template."
+
+**Trilium DSL query:**
 ```
-#author=Tolkien limit 10
+~template.title = 'Grid View'
 ```
-- Search Structure
+
+**Search Structure:**
 ```json
 {
   "searchCriteria": [
-    {"property": "author", "type": "label", "op": "=", "value": "Tolkien"}
-  ],
-  "limit": 10
-}
-```
-- Use case: Attribute-based searches with limit
-
-
-7) Multiple OR Attributes with Values
-- Composed query: Find notes with genre fantasy OR science fiction
-```
-~(#genre = 'fantasy' OR #genre = 'science fiction')
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "genre", "type": "label", "op": "=", "value": "fantasy", "logic": "OR"},
-    {"property": "genre", "type": "label", "op": "=", "value": "science fiction"}
+    {
+      "property": "template.title",
+      "type": "relation",
+      "op": "=",
+      "value": "Grid View",
+      "logic": "AND"
+    }
   ]
 }
 ```
-- Use case: Find notes in either of two specific genres
-
-
-8) Mixed Label and Note Properties OR Logic
-- Composed query: Find archived notes OR text notes
-```
-~(note.isArchived = true OR note.type = 'text')
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "isArchived", "type": "noteProperty", "op": "=", "value": "true", "logic": "OR"},
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "text"}
-  ]
-}
-```
-
-
-9) Mixed Attributes AND Note Properties Cross-Type Query
-- Composed query: Find book notes with high label count
-```
-towers #book AND note.labelCount > 3
-```
-- Search Structure
-```json
-{
-  "text": "towers",
-  "searchCriteria": [
-    {"property": "book", "type": "label", "op": "exists", "logic": "AND"},
-    {"property": "labelCount", "type": "noteProperty", "op": ">", "value": "3"}
-  ]
-}
-```
-
-
-## Relation Search Examples
-
-Relations in TriliumNext allow connecting notes to other notes. The MCP supports searching by relations using the `~` syntax with automatic property enhancement.
-
-### Relation Property Auto-Enhancement
-
-The MCP automatically enhances relation searches to ensure proper TriliumNext syntax:
-
-- **Auto-enhancement**: When you search for `~author = "Tolkien"`, the system automatically converts this to `~author.title = "Tolkien"`
-- **Note ID detection**: For template relations and system relations, if the value matches a note ID pattern, it uses `.noteId` suffix
-- **Smart defaults**: User-friendly behavior that "just works" for most common cases
-
-**Example:**
-```json
-// User provides:
-{"property": "author", "type": "relation", "op": "=", "value": "Tolkien"}
-
-// System generates:
-~author.title = 'Tolkien'
-```
-
-**Template relations:**
-```json
-// User provides:
-{"property": "template", "type": "relation", "op": "=", "value": "Board"}
-
-// System generates:
-~template.title = 'Board'
-```
-
-### 31) Basic Relation Search - Find notes with author relation
-- Composed query: Find all notes that have an "author" relation
-```
-~author
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "author", "type": "relation", "op": "exists"}
-  ]
-}
-```
-- Use case: Find all notes that reference an author
-
-### 32) Relation with Property Search - Find notes by author's title
-- Composed query: Find notes connected to authors containing "Tolkien"
-```
-~author.title *=* 'Tolkien'
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "author.title", "type": "relation", "op": "contains", "value": "Tolkien"}
-  ]
-}
-```
-- Use case: Find books/notes written by Tolkien
-
-### 33) Relation Value Comparison - Find notes by specific author ID
-- Composed query: Find notes connected to a specific author note
-```
-~author = 'authorNoteId123'
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "author", "type": "relation", "op": "=", "value": "authorNoteId123"}
-  ]
-}
-```
-- Use case: Find all works by a specific author note
-
-### 34) Mixed Label and Relation Search
-- Composed query: Find books by Tolkien
-```
-#book ~author.title *=* 'Tolkien'
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "book", "type": "label", "op": "exists", "logic": "AND"},
-    {"property": "author.title", "type": "relation", "op": "contains", "value": "Tolkien"}
-  ]
-}
-```
-- Use case: Find book notes authored by Tolkien
-
-### 35) Relation OR Logic - Find notes with multiple possible relations
-- Composed query: Find notes with author OR editor relations
-```
-~(~author OR ~editor)
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "author", "type": "relation", "op": "exists", "logic": "OR"},
-    {"property": "editor", "type": "relation", "op": "exists"}
-  ]
-}
-```
-- Use case: Find notes that have either author or editor connections
-
-### 36) Complex Relation Property Search
-- Composed query: Find notes connected to authors with specific properties
-```
-~author.relations.publisher.title = 'Penguin Books'
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "author.relations.publisher.title", "type": "relation", "op": "=", "value": "Penguin Books"}
-  ]
-}
-```
-- Use case: Find books by authors published by specific publishers
-
-### 37) Relation String Operations
-- Composed query: Find notes with relations starting with "co-"
-```
-~collaborator =* 'co-'
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "collaborator", "type": "relation", "op": "starts_with", "value": "co-"}
-  ]
-}
-```
-- Use case: Find collaborative relationships
-
-### 38) Combined Keyword and Relation Search
-- Composed query: Find Tolkien content with author relations
-```
-tolkien ~author
-```
-- Search Structure
-```json
-{
-  "text": "tolkien",
-  "searchCriteria": [
-    {"property": "author", "type": "relation", "op": "exists"}
-  ]
-}
-```
-- Use case: Find Tolkien-related content that has author metadata
-
-### 39) Multiple Search Types with Default AND Logic
-- Composed query: Find books published in 1954 (demonstrates default AND behavior)
-```
-#book #publicationYear = 1954
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "book", "type": "label", "op": "exists", "logic": "AND"},
-    {"property": "publicationYear", "type": "label", "op": "=", "value": "1954"}
-  ]
-}
-```
-- Use case: Find notes that have BOTH the book label AND publicationYear set to 1954
-- **Note**: When logic is not specified, default is AND (TriliumNext default behavior)
-
-### 40) Multiple Note Properties with Default AND Logic
-- Composed query: Find text notes that are not archived and have content
-```
-note.type = 'text' AND note.isArchived = false AND note.contentSize > 0
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "text", "logic": "AND"},
-    {"property": "isArchived", "type": "noteProperty", "op": "=", "value": "false", "logic": "AND"},
-    {"property": "contentSize", "type": "noteProperty", "op": ">", "value": "0"}
-  ]
-}
-```
-- Use case: Find active text notes with content (ALL conditions must be met)
-- **Note**: When logic is not specified, default is AND (TriliumNext default behavior)

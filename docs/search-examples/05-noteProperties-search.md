@@ -69,13 +69,14 @@ note.title *= 'Notes'
 }
 ```
 
-4)  User query: "Show me all notes that their titles do not equal 'Tutorial'"
+4)  User query: "Show me all notes that their titles do not equal 'Tutorial'."
 
 **Trilium DSL query:**
 ```
 note.title != 'Tutorial'
 ```
-- Search Structure
+
+**Search Structure:**
 ```json
 {
   "searchCriteria": [
@@ -83,21 +84,20 @@ note.title != 'Tutorial'
       "property": "title",
       "type": "noteProperty",
       "op": "!=",
-      "value": "Tutorial",
-      "logic": "AND"
+      "value": "Tutorial"
     }
   ]
 }
 ```
 
-6) Find all meeting notes where the title starts with 'Meeting' and the content includes an agenda.
+5) Find all meeting notes where the title starts with 'Meeting' and the content includes an agenda.
 
 **Trilium DSL query:**
 ```
 note.title =* 'Meeting' note.content *=* 'agenda'
 ```
 
-**Search Structure**
+**Search Structure:**
 ```json
 {
   "searchCriteria": [
@@ -119,7 +119,7 @@ note.title =* 'Meeting' note.content *=* 'agenda'
 }
 ```
 
-7) Find all archived notes
+6) Find all archived notes
 
 **Trilium DSL query:**
 ```

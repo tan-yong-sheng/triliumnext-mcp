@@ -15,10 +15,10 @@ Trilium Note supports different note types and MIME types that can be searched. 
 - **webView**: Web view notes
 
 ### MIME Type Search Reference
-- **JavaScript**: `text/javascript`
+- **JavaScript**: `application/typescript`
 - **Python**: `text/x-python`
 - **Java**: `text/x-java`
-- **TypeScript**: `text/x-typescript`
+- **TypeScript**: `application/typescript`
 - **CSS**: `text/css`
 - **HTML**: `text/html`
 - **SQL**: `text/x-sql`
@@ -27,14 +27,15 @@ Trilium Note supports different note types and MIME types that can be searched. 
 - **Mermaid**: `text/vnd.mermaid`
 - **JSON**: `application/json`
 
-1) Show me all notes that are code snippets.
+
+1) User query: "Find all text notes."
 
 **Trilium DSL query:**
 ```
-note.type = 'code'
+note.type = 'text'
 ```
 
-**Search Structure**
+**Search Structure:**
 ```json
 {
   "searchCriteria": [
@@ -42,21 +43,21 @@ note.type = 'code'
       "property": "type",
       "type": "noteProperty",
       "op": "=",
-      "value": "code",
+      "value": "text",
       "logic": "AND"
     }
   ]
 }
 ```
 
-9) Show me all folder notes / Show me all collection notes
+2) User query: "Show me all folder notes." / "Show me all collection notes."
 
 **Trilium DSL query:**
 ```
 note.type = 'book'
 ```
 
-**Search Structure**
+**Search Structure:**
 ```json
 {
   "searchCriteria": [
@@ -71,224 +72,229 @@ note.type = 'book'
 }
 ```
 
-2) Find All Text Notes
-- Composed query
-```
-note.type = 'text'
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "text"}
-  ]
-}
-```
-- Use case: Find all regular text notes
+3) User query: "Show me all code notes."
 
-### 77) Find All Code Notes
-- Composed query
+**Trilium DSL query:**
 ```
 note.type = 'code'
 ```
-- Search Structure
+
+**Search Structure:**
 ```json
 {
   "searchCriteria": [
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "code"}
+    {
+      "property": "type",
+      "type": "noteProperty",
+      "op": "=",
+      "value": "code",
+      "logic": "AND"
+    }
   ]
 }
 ```
-- Use case: Find all code notes with syntax highlighting
 
-### 78) Find Mermaid Diagrams
-- Composed query
+4) User query: "Show me all Python code notes."
+
+**Trilium DSL query:**
+```
+note.type = 'code' note.mime = 'text/x-python'
+```
+
+**Search Structure:**
+```json
+{
+  "searchCriteria": [
+    {
+      "property": "type",
+      "type": "noteProperty",
+      "op": "=",
+      "value": "code",
+      "logic": "AND"
+    },
+    {
+      "property": "mime",
+      "type": "noteProperty",
+      "op": "=",
+      "value": "text/x-python",
+      "logic": "AND"
+    }
+  ]
+}
+```
+
+5) User query: "Show me all Javascript code notes."
+
+**Trilium DSL query:**
+```
+note.type = 'code' AND note.mime = 'application/typescript'
+```
+
+**Search Structure:**
+```json
+{
+  "searchCriteria": [
+    {
+      "property": "type",
+      "type": "noteProperty",
+      "op": "=",
+      "value": "code",
+      "logic": "AND"
+    },
+    {
+      "property": "mime",
+      "type": "noteProperty",
+      "op": "=",
+      "value": "application/typescript",
+      "logic": "AND"
+    }
+  ]
+}
+```
+
+6) User query: "Show me all Typescript code notes."
+
+**Trilium DSL query:**
+```
+note.type = 'code' note.mime = 'application/typescript'
+```
+
+**Search Structure:**
+```json
+{
+  "searchCriteria": [
+    {
+      "property": "type",
+      "type": "noteProperty",
+      "op": "=",
+      "value": "code",
+      "logic": "AND"
+    },
+    {
+      "property": "mime",
+      "type": "noteProperty",
+      "op": "=",
+      "value": "application/typescript",
+      "logic": "AND"
+    }
+  ]
+}
+```
+
+7) User query: "Show me all Mermaid notes."
+
+**Trilium DSL query:**
 ```
 note.type = 'mermaid'
 ```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "mermaid"}
-  ]
-}
-```
-- Use case: Find all Mermaid diagram notes
 
-### 79) Find Book/Folder Notes
-- Composed query
-```
-note.type = 'book'
-```
-- Search Structure
+**Search Structure:**
 ```json
 {
   "searchCriteria": [
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "book"}
+    {
+      "property": "type",
+      "type": "noteProperty",
+      "op": "=",
+      "value": "mermaid",
+      "logic": "AND"
+    }
   ]
 }
 ```
-- Use case: Find all book/folder container notes
 
-### 81) Find JavaScript Code Notes
-- Composed query
-```
-note.type = 'code' AND note.mime = 'text/javascript'
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "code", "logic": "AND"},
-    {"property": "mime", "type": "noteProperty", "op": "=", "value": "text/javascript"}
-  ]
-}
-```
-- Use case: Find JavaScript code files specifically
+8) User query: "Show me all Calendar notes."
 
-### 82) Find Python Code Notes
-- Composed query
+**Trilium DSL query:**
 ```
-note.type = 'code' AND note.mime = 'text/x-python'
+~template.title = 'Calendar'
 ```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "code", "logic": "AND"},
-    {"property": "mime", "type": "noteProperty", "op": "=", "value": "text/x-python"}
-  ]
-}
-```
-- Use case: Find Python code files specifically
 
-### 83) Find TypeScript Code Notes
-- Composed query
-```
-note.type = 'code' AND note.mime = 'text/x-typescript'
-```
-- Search Structure
+**Search Structure:**
 ```json
 {
   "searchCriteria": [
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "code", "logic": "AND"},
-    {"property": "mime", "type": "noteProperty", "op": "=", "value": "text/x-typescript"}
+    {
+      "property": "template.title",
+      "type": "relation",
+      "op": "=",
+      "value": "Calendar",
+      "logic": "AND"
+    }
   ]
 }
 ```
-- Use case: Find TypeScript code files specifically
 
-### 84) Find Multiple Code Types (OR Logic)
-- Composed query
-```
-~(note.mime = 'text/javascript' OR note.mime = 'text/x-python' OR note.mime = 'text/x-typescript')
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "mime", "type": "noteProperty", "op": "=", "value": "text/javascript", "logic": "OR"},
-    {"property": "mime", "type": "noteProperty", "op": "=", "value": "text/x-python", "logic": "OR"},
-    {"property": "mime", "type": "noteProperty", "op": "=", "value": "text/x-typescript"}
-  ]
-}
-```
-- Use case: Find JavaScript, Python, or TypeScript code notes
+And then, you could ask it to show all notes under that Calendar Note(s).
 
-### 85) Find Visual Note Types (RelationMap OR Mermaid)
-- Composed query
-```
-~(note.type = 'relationMap' OR note.type = 'mermaid')
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "relationMap", "logic": "OR"},
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "mermaid"}
-  ]
-}
-```
-- Use case: Find all visual diagram notes (relation maps or Mermaid diagrams)
+9) User query: "Show me all Board notes."
 
-### 86) Find Content with Specific Note Type
-- Composed query
+**Trilium DSL query:**
 ```
-kubernetes note.type = 'code'
+~template.title = 'Board'
 ```
-- Search Structure
-```json
-{
-  "text": "kubernetes",
-  "searchCriteria": [
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "code"}
-  ]
-}
-```
-- Use case: Find code notes containing "kubernetes"
 
-### 87) Find Web Development Files
-- Composed query
-```
-~(note.mime = 'text/html' OR note.mime = 'text/css' OR note.mime = 'text/javascript')
-```
-- Search Structure
+**Search Structure:**
 ```json
 {
   "searchCriteria": [
-    {"property": "mime", "type": "noteProperty", "op": "=", "value": "text/html", "logic": "OR"},
-    {"property": "mime", "type": "noteProperty", "op": "=", "value": "text/css", "logic": "OR"},
-    {"property": "mime", "type": "noteProperty", "op": "=", "value": "text/javascript"}
+    {
+      "property": "template.title",
+      "type": "relation",
+      "op": "=",
+      "value": "Board",
+      "logic": "AND"
+    }
   ]
 }
 ```
-- Use case: Find all web development related code files
 
-### 88) Complex Note Type and Content Search
-- Composed query
-```
-project ~(note.type = 'text' OR note.type = 'code') AND note.dateCreated >= '2024-01-01'
-```
-- Search Structure
-```json
-{
-  "text": "project",
-  "searchCriteria": [
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "text", "logic": "OR"},
-    {"property": "type", "type": "noteProperty", "op": "=", "value": "code", "logic": "AND"},
-    {"property": "dateCreated", "type": "noteProperty", "op": ">=", "value": "2024-01-01"}
-  ]
-}
-```
-- Use case: Find recent text or code notes containing "project"
+And then, you could ask it to show all notes under that Board Note(s).
 
-### 89) Find All Non-Text Notes
-- Composed query
-```
-note.type != 'text'
-```
-- Search Structure
-```json
-{
-  "searchCriteria": [
-    {"property": "type", "type": "noteProperty", "op": "!=", "value": "text"}
-  ]
-}
-```
-- Use case: Find all specialized note types (excluding regular text notes)
+10) User query: "Show me all Grid View notes."
 
-### 90) Find Non-Text Notes
-- Composed query
+**Trilium DSL query:**
 ```
-note.type != 'text'
+~template.title = 'Grid View'
 ```
-- Search Structure
+
+**Search Structure:**
 ```json
 {
   "searchCriteria": [
-    {"property": "type", "type": "noteProperty", "op": "!=", "value": "text"}
+    {
+      "property": "template.title",
+      "type": "relation",
+      "op": "=",
+      "value": "Grid View",
+      "logic": "AND"
+    }
   ]
 }
 ```
-- Use case: Find all specialized note types (excluding regular text notes)
+
+And then, you could ask it to show all notes under that Grid View Note(s).
+
+11) User query: "Show me all List View notes."
+
+**Trilium DSL query:**
+```
+~template.title = 'List View'
+```
+
+**Search Structure:**
+```json
+{
+  "searchCriteria": [
+    {
+      "property": "template.title",
+      "type": "relation",
+      "op": "=",
+      "value": "List View",
+      "logic": "AND"
+    }
+  ]
+}
+```
+
+And then, you could ask it to show all notes under that List View Note(s).

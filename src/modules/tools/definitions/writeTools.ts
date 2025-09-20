@@ -94,7 +94,7 @@ export function createWriteTools(): any[] {
           },
           mime: {
             type: "string",
-            description: "NEW: Update MIME type for code notes (e.g., change 'text/javascript' to 'text/x-python'). Only valid for code-type notes. Use this when switching programming languages or content types. Optional - omit if not changing MIME type."
+            description: "NEW: Update MIME type for code notes (e.g., change 'application/typescript' to 'text/x-python'). Only valid for code-type notes. Use this when switching programming languages or content types. Optional - omit if not changing MIME type."
           },
           content: {
             type: "string",

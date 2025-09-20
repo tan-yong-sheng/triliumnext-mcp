@@ -374,7 +374,7 @@ describe('Note Creation Module', () => {
         title: 'Code Note',
         type: 'code',
         content: 'console.log("Hello");',
-        mime: 'text/javascript'
+        mime: 'application/typescript'
       }, mockAxios);
 
       assert.strictEqual(result.duplicateFound, false);

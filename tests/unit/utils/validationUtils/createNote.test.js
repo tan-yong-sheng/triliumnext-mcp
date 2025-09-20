@@ -620,7 +620,7 @@ describe('Create Note Validation', () => {
         title: 'Code Note',
         type: 'code',
         content: 'console.log("Hello World");',
-        mime: 'text/javascript'
+        mime: 'application/typescript'
       };
 
       const htmlRequest = {

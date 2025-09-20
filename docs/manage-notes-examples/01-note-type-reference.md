@@ -1,10 +1,10 @@
 # TriliumNext MCP - Supported Note Types
 
-This document provides comprehensive information about the note types supported by the TriliumNext MCP server.
+This document provides comprehensive information about the note types supported by the Trilium Note's MCP server.
 
 ## Overview
 
-The TriliumNext MCP server currently supports **9 note types** for both search and creation operations. These types have been carefully selected to ensure reliability and stability with the current TriliumNext ETAPI implementation.
+The TriliumNext MCP server currently supports **9 note types** for both search and creation operations. These types have been carefully selected to ensure reliability and stability with the current Trilium Note's ETAPI implementation.
 
 ## Supported Note Types (Search & Creation)
 
@@ -25,7 +25,7 @@ The following **9 note types** are fully supported for both search and creation 
 | Type | Search | Create | Description | MIME Type Support |
 |------|--------|--------|-------------|-------------------|
 | `text` | ✅ | ✅ | Rich text with smart format detection | Not applicable |
-| `code` | ✅ | ✅ | Code with syntax highlighting | Required (e.g., `text/javascript`) |
+| `code` | ✅ | ✅ | Code with syntax highlighting | Required (e.g., `application/typescript`) |
 | `render` | ✅ | ✅ | Custom HTML/JS rendering | Optional |
 | `search` | ✅ | ✅ | Saved search queries | Optional |
 | `relationMap` | ✅ | ✅ | Relationship visualization | Optional |
@@ -80,7 +80,7 @@ Find notes by type using the `search_notes` tool:
       "property": "mime",
       "type": "noteProperty",
       "op": "=",
-      "value": "text/javascript"
+      "value": "application/typescript"
     }
   ]
 }

@@ -287,7 +287,7 @@ export function validateMimeTypeCompatibility(noteType: string, mimeType?: strin
   if (!mimeType) return { isValid: true };
 
   const compatibilityMap: Record<string, string[]> = {
-    'code': ['text/plain', 'text/x-python', 'text/x-javascript', 'text/x-typescript', 'text/x-java', 'text/x-csharp', 'text/x-cpp', 'text/x-ruby', 'text/x-go', 'text/x-php', 'text/x-swift', 'text/x-kotlin', 'text/x-rust', 'text/x-sql', 'text/x-yaml', 'text/x-json', 'text/x-xml', 'text/x-html', 'text/x-css', 'text/x-markdown', 'text/x-shellscript'],
+    'code': ['text/plain', 'text/x-python', 'text/x-javascript', 'application/typescript', 'text/x-java', 'text/x-csharp', 'text/x-cpp', 'text/x-ruby', 'text/x-go', 'text/x-php', 'text/x-swift', 'text/x-kotlin', 'text/x-rust', 'text/x-sql', 'text/x-yaml', 'text/x-json', 'text/x-xml', 'text/x-html', 'text/x-css', 'text/x-markdown', 'text/x-shellscript'],
     'mermaid': ['text/vnd.mermaid', 'text/plain'],
     'text': ['text/plain', 'text/html', 'text/markdown'],
     'render': ['text/html', 'application/xhtml+xml'],

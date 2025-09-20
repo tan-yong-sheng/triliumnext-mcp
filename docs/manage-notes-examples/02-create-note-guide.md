@@ -177,5 +177,5 @@ Use the `manage_attributes` tool with the `"update"` operation. Note that for re
 
 1.  **Choose the Right Template**: Match the template to your content and organizational needs.
 2.  **Combine with Labels**: Add descriptive labels alongside template relations for better searchability.
-3.  **Use Appropriate Note Types**: `book` notes are best for most container-like templates (Board, Calendar, etc.), while `text` notes are suitable for `Text Snippet`.
+3.  **Use Appropriate Note Types**: `book` notes are best for most container-like templates (Board, Calendar, Grid View, List View, etc.), while `text` notes are suitable for `Text Snippet`.
 4.  **Use One-Step Creation**: Using the `attributes` parameter in `create_note` is 30-50% more performant than creating the note and then adding attributes in a separate step.

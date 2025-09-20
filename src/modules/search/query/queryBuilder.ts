@@ -458,8 +458,8 @@ function validateMimeType(value: string): string {
   // Common MIME types for TriliumNext notes
   const commonMimeTypes = [
     // Code languages
-    'text/javascript', 'text/x-python', 'text/x-java', 'text/css', 'text/html',
-    'text/x-go', 'text/x-typescript', 'text/x-sql', 'text/x-yaml', 'text/x-markdown',
+    'application/typescript', 'text/x-python', 'text/x-java', 'text/css', 'text/html',
+    'text/x-go', 'application/typescript', 'text/x-sql', 'text/x-yaml', 'text/x-markdown',
     'text/x-c', 'text/x-cpp', 'text/x-csharp', 'text/x-php', 'text/x-ruby',
     'text/x-shell', 'text/x-dockerfile', 'application/xml', 'application/x-httpd-php',
     // Special note types

@@ -1,5 +1,7 @@
 To fix
-- 
+- need to double check if update_note won't trigger unless user explicitly requested it... Because i ask it to search something yet it return to me that it want to help me to update something...
+
+- render note keeps failing to be created
 
 - perhaps we add list_attributes so that it's easier to manage board note, as we could know the user-created attributes... (created list_attributes) but a bit hard to orchestrate such workflow
 - for create_note function, delete all notes under Board note only during creation process

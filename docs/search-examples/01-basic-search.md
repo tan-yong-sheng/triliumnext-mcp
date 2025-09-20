@@ -11,7 +11,7 @@ This guide shows how to call MCP `search_notes`. The function constructs the Tri
 
 ## Basic Examples
 
-1) Show me notes that mention 'hello kitty'
+1) User query: "Show me notes that mention 'hello kitty'."
 
 **Trilium DSL query:**
 ```

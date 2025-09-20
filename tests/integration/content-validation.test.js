@@ -324,7 +324,7 @@ test('Code Notes - should accept plain text content', async () => {
     title: 'JavaScript Code',
     type: 'code',
     content: 'function hello() { console.log("Hello, World!"); }',
-    mime: 'text/javascript'
+    mime: 'application/typescript'
   };
 
   const result = await handleCreateNote(request, mockAxios);

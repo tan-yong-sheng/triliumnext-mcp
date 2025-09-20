@@ -1,0 +1,24 @@
+
+6) User query: "Find notes containing email address in the content."
+
+Weirdly, it output ```{
+  "text": "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b",
+  "limit": 10
+}``` but i just want content search
+
+----
+Search operator involved: `regex`
+
+**Trilium DSL query:**
+```
+note.content %= '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}'
+```
+
+**Search Structure:**
+```json
+{
+  "searchCriteria": [
+    {"property": "content", "type": "noteProperty", "op": "regex", "value": "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"}
+  ]
+}
+```

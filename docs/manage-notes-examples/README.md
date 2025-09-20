@@ -56,7 +56,7 @@ The server automatically converts the simple string input to the appropriate int
 | Note Type | Input Format | Processing Rules | Examples |
 |---|---|---|---|
 | **`text`** | String | Auto-detects format: Markdown → HTML, plain text → `<p>` tags, HTML → passed through | `"# Hello"` → `<h1>Hello</h1>` |
-| **`code`** | String | Plain text only. HTML tags rejected. `mime` type required. | `"console.log('hi')"` with `mime: "text/javascript"` |
+| **`code`** | String | Plain text only. HTML tags rejected. `mime` type required. | `"console.log('hi')"` with `mime: "application/typescript"` |
 | **`mermaid`**| String | Plain text only. Mermaid diagram syntax. Auto-detected. | `"graph TD; A-->B"` |
 | **`book`** | String | Optional. Can be empty string `""` or HTML content. | `""` or `"<h1>Folder</h1>"` |
 | **`render`** | String | HTML/JS content for custom rendering. | `"<div>Custom HTML</div>"` |
@@ -80,67 +80,75 @@ The server automatically converts the simple string input to the appropriate int
 ```
 
 ### Creating a Code Note (Python)
+
+User query: "Create a python code note on Fibonacci Function."
+
 ```json
 {
   "parentNoteId": "root",
   "title": "Fibonacci Function",
   "type": "code",
-  "content": "def fibonacci(n):\n    a, b = 0, 1\n    while a < n:\n        print(a, end=' ')\n        a, b = b, a+b",
+  "content": "def fibonacci(n):\n    if n <= 0:\n        return []\n    elif n == 1:\n        return [0]\n    else:\n        list_fib = [0, 1]\n        while len(list_fib) < n:\n            next_fib = list_fib[-1] + list_fib[-2]\n            list_fib.append(next_fib)\n        return list_fib",
   "mime": "text/x-python"
 }
+
 ```
 
-### Creating a Note with Attributes
+#### Calendar Note
+
+User query: "Create a Calendar Note"
+
 ```json
 {
   "parentNoteId": "root",
-  "title": "Project Board",
+  "title": "Calendar Note",
   "type": "book",
-  "content": "<h1>Project Task Board</h1>",
   "attributes": [
     {
       "type": "relation",
       "name": "template",
-      "value": "Board"
-    },
-    {
-      "type": "label",
-      "name": "project",
-      "value": "website-redesign"
+      "value": "Calendar"
     }
   ]
 }
 ```
 
-### Creating Different Note Types
 
-#### Render Note
+#### Board Note / Kanban Note
+
+User query: "Create a kanban board called 'Project Kanban'."
+
 ```json
 {
   "parentNoteId": "root",
-  "title": "Custom Widget",
-  "type": "render",
-  "content": "<div id='widget'>Hello from custom HTML!</div>"
-}
-```
-
-#### Search Note
-```json
-{
-  "parentNoteId": "root",
-  "title": "All Project Notes",
-  "type": "search",
-  "content": "note.parents.title = 'Projects' AND #project"
+  "title": "Project Kanban",
+  "type": "book",
+  "attributes": [
+    {
+      "type": "relation",
+      "name": "template",
+      "value": "Board"
+    }
+  ]
 }
 ```
 
 #### WebView Note
+
+User query: "Create a webview note called 'WebView Note' on https://tanyongsheng.com/blog"
+
 ```json
 {
   "parentNoteId": "root",
-  "title": "Documentation",
+  "title": "WebView Note",
   "type": "webView",
-  "content": "https://docs.example.com"
+  "attributes": [
+    {
+      "type": "label",
+      "name": "webViewSrc",
+      "value": "https://tanyongsheng.com/blog"
+    }
+  ]
 }
 ```
 
@@ -193,7 +201,7 @@ The server enforces content type safety to ensure data integrity:
 ### Code Notes
 - **Plain text only**: HTML content is rejected with clear error messages
 - **MIME required**: Must specify appropriate MIME type
-- **Example**: `"console.log('hi')"` with `mime: "text/javascript"`
+- **Example**: `"console.log('hi')"` with `mime: "application/typescript"`
 
 ### Other Types
 - **Flexible**: Accept appropriate content formats based on type
@@ -203,8 +211,8 @@ For detailed error handling and content validation rules, see the individual too
 
 ## Related Documentation
 
-- **[Note Type Reference](./note-type-reference.md)** - Detailed information about supported note types
-- **[Template Relations Guide](./template-guide.md)** - Working with built-in templates
-- **[Attribute Management Guide](./attribute-management-guide.md)** - Managing labels and relations
-- **[Search and Replace Guide](./search-and-replace-guide.md)** - Advanced content editing
+- **[Note Type Reference](./01-note-type-reference.md)** - Detailed information about supported note types
+- **[Create Note Guide](./02-create-note-guide.md.md)** - Working with built-in templates
+- **[Attribute Management Guide](./03-attribute-management-guide.md)** - Managing labels and relations
+- **[Search and Replace Note Guide](./04-search-and-replace-note-guide.md)** - Advanced content editing
 ```
