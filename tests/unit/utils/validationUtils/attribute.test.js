@@ -10,7 +10,7 @@ import assert from 'node:assert';
 import {
   attributeSchema,
   safeValidate
-} from '../../../../build/utils/validationUtils.js';
+} from "../../../../build/modules/utils/core/validationUtils.js";
 
 describe('Attribute Validation', () => {
 

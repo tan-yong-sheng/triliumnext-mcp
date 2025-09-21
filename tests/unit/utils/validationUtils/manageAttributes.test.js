@@ -11,7 +11,7 @@ import {
   manageAttributesSchema,
   attributeSchema,
   safeValidate
-} from '../../../../build/utils/validationUtils.js';
+} from "../../../../build/modules/utils/core/validationUtils.js";
 
 describe('Manage Attributes Validation', () => {
 

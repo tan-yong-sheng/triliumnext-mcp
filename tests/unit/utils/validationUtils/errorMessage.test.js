@@ -15,7 +15,7 @@ import {
   searchNotesSchema,
   safeValidate,
   createValidationError
-} from '../../../../build/utils/validationUtils.js';
+} from "../../../../build/modules/utils/core/validationUtils.js";
 
 describe('Error Message Validation', () => {
 

@@ -3,7 +3,7 @@
  * Centralized tool schema definitions based on permissions
  */
 
-import { PermissionChecker } from '../../utils/permissionUtils.js';
+import { PermissionChecker } from '../../modules/utils/core/permissionUtils.js';
 
 /**
  * Generate write operation tools (CREATE, UPDATE, DELETE operations)

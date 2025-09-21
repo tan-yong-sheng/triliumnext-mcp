@@ -3,7 +3,7 @@
  * Handles blobId-based hash validation for concurrent modification prevention
  */
 
-import { logVerbose } from '../../../utils/verboseUtils.js';
+import { logVerbose } from '../../../modules/utils/core/verboseUtils.js';
 
 /**
  * Validate blobId hash to prevent concurrent modification conflicts

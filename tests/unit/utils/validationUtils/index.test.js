@@ -11,7 +11,7 @@ import { z } from 'zod';
 import {
   safeValidate,
   createValidationError
-} from '../../../../build/utils/validationUtils.js';
+} from "../../../../build/modules/utils/core/validationUtils.js";
 
 describe('Core Validation Functions', () => {
 

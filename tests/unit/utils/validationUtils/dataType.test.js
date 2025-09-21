@@ -13,7 +13,7 @@ import {
   attributeSchema,
   manageAttributesSchema,
   safeValidate
-} from '../../../../build/utils/validationUtils.js';
+} from "../../../../build/modules/utils/core/validationUtils.js";
 
 describe('Data Type Validation', () => {
 

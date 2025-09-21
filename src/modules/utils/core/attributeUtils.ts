@@ -5,10 +5,10 @@
 
 import { AxiosInstance } from 'axios';
 import axios from 'axios';
-import { logVerbose, logVerboseApi, logVerboseAxiosError } from '../utils/verboseUtils.js';
-import { validateAndTranslateTemplate, createTemplateRelationError } from '../utils/templateMapper.js';
-import { cleanAttributeName, generateCleaningMessage } from '../utils/attributeNameCleaner.js';
-import { Attribute, AttributeOperationResult } from '../types/attributeTypes.js';
+import { logVerbose, logVerboseApi, logVerboseAxiosError } from './verboseUtils.js';
+import { validateAndTranslateTemplate, createTemplateRelationError } from './templateMapper.js';
+import { cleanAttributeName, generateCleaningMessage } from './attributeNameCleaner.js';
+import { Attribute, AttributeOperationResult } from '../../types/index.js';
 
 // Re-export Attribute type for convenience
 export type { Attribute };

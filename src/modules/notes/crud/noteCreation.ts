@@ -3,11 +3,11 @@
  * Handles note creation with duplicate detection, content validation, and attribute processing
  */
 
-import { prepareContentForApi } from '../../../utils/contentProcessor.js';
-import { logVerbose, logVerboseError, logVerboseApi } from '../../../utils/verboseUtils.js';
-import { validateContentForNoteType, extractTemplateRelation } from '../../../utils/contentRules.js';
-import { validateAndTranslateTemplate, createTemplateRelationError } from '../../../utils/templateMapper.js';
-import { cleanAttributeName, generateCleaningMessage } from '../../../utils/attributeNameCleaner.js';
+import { prepareContentForApi } from '../../../modules/utils/core/contentProcessor.js';
+import { logVerbose, logVerboseError, logVerboseApi } from '../../../modules/utils/core/verboseUtils.js';
+import { validateContentForNoteType, extractTemplateRelation } from '../../../modules/utils/core/contentRules.js';
+import { validateAndTranslateTemplate, createTemplateRelationError } from '../../../modules/utils/core/templateMapper.js';
+import { cleanAttributeName, generateCleaningMessage } from '../../../modules/utils/core/attributeNameCleaner.js';
 import { SearchOperation } from '../../search/searchManager.js';
 import { Attribute, NoteOperation, NoteCreateResponse } from '../noteManager.js';
 

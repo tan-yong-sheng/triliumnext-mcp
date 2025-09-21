@@ -12,7 +12,7 @@ import {
   isBuiltinTemplateId,
   validateAndTranslateTemplate,
   createTemplateRelationError
-} from '../../../../build/utils/templateMapper.js';
+} from '../../../../build/modules/utils/core/templateMapper.js';
 
 describe('Template Translation Tests', () => {
 

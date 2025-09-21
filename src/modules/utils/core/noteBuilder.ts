@@ -3,8 +3,8 @@
  * Simplified note creation with string content
  */
 
-import { SimpleNoteInput, CreateNoteParams } from '../types/noteBuilderTypes.js';
-import type { NoteType } from '../modules/notes/noteManager.js';
+import { SimpleNoteInput, CreateNoteParams } from '../../types/index.js';
+import type { NoteType } from '../../notes/noteManager.js';
 
 /**
  * Build note parameters with string content

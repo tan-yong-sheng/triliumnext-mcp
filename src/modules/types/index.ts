@@ -1,3 +1,4 @@
+import type { NoteType } from '../notes/noteManager.js';
 /**
  * Type Definitions Module
  * Centralized type exports for all modules
@@ -136,4 +137,22 @@ export interface TemplateRelation {
   name: string;
   value: string;
   systemNoteId?: string;
+}
+// Note Builder types (simplified interfaces for easy note creation)
+export interface SimpleNoteInput {
+  parentNoteId: string;
+  title: string;
+  noteType: NoteType;
+  content: string;
+  mime?: string;
+  attributes?: Attribute[];
+}
+
+export interface CreateNoteParams {
+  parentNoteId: string;
+  title: string;
+  type: NoteType;
+  content: string;
+  mime?: string;
+  attributes?: Attribute[];
 }

@@ -11,7 +11,7 @@ import {
   cleanAttributeName,
   generateCleaningMessage,
   needsCleaning
-} from '../../../build/utils/attributeNameCleaner.js';
+} from '../../../build/modules/utils/core/attributeNameCleaner.js';
 
 describe('Attribute Name Cleaner', () => {
 

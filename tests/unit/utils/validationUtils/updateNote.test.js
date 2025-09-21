@@ -6,7 +6,7 @@ import { strict as assert } from 'assert';
 import { describe, it } from 'node:test';
 
 // Test the update note validation with mime parameter
-import { validateUpdateNote, safeValidate } from '../../../../build/utils/validationUtils.js';
+import { validateUpdateNote, safeValidate } from "../../../../build/modules/utils/core/validationUtils.js";
 
 describe('Update Note MIME Parameter Handling', () => {
 

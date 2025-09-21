@@ -4,12 +4,12 @@
  */
 
 // Note utilities
-export { buildNoteParams } from '../../utils/noteBuilder.js';
-export { trimNoteResults, formatNotesForListing } from '../../utils/noteFormatter.js';
+export { buildNoteParams } from '../../modules/utils/core/noteBuilder.js';
+export { trimNoteResults, formatNotesForListing } from '../../modules/utils/core/noteFormatter.js';
 
 // Content utilities
-export { processContent, prepareContentForApi } from '../../utils/contentProcessor.js';
-export { validateContentForNoteType, getContentRequirements } from '../../utils/contentRules.js';
+export { processContent, prepareContentForApi } from '../../modules/utils/core/contentProcessor.js';
+export { validateContentForNoteType, getContentRequirements } from '../../modules/utils/core/contentRules.js';
 
 // Attribute utilities
 export {
@@ -18,8 +18,8 @@ export {
   validate_attribute,
   check_attribute_exists,
   generate_attribute_cleaning_message
-} from '../../utils/attributeUtils.js';
-export { cleanAttributeName } from '../../utils/attributeNameCleaner.js';
+} from '../../modules/utils/core/attributeUtils.js';
+export { cleanAttributeName } from '../../modules/utils/core/attributeNameCleaner.js';
 
 // Validation utilities
 export {
@@ -28,13 +28,13 @@ export {
   validateSearchNotes,
   validateUpdateNote,
   safeValidate
-} from '../../utils/validationUtils.js';
+} from '../../modules/utils/core/validationUtils.js';
 
 // Template utilities
-export { isBuiltinTemplate } from '../../utils/templateMapper.js';
+export { isBuiltinTemplate } from '../../modules/utils/core/templateMapper.js';
 
 // Permission utilities
-export { PermissionChecker } from '../../utils/permissionUtils.js';
+export { PermissionChecker } from '../../modules/utils/core/permissionUtils.js';
 
 // Logging utilities
 export {
@@ -47,7 +47,7 @@ export {
   logVerboseTransform,
   createSearchDebugInfo,
   createListSummary
-} from '../../utils/verboseUtils.js';
+} from '../../modules/utils/core/verboseUtils.js';
 
 // Error handling utilities
 export {
@@ -64,4 +64,4 @@ export {
 export { SearchOperation, handleSearchNotes } from '../search/searchManager.js';
 
 // Type definitions
-export * from '../../types/index.js';
+export * from '../../modules/types/index.js';
