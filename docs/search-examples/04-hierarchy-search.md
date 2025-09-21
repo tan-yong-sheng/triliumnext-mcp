@@ -4,6 +4,12 @@ This document covers hierarchy navigation, for example, list direct child notes 
 
 ---
 
+1) List all notes 
+
+
+2) List all notes, including subfolders
+
+
 1) User query: "Show me all notes that are under the note titled 'Project Management'."
 
 **Trilium DSL query:**

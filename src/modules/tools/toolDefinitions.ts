@@ -12,13 +12,13 @@ export function createWriteTools(): any[] {
   return [
     {
       name: "create_note",
-      description: "Create a new note in TriliumNext with duplicate title detection. When a note with the same title already exists in the same directory, you'll be presented with choices: skip creation or update the existing note. ⚠️ **PARENT FOLDER SELECTION**: If user references a parent folder by name (e.g., 'create meeting note in Projects folder') and there are multiple folders with that name, ALWAYS use resolve_note_id first to find the exact parent note ID and let user choose the correct location. ONLY use this tool when the user explicitly requests note creation (e.g., 'create a note', 'make a new note'). DO NOT use this tool proactively or when the user is only asking questions about their notes. TIP: For code notes, content is plain text (no HTML processing).",
+      description: "Create a new note with duplicate detection. For parent folder conflicts: use resolve_note_id first to get exact parent note ID. ONLY use when user explicitly requests note creation. TIP: Code notes use plain text content.",
       inputSchema: {
         type: "object",
         properties: {
           parentNoteId: {
             type: "string",
-            description: "ID of the parent note. ⚠️ CRITICAL: If you have multiple folders/notes with identical names (e.g., multiple 'Projects' folders, multiple 'Grid View' notes), you MUST use the exact note ID - do NOT guess or auto-select! When multiple potential parents exist, the system will detect conflicts and ask you to choose the specific parent note ID.\n\n🔍 **FINDING PARENT NOTE ID**: Use resolve_note_id to find the exact note ID when you only know the folder name. Example: resolve_note_id({noteName: 'Projects'}) will return the note ID and show alternatives if multiple matches exist.\n\n📋 **PARENT NOTE REQUIREMENTS**:\n• RENDER parents: child must be type='code', mime='text/html' (HTML content for rendering)\n• CALENDAR parents: child must have #startDate, #endDate, #startTime, #endTime labels\n• BOARD parents: child must have #status label (e.g., 'To Do', 'In Progress', 'Done')\n• Missing required labels/relations will cause child notes to not display properly\n\n⚠️ **MULTIPLE PARENTS WITH SAME NAME**: When users say 'put note under Projects folder' but there are multiple 'Projects' folders, ALWAYS use resolve_note_id first to let users choose the correct parent, then use the returned note ID for parentNoteId.",
+            description: "Parent note ID (use resolve_note_id when folder names conflict). ⚠️ CRITICAL: Use exact note ID for duplicate names. PARENT REQUIREMENTS: RENDER needs HTML code child, CALENDAR/BOARD need specific labels for proper display.",
             default: "root"
           },
           title: {
@@ -28,11 +28,11 @@ export function createWriteTools(): any[] {
           type: {
             type: "string",
             enum: ["text", "code", "render", "search", "relationMap", "book", "noteMap", "mermaid", "webView"],
-            description: "Type of note (aligned with TriliumNext ETAPI specification). ⚠️ SPECIAL TYPES REQUIRE CHILD NOTES:\n• RENDER: Creates empty container - requires child HTML code note with ~renderNote relation\n• CALENDAR (template): Creates empty container - requires child notes with date/time labels\n• BOARD (template): Creates empty container - requires child notes with #status labels\n• All other types can contain content directly",
+            description: "Note type (ETAPI-aligned). ⚠️ SPECIAL: RENDER/CALENDAR/BOARD create empty containers requiring child notes with specific relations/labels.",
           },
           content: {
             type: "string",
-            description: "Content of the note (optional). Content requirements by note type: TEXT notes require HTML content (plain text auto-wrapped in <p> tags, e.g., '<p>Hello world</p>', '<strong>bold</strong>'); CODE/MERMAID notes require plain text ONLY (HTML tags rejected, e.g., 'def fibonacci(n):'); ⚠️ OMIT CONTENT for: 1) WEBVIEW notes (use #webViewSrc label instead), 2) Container templates (Board, Calendar, Grid View, List View, Table, Geo Map), 3) SYSTEM notes: RENDER, SEARCH, RELATION_MAP, NOTE_MAP, BOOK - these must be EMPTY to work properly. When omitted, note will be created with empty content.\n\n📋 WORKFLOW FOR SPECIAL NOTE TYPES:\n• RENDER notes: Create empty → create child HTML code note → add ~renderNote relation to child\n• CALENDAR/BOARD/GRID/LIST/TABLE/GEO templates: Create empty with ~template relation → add child notes with proper labels\n• TEXT SNIPPET templates: Create with ~template relation + content\n• Most other types: Add content directly during creation"
+            description: "Note content (optional). TEXT: HTML format (plain text wrapped in <p> tags). CODE/MERMAID: plain text only. ⚠️ OMIT for WEBVIEW (use #webViewSrc) and container templates (RENDER, BOARD, CALENDAR).",
           },
           mime: {
             type: "string",
@@ -40,31 +40,31 @@ export function createWriteTools(): any[] {
           },
           attributes: {
             type: "array",
-            description: "Optional attributes to create with the note (labels and relations). Enables one-step note creation with metadata. ⚠️ CRITICAL: Always add template relations during create_note when possible!\n\n📋 TEMPLATE RELATIONS (add during create_note):\n• ~template = 'Board' (kanban task boards)\n• ~template = 'Calendar' (calendar event displays)\n• ~template = 'Grid View' (grid layouts)\n• ~template = 'List View' (list layouts)\n• ~template = 'Table' (table structures)\n• ~template = 'Geo Map' (geographic maps)\n• ~template = 'Text Snippet' (reusable text)\n\n⚠️ SPECIAL CASES requiring separate steps:\n• ~renderNote = '<noteId>' (RENDER notes - requires existing child note ID)\n• Custom relations pointing to specific notes (use note IDs after creation)\n\n📋 LABELS & OTHER RELATIONS:\n• Labels: #tag format (e.g., #important, #project)\n• Relations: ~connection format (e.g., ~author, ~publisher)\n• Template relations use human-readable names (auto-translated to system IDs)\n\n⚠️ TEMPLATE RESTRICTIONS: Container templates MUST be book note type with empty content - add content as child notes",
+            description: "Optional labels (#tags) and relations (~template) to create with note. ⚠️ Add template relations during creation when possible. Templates: 'Board', 'Calendar', 'Text Snippet', etc.",
             items: {
               type: "object",
               properties: {
                 type: {
                   type: "string",
                   enum: ["label", "relation"],
-                  description: "Attribute type: 'label' for #tags, 'relation' for ~connections"
+                  description: "Attribute type: 'label' (#tags) or 'relation' (~connections)"
                 },
                 name: {
                   type: "string",
-                  description: "Attribute name: for labels use descriptive tags, for relations use connection types (e.g., 'template', 'author')"
+                  description: "Attribute name: tags for labels, connection types for relations"
                 },
                 value: {
                   type: "string",
-                  description: "Attribute value: optional for labels (e.g., 'In Progress'), required for relations (e.g., 'Board', 'Calendar', target note IDs/titles)"
+                  description: "Attribute value: optional for labels, required for relations (template names or note IDs)"
                 },
                 position: {
                   type: "number",
-                  description: "Display position (lower numbers appear first, default: 10)",
+                  description: "Display position (lower first, default: 10)",
                   default: 10
                 },
                 isInheritable: {
                   type: "boolean",
-                  description: "Whether attribute is inherited by child notes (default: false)",
+                  description: "Inherited by child notes (default: false)",
                   default: false
                 }
               },
@@ -77,7 +77,7 @@ export function createWriteTools(): any[] {
     },
     {
       name: "update_note",
-      description: "Update note with support for title-only updates, content operations, note type changes, and MIME type updates. ⚠️ **CRITICAL: ONLY use this tool when the user explicitly requests note modification** (e.g., 'update the note', 'change the content', 'modify the title', 'edit this note'). DO NOT use this tool proactively or make assumptions about what should be updated. ⚠️ REQUIRED: ALWAYS call get_note first to obtain current hash and validate current note type. MODE SELECTION: Use 'append' when adding content, 'overwrite' when replacing content, or title-only for efficient title changes. TYPE CHANGES: Convert between note types (e.g., 'text' to 'code') with automatic validation for template compatibility and content requirements. MIME UPDATES: Change content type for code notes (e.g., JavaScript to Python). PREVENTS: Overwriting changes made by other users (hash mismatch) or invalid type conversions. WORKFLOW: get_note → review current state → update_note with hash",
+      description: "Update note content, title, type, or MIME type. ⚠️ CRITICAL: ONLY use when user explicitly requests modification. ⚠️ REQUIRED: Call get_note first to get current hash. Choose 'append' to add content or 'overwrite' to replace all content. Supports type conversion with validation. PREVENTS: Data loss from concurrent edits via hash validation.",
       inputSchema: {
         type: "object",
         properties: {
@@ -92,15 +92,15 @@ export function createWriteTools(): any[] {
           type: {
             type: "string",
             enum: ["text", "code", "render", "search", "relationMap", "book", "noteMap", "mermaid", "webView"],
-            description: "NEW: Change note type with validation (e.g., convert 'text' to 'code' note). ⚠️ IMPORTANT: Type changes are validated for template compatibility - notes with ~template='Board' must remain type='book', ~template='Calendar' must remain type='book', etc. Content compatibility is also validated (e.g., HTML content may not be suitable for code notes). Use this when converting between different note formats (e.g., changing a text note to a code note for better syntax highlighting, or converting a generic note to a Mermaid diagram). Optional - omit if not changing note type."
+            description: "Change note type with validation (e.g., 'text' to 'code'). ⚠️ Template compatibility checked. Optional - omit if not changing type."
           },
           mime: {
             type: "string",
-            description: "NEW: Update MIME type for code notes (e.g., change 'application/typescript' to 'text/x-python'). Only valid for code-type notes. Use this when switching programming languages or content types. Optional - omit if not changing MIME type."
+            description: "Update MIME type for code notes (e.g., 'application/typescript' to 'text/x-python'). Optional - omit if not changing MIME type."
           },
           content: {
             type: "string",
-            description: "Content of the note. Content requirements by note type: TEXT notes require HTML content (plain text auto-wrapped in <p> tags, e.g., '<p>Hello world</p>', '<strong>bold</strong>'); CODE/MERMAID notes require plain text ONLY (HTML tags rejected, e.g., 'def fibonacci(n):'); ⚠️ SYSTEM NOTES MUST REMAIN EMPTY: RENDER (HTML handled by note type), SEARCH (queries in search properties), RELATION_MAP (visual maps), NOTE_MAP (visual hierarchies), BOOK (container notes), WEBVIEW (use #webViewSrc label); IMPORTANT: When updating notes with template relations (Board, Calendar, Grid View, List View, Table, Geo Map), the note must remain EMPTY - these templates provide specialized layouts and content should be added as child notes instead."
+            description: "Note content. TEXT: HTML format. CODE/MERMAID: plain text only. ⚠️ Keep EMPTY for container templates (RENDER, BOARD, CALENDAR, WEBVIEW)."
           },
           expectedHash: {
             type: "string",
@@ -114,7 +114,7 @@ export function createWriteTools(): any[] {
           mode: {
             type: "string",
             enum: ["overwrite", "append"],
-            description: "⚠️ REQUIRED: Content update mode. CRITICAL: Choose based on user intent: 'append' = add/insert content while preserving existing content (use for 'add to', 'append', 'insert', 'add more', 'continue writing'); 'overwrite' = completely replace all existing content (use for 'replace', 'overwrite', 'update all', 'completely replace'). Default behavior is not available - you MUST explicitly choose."
+            description: "⚠️ REQUIRED: 'append' to add content, 'overwrite' to replace all content. Choose based on user intent."
           }
         },
         required: ["noteId", "expectedHash", "mode"]
@@ -246,7 +246,7 @@ export function createReadTools(): any[] {
     },
     {
       name: "search_notes",
-      description: "🔎 **SMART SEARCH with two approaches**: Choose wisely based on what the user is looking for:\n\n📝 **Simple discovery?** Use 'text' parameter for broad searches across both title AND content when users say general things like 'find notes about project' or 'search for meeting notes'.\n\n🎯 **Specific targeting?** Use 'searchCriteria' when users specify WHERE to search ('in title', 'in content'), need regex patterns ('email addresses'), or want complex logic ('docker OR kubernetes').\n\n✨ **POWERFUL CAPABILITIES**: Field-specific searches (title-only, content-only), regex patterns, boolean logic, label/attribute filtering, template searches, hierarchy navigation (parents.title, ancestors.noteId), note type filtering, and MIME type searches.\n\n📋 **QUICK EXAMPLES**:\n• Generic: 'search for project' → {text: 'project'}\n• Title-specific: 'title containing Project' → {searchCriteria: [{property: 'title', type: 'noteProperty', op: 'contains', value: 'Project'}]}\n• Content regex: 'find emails' → {searchCriteria: [{property: 'content', type: 'noteProperty', op: 'regex', value: '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\\.[a-zA-Z]{2,}'}]}\n• Template: 'find calendar notes' → {searchCriteria: [{property: 'template.title', type: 'relation', op: '=', value: 'Calendar'}]}\n\n🗺️ **HIERARCHY NAVIGATION**:\n• Direct children: parents.noteId / parents.title\n• All descendants: ancestors.noteId / ancestors.title\n• Parent finding: children.noteId / children.title",
+      description: "Search notes with two approaches: Use 'text' for broad searches across title AND content (e.g., 'project', 'meeting notes'). Use 'searchCriteria' for field-specific searches when users specify WHERE to search ('in title', 'in content'), need regex patterns, or want complex logic. For listing all notes: use searchCriteria with 'exists' operator on any property like 'noteId'. Supports label/attribute filtering, template searches, hierarchy navigation, and boolean logic.",
       inputSchema: {
         type: "object",
         properties: searchProperties,
@@ -262,17 +262,17 @@ function createSearchProperties() {
   return {
     text: {
       type: "string",
-      description: "🔍 **BROAD SEARCH across both title and content** - Think of this as asking 'find me anything related to X' without caring which field it appears in. Perfect for simple discovery when you want to cast a wide net. Examples: 'project' (finds notes with 'project' in title OR content), 'meeting notes' (finds notes containing both words together anywhere), '\"quarterly report\"' (finds exact phrase in title or content). ⚠️ **AVOID THIS when users specify WHERE to search** - if they say 'in the title', 'in the content', 'title containing', or need regex patterns, use searchCriteria instead for precise field targeting. Does NOT support boolean operators like OR/AND/NOT.",
+      description: "Broad search across both title and content. Use for simple discovery like 'project' or 'meeting notes'. ⚠️ CANNOT BE EMPTY - must provide search terms. Use searchCriteria instead for field-specific searches or when users specify 'in title', 'in content'. Does not support boolean operators.",
     },
     searchCriteria: {
       type: "array",
-      description: "🎯 **PRECISE FIELD-SPECIFIC SEARCHES** - Your go-to for targeted searches when users specify WHERE or HOW to search. Perfect for: title-only searches ('title containing Project'), content-only searches ('find emails in content'), regex patterns ('email addresses'), complex logic ('docker OR kubernetes'), and exact field targeting. Supports field-specific operators (contains, starts_with, ends_with, regex) and boolean logic (AND/OR). Examples: Title search: {property: 'title', type: 'noteProperty', op: 'contains', value: 'Project'}. Content regex: {property: 'content', type: 'noteProperty', op: 'regex', value: '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\\.[a-zA-Z]{2,}'}. Complex logic: Multiple criteria with AND/OR operators. Also handles labels (#tags), relations (~connections), hierarchy navigation (parents.title, ancestors.noteId), note types, and MIME types. ⚠️ **USE THIS when users say 'in title', 'in content', or specify exact field requirements.",
+      description: "Field-specific searches for precise targeting. Use when users specify WHERE to search ('in title', 'in content'), need regex patterns, or want complex logic. Supports operators (contains, regex, exists), boolean logic (AND/OR), labels (#tags), relations (~connections), hierarchy navigation (parents.title, ancestors.noteId), note types, and MIME types.",
       items: {
         type: "object",
         properties: {
           property: {
             type: "string",
-            description: "Property name. For labels: tag name (e.g., 'book', 'author'). For relations: relation name with optional property path (e.g., 'author', 'author.title', 'template.title'). Built-in templates: use 'template.title' with values 'Calendar', 'Board', 'Text Snippet', 'Grid View', 'List View', 'Table', 'Geo Map'. For note properties: system property name (e.g., 'isArchived', 'type', 'mime', 'title', 'content', 'dateCreated') OR hierarchy properties (see HIERARCHY NAVIGATION section above for guidance on parents vs ancestors)."
+            description: "Property name: label names (e.g., 'book'), relation names with paths (e.g., 'template.title'), or note properties (e.g., 'title', 'type', 'dateCreated'). Use 'template.title' for built-in templates like 'Board', 'Calendar'."
           },
           type: {
             type: "string",
@@ -282,17 +282,17 @@ function createSearchProperties() {
           op: {
             type: "string",
             enum: ["exists", "not_exists", "=", "!=", ">=", "<=", ">", "<", "contains", "starts_with", "ends_with", "regex"],
-            description: "Search operator for property matching and comparison. Use 'exists' to find notes with a property, 'not_exists' to find notes without the property at all, '=' for exact matches, '!=' to find notes that have the property but excluding specific values, '>=' and '<=' for ranges, and text operators like 'contains' for partial matches.",
+            description: "Search operator: 'exists' (has property), 'contains' (partial match), '=' (exact match), 'regex' (pattern match). Default: 'exists'.",
             default: "exists"
           },
           value: {
             type: "string",
-            description: "Value to compare against (optional for exists operator). For built-in template relations: use 'Calendar' (calendar notes), 'Board' (task boards), 'Text Snippet' (text snippets), 'Grid View' (grid layouts), 'List View' (list layouts), 'Table' (table views), 'Geo Map' (geography maps). For note type property: use ETAPI-aligned note types: 'text' (rich text), 'code' (code with syntax highlighting), 'render' (rendered content), 'search' (saved searches), 'relationMap' (relation maps), 'book' (folders/containers), 'noteMap' (note relationship maps), 'mermaid' (Mermaid diagrams), 'webView' (web content embedding). For note MIME property: use MIME types like 'application/typescript', 'text/x-python', 'text/x-java', 'text/css', 'text/html', 'application/typescript', 'text/x-sql', 'text/x-yaml', 'text/x-markdown', 'text/vnd.mermaid', 'application/json'. For noteProperty dates (dateCreated, dateModified): MUST use ISO date format - 'YYYY-MM-DDTHH:mm:ss.sssZ'. For hierarchy navigation: parent/ancestor note title or 'root' for top-level."
+            description: "Value to match (optional for 'exists' operator). Use template names ('Board', 'Calendar'), note types ('text', 'code'), MIME types ('text/x-python'), or ISO dates for dateCreated/dateModified."
           },
           logic: {
             type: "string",
             enum: ["AND", "OR"],
-            description: "Logic operator connecting this item to the NEXT item in the array. Think sequentially: each item's logic determines how it combines with the following item. For 'A OR B AND C' expressions, use OR on first item, AND on second item. For simple 'A OR B' use OR on first item only. Default AND creates standard conjunctions. System ignores logic on the final array item.",
+            description: "Logic operator connecting to next item: 'AND' (default) for intersection, 'OR' for union. Use 'OR' on first item for 'A OR B AND C' patterns.",
             default: "AND"
           }
         },
@@ -362,7 +362,7 @@ export function createWriteAttributeTools(): any[] {
   return [
     {
       name: "manage_attributes",
-      description: "Manage note attributes with write operations (create, update, delete). Create labels (#tags), template relations (~template), update existing attributes, and organize notes with metadata. ⚠️ PRIORITY: Use create_note with attributes parameter for template relations when possible - only use this tool for post-creation modifications or complex scenarios.\n\n✅ BEST PRACTICE: Most template relations (~template = 'Board', 'Calendar', etc.) should be added during create_note\n❌ USE THIS TOOL FOR: ~renderNote relations, custom note-to-note relations, post-creation label updates\n\nIMPORTANT: This tool only provides write access - use read_attributes to view existing attributes. Relations require values pointing to existing notes (e.g., template relations use human-readable names like 'Board', 'Calendar' which are automatically translated to system note IDs; author relations use target note titles or IDs). UPDATE LIMITATIONS: For labels, only value and position can be updated. For relations, only position can be updated. The isInheritable property cannot be changed via update - delete and recreate to modify inheritability. Supports single operations and efficient batch creation for better performance.\n\n🛡️ VALIDATION: Create operations automatically check for existing attributes to prevent duplicates. If an attribute already exists, you'll receive detailed error messages with guidance on using 'update' instead. Batch operations skip duplicates and continue processing valid attributes.",
+      description: "Create, update, or delete note attributes (labels #tags and relations ~template). ⚠️ PRIORITY: Add template relations during create_note when possible. Use this for post-creation changes or complex scenarios. Supports batch operations. UPDATE LIMITATIONS: Labels: value/position only. Relations: position only. Use read_attributes to view existing attributes.",
       inputSchema: {
         type: "object",
         properties: {
