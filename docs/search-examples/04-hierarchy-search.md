@@ -6,9 +6,48 @@ This document covers hierarchy navigation, for example, list direct child notes 
 
 1) List all notes 
 
+**Trilium DSL query:**
+```
+note.parents.title = 'root'
+```
+
+**Search Structure:**
+```json
+{
+  "searchCriteria": [
+    {
+      "property": "parents.title",
+      "type": "noteProperty",
+      "op": "=",
+      "value": "root",
+      "logic": "AND"
+    }
+  ]
+}
+```
 
 2) List all notes, including subfolders
 
+
+**Trilium DSL query:**
+```
+note.ancestors.title = 'root'
+```
+
+**Search Structure:**
+```json
+{
+  "searchCriteria": [
+    {
+      "property": "ancestors.title",
+      "type": "noteProperty",
+      "op": "=",
+      "value": "root",
+      "logic": "AND"
+    }
+  ]
+}
+```
 
 3) User query: "Show me all notes that are under the note titled 'Project Management'."
 
