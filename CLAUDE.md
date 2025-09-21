@@ -364,7 +364,6 @@ This follows the principle of least privilege and provides clean separation betw
 - **Structured → DSL**: `searchQueryBuilder.ts` converts JSON parameters to Trilium search strings
 - **Critical fix**: OR queries with parentheses automatically get `~` prefix (required by Trilium parser)
 - **Field operators**: `*=*` (contains), `=*` (starts with), `*=` (ends with), `!=` (not equal), `%=` (regex)
-- **Documentation**: `docs/search-query-examples.md` contains 30+ examples with JSON structure for all parameters
 
 ### Development Guidelines for Search Functions
 
@@ -493,8 +492,6 @@ const textNote = buildNoteParams({
 - **Text notes**: Support smart format detection (HTML/Markdown/plain)
 - **Code notes**: Plain text only, no processing applied
 - **Book/Search/etc**: Optional content, can be empty
-
-**Documentation**: See `docs/create-notes-examples/simplified-interface-guide.md` for comprehensive examples and usage patterns.
 
 ## API Integration
 
