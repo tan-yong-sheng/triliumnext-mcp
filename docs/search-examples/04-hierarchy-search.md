@@ -10,7 +10,7 @@ This document covers hierarchy navigation, for example, list direct child notes 
 2) List all notes, including subfolders
 
 
-1) User query: "Show me all notes that are under the note titled 'Project Management'."
+3) User query: "Show me all notes that are under the note titled 'Project Management'."
 
 **Trilium DSL query:**
 ```
@@ -32,7 +32,7 @@ note.parents.title = 'Project Management'
 }
 ```
 
-2) User query: "Show me all notes, including subfolders, that are under the note titled 'Project Management'."
+4) User query: "Show me all notes, including subfolders, that are under the note titled 'Project Management'."
 
 **Trilium DSL query:**
 ```
@@ -54,7 +54,7 @@ note.ancestors.title = 'Project Management'
 }
 ```
 
-3) User query: "Show me notes under 'Project Management' updated after Sep 1, 2025."
+5) User query: "Show me notes under 'Project Management' updated after Sep 1, 2025."
 
 **Trilium DSL query:**
 ```
