@@ -3,8 +3,8 @@
  * Handles content search and replace with regex support and validation
  */
 
-import { prepareContentForApi } from '../../../modules/utils/core/contentProcessor.js';
-import { logVerbose } from '../../../modules/utils/core/verboseUtils.js';
+import { prepareContentForApi } from '../../../modules/utils/content/contentProcessor.js';
+import { logVerbose } from '../../../modules/utils/system/verboseUtils.js';
 import { validateContentForNoteType } from '../validation/contentValidator.js';
 import { validateBlobIdHash } from '../validation/hashValidator.js';
 import { NoteOperation, NoteSearchReplaceResponse, RegexMatch } from '../noteManager.js';

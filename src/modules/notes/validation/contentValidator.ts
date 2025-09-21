@@ -3,7 +3,7 @@
  * Handles content type validation and safety for different note types
  */
 
-import { validateContentForNoteType as baseValidateContentForNoteType } from '../../../modules/utils/core/contentRules.js';
+import { validateContentForNoteType as baseValidateContentForNoteType } from '../../../modules/utils/validation/contentRules.js';
 import { NoteType } from '../noteManager.js';
 
 /**

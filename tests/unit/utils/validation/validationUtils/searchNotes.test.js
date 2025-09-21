@@ -11,7 +11,7 @@ import {
   searchNotesSchema,
   searchCriteriaSchema,
   safeValidate
-} from "../../../../build/modules/utils/core/validationUtils.js";
+} from "../../../../../build/modules/utils/validation/validationUtils.js";
 
 describe('Search Notes Validation', () => {
 

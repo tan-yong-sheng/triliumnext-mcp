@@ -3,9 +3,9 @@
  * Handles note updates with hash validation, content type safety, and container template protection
  */
 
-import { prepareContentForApi } from '../../../modules/utils/core/contentProcessor.js';
-import { logVerbose, logVerboseError, logVerboseApi } from '../../../modules/utils/core/verboseUtils.js';
-import { validateContentForNoteType, getContentRequirements } from '../../../modules/utils/core/contentRules.js';
+import { prepareContentForApi } from '../../../modules/utils/content/contentProcessor.js';
+import { logVerbose, logVerboseError, logVerboseApi } from '../../../modules/utils/system/verboseUtils.js';
+import { validateContentForNoteType, getContentRequirements } from '../../../modules/utils/validation/contentRules.js';
 import { isContainerTemplateNote, generateContainerTemplateGuidance } from '../validation/containerValidator.js';
 import { NoteOperation, NoteUpdateResponse } from '../noteManager.js';
 

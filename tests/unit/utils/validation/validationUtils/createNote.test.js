@@ -11,7 +11,7 @@ import {
   createNoteSchema,
   attributeSchema,
   safeValidate
-} from "../../../../build/modules/utils/core/validationUtils.js";
+} from "../../../../../build/modules/utils/validation/validationUtils.js";
 
 describe('Create Note Validation', () => {
 

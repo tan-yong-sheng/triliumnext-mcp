@@ -154,4 +154,4 @@ server.run().catch((error) => {
 // Export helper functions for external use
 export {
   buildNoteParams
-} from './modules/utils/core/noteBuilder.js';
+} from './modules/utils/formatting/noteBuilder.js';

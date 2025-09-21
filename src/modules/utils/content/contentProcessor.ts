@@ -4,7 +4,7 @@
  */
 
 import { marked } from 'marked';
-import { isLikelyHtml } from './contentRules.js';
+import { isLikelyHtml } from '../validation/contentRules.js';
 
 /**
  * Process string content into format suitable for ETAPI

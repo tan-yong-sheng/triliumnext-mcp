@@ -4,7 +4,7 @@
  */
 
 import type { NoteType, Attribute } from '../../notes/noteManager.js';
-import { getContentRequirements } from './contentRules.js';
+import { getContentRequirements, isLikelyHtml } from './contentRules.js';
 
 /**
  * Enhanced NoteGetResponse with hash information
@@ -25,22 +25,6 @@ export interface EnhancedNoteUpdateResponse {
   revisionCreated: boolean;
   newHash?: string;
   conflict?: boolean;
-}
-
-/**
- * HTML detection utility (moved from hashUtils)
- */
-export function isLikelyHtml(content: string): boolean {
-  if (!content || content.length < 3) return false;
-
-  const htmlPatterns = [
-    /<[a-zA-Z][^>]*>.*<\/[a-zA-Z][^>]*>/, // Complete HTML tags
-    /<[a-zA-Z][^>]*\/>/,                   // Self-closing tags
-    /<[a-zA-Z][^>]*>/,                      // Opening tags only
-    /&[a-zA-Z]+;/,                          // HTML entities
-  ];
-
-  return htmlPatterns.some(pattern => pattern.test(content));
 }
 
 /**

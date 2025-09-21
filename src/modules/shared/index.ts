@@ -4,12 +4,12 @@
  */
 
 // Note utilities
-export { buildNoteParams } from '../../modules/utils/core/noteBuilder.js';
-export { trimNoteResults, formatNotesForListing } from '../../modules/utils/core/noteFormatter.js';
+export { buildNoteParams } from '../../modules/utils/formatting/noteBuilder.js';
+export { trimNoteResults, formatNotesForListing } from '../../modules/utils/formatting/noteFormatter.js';
 
 // Content utilities
-export { processContent, prepareContentForApi } from '../../modules/utils/core/contentProcessor.js';
-export { validateContentForNoteType, getContentRequirements } from '../../modules/utils/core/contentRules.js';
+export { processContent, prepareContentForApi } from '../../modules/utils/content/contentProcessor.js';
+export { validateContentForNoteType, getContentRequirements } from '../../modules/utils/validation/contentRules.js';
 
 // Attribute utilities
 export {
@@ -18,8 +18,8 @@ export {
   validate_attribute,
   check_attribute_exists,
   generate_attribute_cleaning_message
-} from '../../modules/utils/core/attributeUtils.js';
-export { cleanAttributeName } from '../../modules/utils/core/attributeNameCleaner.js';
+} from '../../modules/utils/attributes/attributeUtils.js';
+export { cleanAttributeName } from '../../modules/utils/attributes/attributeNameCleaner.js';
 
 // Validation utilities
 export {
@@ -28,13 +28,13 @@ export {
   validateSearchNotes,
   validateUpdateNote,
   safeValidate
-} from '../../modules/utils/core/validationUtils.js';
+} from '../../modules/utils/validation/validationUtils.js';
 
 // Template utilities
-export { isBuiltinTemplate } from '../../modules/utils/core/templateMapper.js';
+export { isBuiltinTemplate } from '../../modules/utils/content/templateMapper.js';
 
 // Permission utilities
-export { PermissionChecker } from '../../modules/utils/core/permissionUtils.js';
+export { PermissionChecker } from '../../modules/utils/system/permissionUtils.js';
 
 // Logging utilities
 export {
@@ -47,7 +47,7 @@ export {
   logVerboseTransform,
   createSearchDebugInfo,
   createListSummary
-} from '../../modules/utils/core/verboseUtils.js';
+} from '../../modules/utils/system/verboseUtils.js';
 
 // Error handling utilities
 export {
@@ -58,7 +58,7 @@ export {
   createValidationError,
   createConflictError,
   createContainerTemplateError
-} from '../utils/errorUtils.js';
+} from '../utils/system/errorUtils.js';
 
 // Search operations
 export { SearchOperation, handleSearchNotes } from '../search/searchManager.js';

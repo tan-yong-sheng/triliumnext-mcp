@@ -3,8 +3,8 @@
  * Handles note retrieval with content, hash validation, and search capabilities
  */
 
-import { logVerbose } from '../../../modules/utils/core/verboseUtils.js';
-import { getContentRequirements } from '../../../modules/utils/core/contentRules.js';
+import { logVerbose } from '../../../modules/utils/system/verboseUtils.js';
+import { getContentRequirements } from '../../../modules/utils/validation/contentRules.js';
 import { executeUnifiedSearch } from '../operations/searchReplace.js';
 import { NoteOperation, NoteGetResponse, RegexMatch } from '../noteManager.js';
 

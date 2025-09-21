@@ -3,8 +3,8 @@
  * Handles construction of Trilium search queries from structured parameters
  */
 
-import { logVerboseInput, logVerboseOutput, logVerboseTransform } from "../../../modules/utils/core/verboseUtils.js";
-import { translateTemplateNameToId, isBuiltinTemplate } from "../../../modules/utils/core/templateMapper.js";
+import { logVerboseInput, logVerboseOutput, logVerboseTransform } from "../../../modules/utils/system/verboseUtils.js";
+import { translateTemplateNameToId, isBuiltinTemplate } from "../../../modules/utils/content/templateMapper.js";
 
 // Unified SearchCriteria interface for all search types
 interface SearchCriteria {

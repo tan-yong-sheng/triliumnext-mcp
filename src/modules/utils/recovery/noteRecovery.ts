@@ -3,7 +3,7 @@
  * Provides smart recovery mechanisms when notes are not found during update operations
  */
 
-import { logVerbose } from './verboseUtils.js';
+import { logVerbose } from '../system/verboseUtils.js';
 
 /**
  * Extract a potential note name from a noteId

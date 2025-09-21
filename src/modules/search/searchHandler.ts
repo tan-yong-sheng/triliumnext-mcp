@@ -4,7 +4,7 @@
  */
 
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
-import { PermissionChecker } from "../../modules/utils/core/permissionUtils.js";
+import { PermissionChecker } from "../../modules/utils/system/permissionUtils.js";
 import {
   SearchOperation,
   handleSearchNotes,

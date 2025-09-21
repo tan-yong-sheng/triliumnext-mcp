@@ -10,7 +10,7 @@ import assert from 'node:assert';
 import {
   searchCriteriaSchema,
   safeValidate
-} from "../../../../build/modules/utils/core/validationUtils.js";
+} from "../../../../../build/modules/utils/validation/validationUtils.js";
 
 describe('Search Criteria Validation', () => {
 

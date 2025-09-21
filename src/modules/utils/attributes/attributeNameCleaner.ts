@@ -4,7 +4,7 @@
  * leading/trailing # and ~ symbols that don't belong in attribute names.
  */
 
-import { logVerbose } from './verboseUtils.js';
+import { logVerbose } from '../system/verboseUtils.js';
 
 /**
  * Cleaning result interface

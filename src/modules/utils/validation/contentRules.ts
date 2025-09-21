@@ -32,7 +32,7 @@ const CONTAINER_TEMPLATES = [
 ];
 
 // Import template translation utilities
-import { isBuiltinTemplate } from "./templateMapper.js";
+import { isBuiltinTemplate } from "../content/templateMapper.js";
 
 /**
  * Get content rules for a note type (without considering templates)

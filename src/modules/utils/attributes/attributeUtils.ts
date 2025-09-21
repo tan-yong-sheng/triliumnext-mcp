@@ -5,8 +5,8 @@
 
 import { AxiosInstance } from 'axios';
 import axios from 'axios';
-import { logVerbose, logVerboseApi, logVerboseAxiosError } from './verboseUtils.js';
-import { validateAndTranslateTemplate, createTemplateRelationError } from './templateMapper.js';
+import { logVerbose, logVerboseApi, logVerboseAxiosError } from '../system/verboseUtils.js';
+import { validateAndTranslateTemplate, createTemplateRelationError } from '../content/templateMapper.js';
 import { cleanAttributeName, generateCleaningMessage } from './attributeNameCleaner.js';
 import { Attribute, AttributeOperationResult } from '../../types/index.js';
 
