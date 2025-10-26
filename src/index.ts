@@ -44,7 +44,7 @@ class TriliumServer {
     this.server = new Server(
       {
         name: "triliumnext-mcp",
-        version: "0.3.11",
+        version: "0.3.13",
       },
       {
         capabilities: {
