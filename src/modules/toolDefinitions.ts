@@ -25,18 +25,22 @@ export function createWriteTools(): any[] {
             type: "string",
             description: "Title of the note",
           },
-          type: {
-            type: "string",
-            enum: ["text", "code", "render", "search", "relationMap", "book", "noteMap", "mermaid", "webView"],
-            description: "Type of note (aligned with TriliumNext ETAPI specification)",
-          },
           content: {
             type: "string",
-            description: "Content of the note (optional). Content requirements by note type: TEXT notes require HTML content (plain text auto-wrapped in <p> tags, e.g., '<p>Hello world</p>', '<strong>bold</strong>'); CODE/MERMAID notes require plain text ONLY (HTML tags rejected, e.g., 'def fibonacci(n):'); ⚠️ OMIT CONTENT for: 1) WEBVIEW notes (use #webViewSrc label instead), 2) Container templates (Board, Calendar, Grid View, List View, Table, Geo Map), 3) System notes: RENDER (create child HTML note with type='code' and mime='application/x-html', then link with ~renderNote relation), SEARCH (queries in search properties), RELATION_MAP (visual maps), NOTE_MAP (visual hierarchies), BOOK (container notes) - these must be EMPTY to work properly. When omitted, note will be created with empty content."
+            description: "Content of the note (optional). Content requirements by note type: TEXT notes require HTML content (plain text auto-wrapped in <p> tags, e.g., '<p>Hello world</p>', '<strong>bold</strong>'); CODE/MERMAID notes require plain text ONLY (HTML tags rejected, e.g., 'def fibonacci(n):'); ⚠️ OMIT CONTENT for: 1) FILE notes (binary content uploaded separately via fileUri parameter), 2) WEBVIEW notes (use #webViewSrc label instead), 3) Container templates (Board, Calendar, Grid View, List View, Table, Geo Map), 4) System notes: RENDER (create child HTML note with type='code' and mime='application/x-html', then link with ~renderNote relation), SEARCH (queries in search properties), RELATION_MAP (visual maps), NOTE_MAP (visual hierarchies), BOOK (container notes) - these must be EMPTY to work properly. When omitted, note will be created with empty content."
+          },
+          type: {
+            type: "string",
+            enum: ["text", "code", "render", "search", "relationMap", "book", "noteMap", "mermaid", "webView", "file", "image"],
+            description: "Type of note (aligned with TriliumNext ETAPI specification). For file uploads: Use 'image' for Images (JPG/JPEG/PNG/WebP), 'file' for Documents & Audio (PDF/DOCX/MP3/WAV/M4A). Other types: 'text', 'code', 'render', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView'.",
           },
           mime: {
             type: "string",
-            description: "MIME type for code/file/image notes",
+            description: "MIME type for code/file/image notes. For file uploads, auto-detected from file extension when not specified. Supported: application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document, audio/mpeg, audio/wav, audio/mp4, image/jpg, image/png, image/webp"
+          },
+          fileUri: {
+            type: "string",
+            description: "File data source (required when type='file' or type='image'). Supports: 1) Local file path: '/path/to/document.pdf', 2) Base64 data URI: 'data:application/pdf;base64,JVBERi0xLjcK...', 3) Raw base64 string. Supports PDF, DOCX, PPTX, XLSX, CSV, MP3, WAV, M4A, JPG, JPEG, PNG, WebP formats. File will be uploaded via Trilium's two-step process: create note metadata, then upload binary content."
           },
           attributes: {
             type: "array",
@@ -82,7 +86,7 @@ export function createWriteTools(): any[] {
     },
     {
       name: "update_note",
-      description: "Update note with support for title-only updates, content overwrite, or content append. ⚠️ REQUIRED: ALWAYS call get_note first to obtain current hash. MODE SELECTION: Use 'append' when user wants to add/insert content (e.g., 'append to note', 'add to the end', 'insert content', 'add more content', 'continue writing', 'add to bottom'). Use 'overwrite' when replacing entire content (e.g., 'replace content', 'overwrite note', 'update the whole note', 'completely replace'). TITLE-ONLY: Efficient title changes without content modification. PREVENTS: Overwriting changes made by other users (hash mismatch) or content type violations. ONLY use when user explicitly requests note update. WORKFLOW: get_note → review content → update_note with returned hash",
+      description: "Update note with support for title-only updates, content overwrite, content append, or file replacement. ⚠️ REQUIRED: ALWAYS call get_note first to obtain current hash. ⚠️ SIMPLER RULES: Note type and MIME type are IMMUTABLE - cannot be changed after creation. MODE SELECTION: Use 'append' when user wants to add/insert content (e.g., 'append to note', 'add to the end', 'insert content', 'add more content', 'continue writing', 'add to bottom'). Use 'overwrite' when replacing entire content (e.g., 'replace content', 'overwrite note', 'update the whole note', 'completely replace'). TITLE-ONLY: Efficient title changes without content modification. FILE UPDATES: Replace file content only with SAME file type (image→image, file→file). To change file types, create a new note instead. PREVENTS: Type mismatches, file type conflicts, and overwriting changes made by other users. ONLY use when user explicitly requests note update. WORKFLOW: get_note → review content → update_note with returned hash",
       inputSchema: {
         type: "object",
         properties: {
@@ -94,18 +98,13 @@ export function createWriteTools(): any[] {
             type: "string",
             description: "New title for the note. If provided alone (without content), performs efficient title-only update without affecting note content or blobId."
           },
-          type: {
-            type: "string",
-            enum: ["text", "code", "render", "search", "relationMap", "book", "noteMap", "mermaid", "webView"],
-            description: "Type of note (aligned with TriliumNext ETAPI specification). This determines content validation requirements. Required when updating content, optional for title-only updates."
-          },
-          mime: {
-            type: "string",
-            description: "MIME type for code/file/image notes. Helps with syntax highlighting and content type identification."
-          },
           content: {
             type: "string",
             description: "Content of the note. Content requirements by note type: TEXT notes require HTML content (plain text auto-wrapped in <p> tags, e.g., '<p>Hello world</p>', '<strong>bold</strong>'); CODE/MERMAID notes require plain text ONLY (HTML tags rejected, e.g., 'def fibonacci(n):'); ⚠️ SYSTEM NOTES MUST REMAIN EMPTY: RENDER (HTML handled by note type), SEARCH (queries in search properties), RELATION_MAP (visual maps), NOTE_MAP (visual hierarchies), BOOK (container notes), WEBVIEW (use #webViewSrc label); IMPORTANT: When updating notes with template relations (Board, Calendar, Grid View, List View, Table, Geo Map), the note must remain EMPTY - these templates provide specialized layouts and content should be added as child notes instead."
+          },
+          fileUri: {
+            type: "string",
+            description: "File data source for file/image note updates. Replaces the existing file content with new file data. ⚠️ FILE TYPE MUST MATCH: The new file must have the same type as the current note (image files for image notes, other files for file notes). Supports: 1) Local file path: '/path/to/new_document.pdf', 2) Base64 data URI: 'data:application/pdf;base64,JVBERi0xLjcK...', 3) Raw base64 string. To change file types, create a new note instead."
           },
           expectedHash: {
             type: "string",
@@ -119,10 +118,10 @@ export function createWriteTools(): any[] {
           mode: {
             type: "string",
             enum: ["overwrite", "append"],
-            description: "⚠️ REQUIRED: Content update mode. CRITICAL: Choose based on user intent: 'append' = add/insert content while preserving existing content (use for 'add to', 'append', 'insert', 'add more', 'continue writing'); 'overwrite' = completely replace all existing content (use for 'replace', 'overwrite', 'update all', 'completely replace'). Default behavior is not available - you MUST explicitly choose."
+            description: "Content update mode. REQUIRED when updating content for text/code notes, optional for file-only updates. CRITICAL: Choose based on user intent: 'append' = add/insert content while preserving existing content (use for 'add to', 'append', 'insert', 'add more', 'continue writing'); 'overwrite' = completely replace all existing content (use for 'replace', 'overwrite', 'update all', 'completely replace'). Default behavior is not available - you MUST explicitly choose when updating content."
           }
         },
-        required: ["noteId", "expectedHash", "mode"]
+        required: ["noteId", "expectedHash"]
       }
     },
     {
@@ -180,7 +179,7 @@ export function createWriteTools(): any[] {
         required: ["noteId", "searchPattern", "replacePattern", "expectedHash"]
       }
     },
-    ];
+  ];
 }
 
 /**
@@ -188,11 +187,11 @@ export function createWriteTools(): any[] {
  */
 export function createReadTools(): any[] {
   const searchProperties = createSearchProperties();
-  
+
   return [
     {
       name: "get_note",
-      description: "Get a note and its content by ID. Perfect for when someone wants to see what's in a note, extract specific information, or prepare for search and replace operations. Getting the full content lets you see the context and create better regex patterns for extraction or replacement.",
+      description: "Get a note and its content by ID. Perfect for when someone wants to see what's in a note, extract specific information, or prepare for search and replace operations. Getting the full content lets you see the context and create better regex patterns for extraction or replacement. ⚠️ SMART CONTENT INCLUSION: For file/image notes, binary content is automatically excluded by default for performance. Use includeBinaryContent: true to explicitly retrieve binary data when needed.",
       inputSchema: {
         type: "object",
         properties: {
@@ -200,9 +199,19 @@ export function createReadTools(): any[] {
             type: "string",
             description: "ID of the note to retrieve",
           },
+          includeContent: {
+            type: "boolean",
+            description: "Whether to include note content (default: true). For file/image notes, this excludes binary content by default - use includeBinaryContent to retrieve binary data.",
+            default: true
+          },
+          includeBinaryContent: {
+            type: "boolean",
+            description: "Whether to include binary content for file/image notes (default: false). Set to true only when you need the actual binary data (e.g., for file downloads). Otherwise, keep false for faster responses.",
+            default: false
+          },
           searchPattern: {
             type: "string",
-            description: "Optional pattern to search for within the note. Use when you need to find specific text or extract information.",
+            description: "Optional pattern to search for within the note. Use when you need to find specific text or extract information. Note: Search is not available for file/image notes unless includeBinaryContent is true.",
           },
           useRegex: {
             type: "boolean",

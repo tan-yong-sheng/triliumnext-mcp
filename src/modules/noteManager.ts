@@ -16,7 +16,7 @@ export interface Attribute {
   isInheritable?: boolean;
 }
 
-export type NoteType = 'text' | 'code' | 'render' | 'search' | 'relationMap' | 'book' | 'noteMap' | 'mermaid' | 'webView';
+export type NoteType = 'text' | 'code' | 'render' | 'search' | 'relationMap' | 'book' | 'noteMap' | 'mermaid' | 'webView' | 'file' | 'image';
 
 export interface NoteOperation {
   parentNoteId?: string;
@@ -24,9 +24,11 @@ export interface NoteOperation {
   type?: string;
   content?: string;
   mime?: string;
+  fileUri?: string;
   noteId?: string;
   revision?: boolean;
   includeContent?: boolean;
+  includeBinaryContent?: boolean;
   attributes?: Attribute[];
   expectedHash?: string;
   forceCreate?: boolean;
@@ -92,6 +94,7 @@ export interface NoteGetResponse {
     totalMatches: number;
     searchMode?: 'html' | 'plain';
     useRegex?: boolean;
+    note?: string;
   };
 }
 
@@ -260,11 +263,44 @@ export async function handleCreateNote(
   args: NoteOperation,
   axiosInstance: any
 ): Promise<NoteCreateResponse> {
-  const { parentNoteId, title, type, content: rawContent, mime, attributes, forceCreate = false } = args;
+  const { parentNoteId, title, type, content: rawContent, mime, fileUri, attributes, forceCreate = false } = args;
 
   // Validate required parameters
   if (!parentNoteId || !title || !type) {
     throw new Error("parentNoteId, title, and type are required for create operation.");
+  }
+
+  // Handle file uploads (both 'file' and 'image' types)
+  if (type === 'file' || type === 'image') {
+    // Import FileManager and utils only when needed
+    const { FileManager } = await import('./fileManager.js');
+
+    // Validate file if provided
+    if (!fileUri) {
+      throw new Error(`fileUri is required when type='${type}'.`);
+    }
+
+    // Use FileManager to handle the upload
+    const fileManager = new FileManager(axiosInstance);
+
+    try {
+      const fileResult = await fileManager.createFileNote({
+        parentNoteId,
+        filePath: fileUri,
+        title: title,
+        mimeType: mime,
+        attributes,
+        noteType: type as 'file' | 'image'
+      });
+
+      return {
+        noteId: fileResult.note.noteId,
+        message: `Created file note: ${fileResult.note.noteId} (${fileResult.note.title})`,
+        duplicateFound: false
+      };
+    } catch (error) {
+      throw new Error(`File upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   // Check for duplicate title in the same directory (unless forceCreate is true)
@@ -396,6 +432,7 @@ export async function handleUpdateNote(
     type,
     content: rawContent,
     mime,
+    fileUri,
     revision = true,
     expectedHash,
     mode
@@ -405,18 +442,78 @@ export async function handleUpdateNote(
     throw new Error("noteId and expectedHash are required for update operation.");
   }
 
-  if (!mode) {
+  // Mode is required only for content updates (non-file notes)
+  if (type !== 'file' && !mode) {
     throw new Error("mode is required for update operation. Please specify either 'overwrite' or 'append'.");
   }
 
-  // Check if this is a title-only update
-  const isTitleOnlyUpdate = title && !rawContent;
+  // Handle file content updates (both 'file' and 'image' types)
+  if (type === 'file' || type === 'image') {
+    // Import FileManager only when needed
+    const { FileManager } = await import('./fileManager.js');
+    const { parseFileDataSource } = await import('../utils/fileUtils.js');
+
+    // If fileUri is provided, update file content
+    if (fileUri) {
+      // Use FileManager to handle the file upload (supports file paths, base64, data URIs)
+      const fileManager = new FileManager(axiosInstance);
+
+      try {
+        // First update metadata if title is provided (type and mime are not changeable)
+        if (title) {
+          const patchData: any = {};
+          if (title) patchData.title = title;
+
+          await axiosInstance.patch(`/notes/${noteId}`, patchData, {
+            headers: { "Content-Type": "application/json" }
+          });
+        }
+
+        // Then upload new file content using fileUri
+        const fileData = parseFileDataSource(fileUri);
+        await fileManager.uploadFileContentFromData(noteId, fileData, mime || fileData.mimeType);
+
+        return {
+          noteId,
+          message: `File note updated: ${noteId} (${title || 'Title unchanged'})`,
+          revisionCreated: false
+        };
+      } catch (error) {
+        throw new Error(`File update failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    } else {
+      // File metadata-only update (title only, since type and mime are not changeable)
+      if (title) {
+        const patchData: any = {};
+        if (title) patchData.title = title;
+
+        try {
+          await axiosInstance.patch(`/notes/${noteId}`, patchData, {
+            headers: { "Content-Type": "application/json" }
+          });
+
+          return {
+            noteId,
+            message: `File note metadata updated: ${noteId} (title updated to "${title}")`,
+            revisionCreated: false
+          };
+        } catch (error) {
+          throw new Error(`File metadata update failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      } else {
+        throw new Error("No changes specified for file note update. Provide title or fileUri.");
+      }
+    }
+  }
+
+  // Check if this is a metadata-only update (title only, since type and mime are not changeable)
+  const isMetadataOnlyUpdate = title && !rawContent && !fileUri;
 
   // Check if this is a multi-parameter update (title + content)
-  const isMultiParamUpdate = title && rawContent;
+  const isMultiParamUpdate = title && (rawContent || fileUri);
 
   // For content updates (with or without title), validate required fields
-  if (rawContent && !type) {
+  if ((rawContent || fileUri) && !type) {
     throw new Error("type is required when updating content.");
   }
 
@@ -444,15 +541,10 @@ export async function handleUpdateNote(
       }
     }
 
-    // Handle title-only update (efficient PATCH operation)
-    if (isTitleOnlyUpdate) {
-      // For title-only updates, skip revision creation for efficiency
+    // Handle metadata-only update (efficient PATCH operation)
+    if (isMetadataOnlyUpdate) {
+      // For metadata-only updates, skip revision creation for efficiency
       const patchData: any = { title };
-
-      // Add MIME type if provided
-      if (mime) {
-        patchData.mime = mime;
-      }
 
       logVerboseApi("PATCH", `/notes/${noteId}`, patchData);
       const response = await axiosInstance.patch(`/notes/${noteId}`, patchData, {
@@ -465,10 +557,9 @@ export async function handleUpdateNote(
         throw new Error(`Unexpected response status: ${response.status}`);
       }
 
-      const mimeMessage = mime ? ` and MIME type updated to "${mime}"` : "";
       return {
         noteId,
-        message: `Note ${noteId} title updated successfully to "${title}"${mimeMessage}`,
+        message: `Note ${noteId} title updated successfully to "${title}"`,
         revisionCreated: false,
         conflict: false
       };
@@ -556,30 +647,19 @@ export async function handleUpdateNote(
       throw new Error(`Unexpected response status: ${contentResponse.status}`);
     }
 
-    // Step 7: Update title and MIME type if provided (multi-parameter update)
-    if (isMultiParamUpdate && (title || mime)) {
-      const patchData: any = {};
+    // Step 7: Update title if provided (multi-parameter update)
+    if (isMultiParamUpdate && title) {
+      const patchData: any = { title };
 
-      if (title) {
-        patchData.title = title;
-      }
-
-      if (mime) {
-        patchData.mime = mime;
-      }
-
-      // Only make PATCH call if there's something to update
-      if (Object.keys(patchData).length > 0) {
-        logVerboseApi("PATCH", `/notes/${noteId}`, patchData);
-        const titleResponse = await axiosInstance.patch(`/notes/${noteId}`, patchData, {
-          headers: {
-            "Content-Type": "application/json"
-          }
-        });
-
-        if (titleResponse.status !== 200) {
-          throw new Error(`Unexpected response status for title/mime update: ${titleResponse.status}`);
+      logVerboseApi("PATCH", `/notes/${noteId}`, patchData);
+      const titleResponse = await axiosInstance.patch(`/notes/${noteId}`, patchData, {
+        headers: {
+          "Content-Type": "application/json"
         }
+      });
+
+      if (titleResponse.status !== 200) {
+        throw new Error(`Unexpected response status for title update: ${titleResponse.status}`);
       }
     }
 
@@ -587,11 +667,10 @@ export async function handleUpdateNote(
     const correctionMsg = (finalContent !== rawContent) ? " (content auto-corrected)" : "";
     const modeMsg = mode === 'append' ? " (content appended)" : " (content overwritten)";
     const titleMsg = (isMultiParamUpdate && title) ? ` (title updated to "${title}")` : "";
-    const mimeMsg = (isMultiParamUpdate && mime) ? ` (MIME type updated to "${mime}")` : "";
 
     return {
       noteId,
-      message: `Note ${noteId} updated successfully${revisionMsg}${correctionMsg}${modeMsg}${titleMsg}${mimeMsg}`,
+      message: `Note ${noteId} updated successfully${revisionMsg}${correctionMsg}${modeMsg}${titleMsg}`,
       revisionCreated,
       conflict: false
     };
@@ -792,6 +871,7 @@ export async function handleGetNote(
   const {
     noteId,
     includeContent = true,
+    includeBinaryContent = false,
     searchPattern,
     useRegex = true,
     searchFlags = 'g'
@@ -802,16 +882,27 @@ export async function handleGetNote(
   }
 
   const noteResponse = await axiosInstance.get(`/notes/${noteId}`);
+  const noteData = noteResponse.data;
 
   if (!includeContent) {
     return {
-      note: noteResponse.data
+      note: noteData
     };
   }
 
-  const noteData = noteResponse.data;
+  // Smart content inclusion: skip binary content for file/image notes by default
+  const isFileOrImageNote = noteData.type === 'file' || noteData.type === 'image';
+  const shouldIncludeContent = !isFileOrImageNote || includeBinaryContent;
 
-  // Get note content (works for all note types including file/image)
+  if (!shouldIncludeContent) {
+    // For file/image notes without explicit binary content request, return metadata only
+    return {
+      note: noteData,
+      contentHash: noteData.blobId
+    };
+  }
+
+  // Get note content (works for all note types including file/image when explicitly requested)
   const { data: noteContent } = await axiosInstance.get(`/notes/${noteId}/content`, {
     responseType: 'text'
   });
@@ -822,6 +913,23 @@ export async function handleGetNote(
 
   // Handle search if pattern is provided
   if (searchPattern) {
+    // For file/image notes without content, search is not available
+    if (isFileOrImageNote && !includeBinaryContent) {
+      return {
+        note: noteData,
+        contentHash: blobId,
+        search: {
+          pattern: searchPattern,
+          flags: searchFlags,
+          matches: [],
+          totalMatches: 0,
+          searchMode: contentRequirements.requiresHtml ? 'html' : 'plain',
+          useRegex,
+          note: "Search not available for file/image notes without binary content inclusion"
+        }
+      };
+    }
+
     // Use original content directly (no HTML stripping)
     const searchContent = noteContent;
 
@@ -852,10 +960,16 @@ export async function handleGetNote(
   }
 
   // Standard response without search
-  return {
+  const response: any = {
     note: noteData,
-    content: noteContent,
-    contentHash: blobId, // Use blobId as content hash
-    contentRequirements
+    contentHash: blobId
   };
+
+  // Include content only if it was actually retrieved
+  if (shouldIncludeContent) {
+    response.content = noteContent;
+    response.contentRequirements = contentRequirements;
+  }
+
+  return response;
 }

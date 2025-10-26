@@ -1,0 +1,24 @@
+1. File upload
+- upload "C:\Users\tys\Downloads\downloaded.pdf" to trilium note under 'Test' folder
+- upload "C:\Users\tys\Downloads\file_example_MP3_700KB.mp3" to trilium note under 'Test' folder
+- upload "C:\Users\tys\Downloads\file_example_WAV_1MG.wav" to trilium note under 'Test' folder
+- upload "C:\Users\tys\Downloads\sample3.m4a" to trilium note under 'Test' folder
+- upload "C:\Users\tys\Downloads\best-free-travel-images-main-image-hd-op.webp" under 'Test' folder
+- upload "C:\Users\tys\Downloads\generated_image.jpeg" to trilium note under 'Test' folder
+- upload "C:\Users\tys\Downloads\photo-1580052040395-32c97dcb60de.jpg" to trilium note under 'Test' folder
+- upload "C:\Users\tys\Downloads\generated-image (1).png" to trilium note under 'Test' folder
+- upload "C:\Users\tys\Downloads\Reviews.csv\Reviews.csv" to trilium note under 'Test' folder
+- upload "C:\Users\tys\Downloads\online+retail\Online Retail.xlsx" to trilium note under 'Test' folder
+- upload "C:\Users\tys\Downloads\FYP Slide - 17127681.pptx" to trilium note under 'Test' folder
+- upload "C:\Users\tys\Downloads\mid-term-assessment.docx" to trilium note under 'Test' folder
+- Upload "C:\Users\tys\Downloads\file_example_WMV_480_1_2MB.wmv" to trilium note under 'Test' folder
+- Upload "C:\Users\tys\Downloads\file_example_AVI_480_750kB.avi" to trilium note under 'Test' folder
+- Upload "C:\Users\tys\Downloads\file_example_SVG_20kB.svg" to trilium note under 'Test' folder
+- Upload "C:\Users\tys\Downloads\file_example_GIF_500kB.gif" to trilium note under 'Test' folder
+- Upload "C:\Users\tys\Downloads\file_example_favicon.ico" to trilium note under 'Test' folder
+- Upload "C:\Users\tys\Downloads\sample_640x360.mkv" to trilium note under 'Test' folder
+- Upload "C:\Users\tys\Downloads\file_example_MOV_480_700kB.mov" to trilium note under 'Test' folder
+- Upload "C:\Users\tys\Downloads\file_example_MP4_480_1_5MG.mp4" to trilium note under 'Test' folder
+- Upload "C:\Users\tys\Downloads\generated-image (1) (2).png" to trilium note under 'Test' folder
+- Upload "C:\Users\tys\Downloads\file_example_TIFF_1MB.tiff" to trilium note under 'Test' folder
+- Upload "C:\Users\tys\Downloads\file_example_WEBM_480_900KB.webm" to trilium note under 'Test' folder

@@ -26,6 +26,42 @@ export async function handleCreateNoteRequest(
     throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to create notes.");
   }
 
+  // Validate file upload requirements
+  if (args.type === 'file' || args.type === 'image') {
+    if (!args.fileUri) {
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `Parameter 'fileUri' is required when type='${args.type}'.`
+      );
+    }
+  }
+
+  // For non-file/image notes, fileUri should not be provided
+  if (args.fileUri && !['file', 'image'].includes(args.type)) {
+    throw new McpError(
+      ErrorCode.InvalidParams,
+      "Parameter 'fileUri' can only be used when type='file' or type='image'."
+    );
+  }
+
+  // Validate file upload requirements
+  if (args.type === 'file' || args.type === 'image') {
+    if (!args.fileUri) {
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `Parameter 'fileUri' is required when type='${args.type}'.`
+      );
+    }
+  }
+
+  // For non-file/image notes, fileUri should not be provided
+  if (args.fileUri && !['file', 'image'].includes(args.type)) {
+    throw new McpError(
+      ErrorCode.InvalidParams,
+      "Parameter 'fileUri' can only be used when type='file' or type='image'."
+    );
+  }
+
   try {
     const noteOperation: NoteOperation = {
       parentNoteId: args.parentNoteId || "root", // Use default value if not provided
@@ -33,6 +69,7 @@ export async function handleCreateNoteRequest(
       type: args.type,
       content: args.content,
       mime: args.mime,
+      fileUri: args.fileUri,
       attributes: args.attributes
     };
 
@@ -72,29 +109,94 @@ export async function handleUpdateNoteRequest(
     );
   }
 
-  // Validate that either title or content is provided
-  if (!args.title && !args.content) {
+  // Validate that either title, content, or fileUri is provided
+  if (!args.title && !args.content && !args.fileUri) {
     throw new McpError(
       ErrorCode.InvalidParams,
-      "Either 'title' or 'content' (or both) must be provided for update operation."
+      "Either 'title', 'content', or 'fileUri' (or any combination) must be provided for update operation."
     );
   }
 
-  // Validate that type is provided when content is being updated
-  if (args.content && !args.type) {
+  // Get current note for type validation
+  let currentNote = null;
+  try {
+    const currentNoteResponse = await axiosInstance.get(`/notes/${args.noteId}`);
+    currentNote = currentNoteResponse.data;
+  } catch (error) {
     throw new McpError(
       ErrorCode.InvalidParams,
-      "Parameter 'type' is required when updating content."
+      `Failed to retrieve current note for validation: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
+  }
+
+  // SIMPLER RULE 1: Note type is immutable - cannot be changed after creation
+  if (args.type && args.type !== currentNote.type) {
+    throw new McpError(
+      ErrorCode.InvalidParams,
+      `Note type cannot be changed after creation. Current type: '${currentNote.type}', requested type: '${args.type}'. Create a new note instead of changing the type.`
+    );
+  }
+
+  // SIMPLER RULE 2: MIME type is immutable - cannot be changed after creation
+  if (args.mime && args.mime !== currentNote.mime) {
+    throw new McpError(
+      ErrorCode.InvalidParams,
+      `MIME type cannot be changed after creation. Current MIME type: '${currentNote.mime}', requested MIME type: '${args.mime}'. Create a new note instead of changing the MIME type.`
+    );
+  }
+
+  // SIMPLER RULE 3: File type validation - file must match note type
+  if (args.fileUri) {
+    // Only file/image notes can have fileUri
+    if (!['file', 'image'].includes(currentNote.type)) {
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `Parameter 'fileUri' can only be used with file or image notes. Current note type: '${currentNote.type}'.`
+      );
+    }
+
+    // Validate that the new file matches the existing note type
+    const { parseFileDataSource, detectNoteTypeFromMime } = await import('../utils/fileUtils.js');
+    try {
+      const fileData = parseFileDataSource(args.fileUri);
+      const detectedType = detectNoteTypeFromMime(fileData.mimeType);
+
+      if (!detectedType || detectedType !== currentNote.type) {
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          `File type mismatch: Cannot replace ${currentNote.type} note content with ${detectedType || 'unsupported'} file. The file type must match the note type. Create a new note for different file types.`
+        );
+      }
+    } catch (parseError) {
+      if (parseError instanceof McpError) {
+        throw parseError;
+      }
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `Failed to parse or validate file: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  // SIMPLER RULE 4: Content updates must use current note type (no type parameter needed)
+  if (args.content) {
+    // Use current note type for content validation - args.type is not needed
+    if (!currentNote.type) {
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        "Cannot determine current note type for content validation."
+      );
+    }
   }
 
   try {
     const noteOperation: NoteOperation = {
       noteId: args.noteId,
       title: args.title,
-      type: args.type,
+      type: currentNote.type, // Always use current note type (immutable)
       content: args.content,
-      mime: args.mime,
+      mime: currentNote.mime, // Always use current MIME type (immutable)
+      fileUri: args.fileUri,
       revision: args.revision !== false, // Default to true (safe behavior)
       expectedHash: args.expectedHash,
       mode: args.mode
@@ -166,6 +268,7 @@ export async function handleGetNoteRequest(
     const noteOperation: NoteOperation = {
       noteId: args.noteId,
       includeContent: args.includeContent !== false,
+      includeBinaryContent: args.includeBinaryContent || false,
       searchPattern: args.searchPattern,
       useRegex: args.useRegex !== false, // Default to true
       searchFlags: args.searchFlags || 'g'
