@@ -44,7 +44,7 @@ class TriliumServer {
     this.server = new Server(
       {
         name: "triliumnext-mcp",
-        version: "0.3.10",
+        version: "0.3.11",
       },
       {
         capabilities: {
@@ -61,7 +61,7 @@ class TriliumServer {
     });
 
     this.setupToolHandlers();
-    
+
     this.server.onerror = (error) => console.error("[MCP Error]", error);
     process.on("SIGINT", async () => {
       await this.server.close();
@@ -77,7 +77,7 @@ class TriliumServer {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       // Generate standard tools based on permissions
       const tools = generateTools(this);
-      
+
 
       return { tools };
     });
