@@ -19,5 +19,18 @@
     "additionalDirectories": [
       "C:\\c\\Users\\tys\\Documents\\Coding"
     ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npm run build"
+          }
+        ]
+      }
+    ]
   }
 }

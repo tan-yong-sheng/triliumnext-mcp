@@ -9,78 +9,125 @@ A model context protocol server for TriliumNext Notes. This server provides tool
 Make sure to set up your environment variables first:
 - `TRILIUM_API_URL` (default: http://localhost:8080/etapi)
 - `TRILIUM_API_TOKEN` (required, get this from your Trilium Notes settings)
-- `PERMISSIONS` (optional, default='READ;WRITE', where READ grants access to `search_notes`, `get_note`, `resolve_note_id`, and `read_attributes`, and WRITE grants access to `create_note`, `update_note`, `delete_note`, and `manage_attributes`)
+- `PERMISSIONS` (optional, default=''READ;WRITE'', where READ grants access to `search_notes`, `get_note`, `resolve_note_id`, and `read_attributes`, and WRITE grants access to `create_note`, `update_note`, `delete_note`, and `manage_attributes`)
 - `VERBOSE` (optional, default='false', which if true will print verbose debugging logs)
 
 ## Installation
 
-### 1. Using with Claude Desktop
 
-Add the server config to your Claude Desktop configuration file:
+Below are the installation guide for this MCP on different MCP clients, such as Claude Desktop, Claude Code, Cursor, Cline, etc.
 
-#### For Local Installation (on Windows)
+<details>
+<summary>Claude Desktop</summary>
+
+Add to your Claude Desktop configuration:
 
 ```json
-"triliumnext-mcp": {
-  "command": "cmd",
-  "args": [
-        "/k",
-        "npx",
-        "-y",
-        "triliumnext-mcp"
-      ],
-   "env": {
-    "TRILIUM_API_URL": "http://localhost:8080/etapi",
-    "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>",
-    "PERMISSIONS": "READ;WRITE"
+{
+  "mcpServers": {
+    "triliumnext-mcp": {
+      "command": "npx",
+      "args": ["triliumnext-mcp"],
+      "env": {
+        "TRILIUM_API_URL": "http://localhost:8080/etapi",
+        "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>",
+        "PERMISSIONS": "'READ;WRITE'"
+      }
+    }
   }
 }
 ```
+</details>
 
-#### For Local installation (on Linux)
-
-```json
-"triliumnext-mcp": {
-  "command": "npx",
-  "args": [
-        "-y",
-        "triliumnext-mcp"
-      ],
-   "env": {
-    "TRILIUM_API_URL": "http://localhost:8080/etapi",
-    "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>",
-    "PERMISSIONS": "READ;WRITE"
-  }
-}
-```
-
-#### For Development (on Windows / Linux)
+<details>
+<summary>Claude Code</summary>
 
 ```bash
-cd /path/to/triliumnext-mcp
-npm run build
+claude mcp add triliumnext-mcp \
+  -e TRILIUM_API_URL=http://localhost:8080/etapi \
+  -e TRILIUM_API_TOKEN=<YOUR_TRILIUM_API_TOKEN> \
+  -e PERMISSIONS='READ;WRITE' \
+  -- npx triliumnext-mcp
 ```
 
+Note: Increase the MCP startup timeout to 1 minutes and MCP tool execution timeout to about 5 minutes by updating `~\.claude\settings.json` as follows:
+
 ```json
-"triliumnext-mcp": {
-  "command": "node",
-  "args": [
-        "/path/to/triliumnext-mcp/build/index.js"
-  ],
+{
   "env": {
-    "TRILIUM_API_URL": "http://localhost:8080/etapi",
-    "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>",
-    "PERMISSIONS": "READ;WRITE",
-    "VERBOSE": "true"
+    "MCP_TIMEOUT": "60000",
+    "MCP_TOOL_TIMEOUT": "300000"
   }
 }
 ```
 
-Location of the configuration file:
-- Windows: `%APPDATA%/Claude/claude_desktop_config.json`
-- MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+</details>
 
-**Feedback**: Please report issues and test results at [GitHub Issues](https://github.com/TriliumNext/Notes/issues)
+<details>
+<summary>Cursor</summary>
+
+Go to: Settings -> Cursor Settings -> MCP -> Add new global MCP server
+
+Pasting the following configuration into your Cursor ~/.cursor/mcp.json file is the recommended approach. You may also install in a specific project by creating .cursor/mcp.json in your project folder. See [Cursor MCP docs](https://docs.cursor.com/context/model-context-protocol) for more info.
+
+```json
+{
+  "mcpServers": {
+    "triliumnext-mcp": {
+      "command": "npx",
+      "args": ["triliumnext-mcp"],
+      "env": {
+        "TRILIUM_API_URL": "http://localhost:8080/etapi",
+        "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>",
+        "PERMISSIONS": "'READ;WRITE'"
+      }
+    }
+  }
+}
+```
+</details>
+
+
+<details>
+<summary>Cline</summary>
+
+Cline uses a JSON configuration file to manage MCP servers. To integrate the provided MCP server configuration:
+
+1. Open Cline and click on the MCP Servers icon in the top navigation bar.
+2. Select the Installed tab, then click Advanced MCP Settings.
+3. In the cline_mcp_settings.json file, add the following configuration:
+
+(i) Using Google AI Studio Provider
+```json
+{
+  "mcpServers": {
+    "timeout": 300, 
+    "type": "stdio",
+    "triliumnext-mcp": {
+      "command": "npx",
+      "args": ["triliumnext-mcp"],
+      "env": {
+        "TRILIUM_API_URL": "http://localhost:8080/etapi",
+        "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>",
+        "PERMISSIONS": "'READ;WRITE'"
+      }
+    }
+  }
+}
+```
+</details>
+
+
+<details>
+
+<summary>Other MCP clients</summary>
+
+The server uses stdio transport and follows the standard MCP protocol. It can be integrated with any MCP-compatible client by running:
+
+```bash
+npx triliumnext-mcp
+```
+</details>
 
 ## Available Tools
 
