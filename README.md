@@ -9,7 +9,7 @@ A model context protocol server for TriliumNext Notes. This server provides tool
 Make sure to set up your environment variables first:
 - `TRILIUM_API_URL` (default: http://localhost:8080/etapi)
 - `TRILIUM_API_TOKEN` (required, get this from your Trilium Notes settings)
-- `PERMISSIONS` (optional, default=''READ;WRITE'', where READ grants access to `search_notes`, `get_note`, `resolve_note_id`, and `read_attributes`, and WRITE grants access to `create_note`, `update_note`, `delete_note`, and `manage_attributes`)
+- `PERMISSIONS` (optional, default='READ;WRITE', where READ grants access to `search_notes`, `get_note`, `resolve_note_id`, and `read_attributes`, and WRITE grants access to `create_note`, `update_note`, `delete_note`, and `manage_attributes`)
 - `VERBOSE` (optional, default='false', which if true will print verbose debugging logs)
 
 ## Installation
@@ -31,7 +31,7 @@ Add to your Claude Desktop configuration:
       "env": {
         "TRILIUM_API_URL": "http://localhost:8080/etapi",
         "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>",
-        "PERMISSIONS": "'READ;WRITE'"
+        "PERMISSIONS": "READ;WRITE"
       }
     }
   }
@@ -79,7 +79,7 @@ Pasting the following configuration into your Cursor ~/.cursor/mcp.json file is 
       "env": {
         "TRILIUM_API_URL": "http://localhost:8080/etapi",
         "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>",
-        "PERMISSIONS": "'READ;WRITE'"
+        "PERMISSIONS": "READ;WRITE"
       }
     }
   }
@@ -109,7 +109,7 @@ Cline uses a JSON configuration file to manage MCP servers. To integrate the pro
       "env": {
         "TRILIUM_API_URL": "http://localhost:8080/etapi",
         "TRILIUM_API_TOKEN": "<YOUR_TRILIUM_API_TOKEN>",
-        "PERMISSIONS": "'READ;WRITE'"
+        "PERMISSIONS": "READ;WRITE"
       }
     }
   }
