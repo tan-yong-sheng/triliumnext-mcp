@@ -65,7 +65,7 @@ describe('Create Note Validation', () => {
   describe('Note Type Validation', () => {
     it('should validate all supported note types', () => {
       const validTypes = [
-        'text', 'code', 'render', 'search', 'relationMap', 'book',
+        'text', 'code', 'canvas', 'render', 'search', 'relationMap', 'book',
         'noteMap', 'mermaid', 'webView'
       ];
 
@@ -97,7 +97,7 @@ describe('Create Note Validation', () => {
     });
 
     it('should reject note types that are not in enum', () => {
-      const unsupportedTypes = ['canvas', 'widget', 'custom'];
+      const unsupportedTypes = ['widget', 'custom'];
 
       unsupportedTypes.forEach(type => {
         const request = {
@@ -127,7 +127,7 @@ describe('Create Note Validation', () => {
       assert.strictEqual(typeof result.data.content, 'string');
     });
 
-    
+
     it('should validate content as string type', () => {
       const validRequest = {
         parentNoteId: 'root',

@@ -988,8 +988,7 @@ const result = await update_note({
 
 **ETAPI Alignment Updates**:
 - **Updated Note Type Enum**: Changed from 11 to 15 types to exactly match ETAPI specification
-- **Removed**: `canvas` type (currently not yet supported)
-- **Added**: `noteMap`, `webView`, `shortcut`, `doc`, `contentWidget`, `launcher`
+- **Added**: `canvas`, `noteMap`, `webView`, `shortcut`, `doc`, `contentWidget`, `launcher`
 - **Tool Definitions**: Updated `create_note` and `search_notes` schemas with new enum values
 - **Backward Compatibility**: All existing functionality preserved with new type support
 

@@ -16,7 +16,7 @@ export interface Attribute {
   isInheritable?: boolean;
 }
 
-export type NoteType = 'text' | 'code' | 'render' | 'search' | 'relationMap' | 'book' | 'noteMap' | 'mermaid' | 'webView' | 'file' | 'image';
+export type NoteType = 'text' | 'code' | 'canvas' | 'render' | 'search' | 'relationMap' | 'book' | 'noteMap' | 'mermaid' | 'webView' | 'file' | 'image';
 
 export interface NoteOperation {
   parentNoteId?: string;
@@ -533,8 +533,8 @@ export async function handleUpdateNote(
         return {
           noteId,
           message: `CONFLICT: Note has been modified by another user. ` +
-                   `Current blobId: ${currentBlobId}, expected: ${expectedHash}. ` +
-                   `Please get the latest note content and retry.`,
+            `Current blobId: ${currentBlobId}, expected: ${expectedHash}. ` +
+            `Please get the latest note content and retry.`,
           revisionCreated: false,
           conflict: true
         };
@@ -731,8 +731,8 @@ export async function handleSearchReplaceNote(
       return {
         noteId,
         message: `CONFLICT: Note has been modified by another user. ` +
-                 `Current blobId: ${currentBlobId}, expected: ${expectedHash}. ` +
-                 `Please get the latest note content and retry.`,
+          `Current blobId: ${currentBlobId}, expected: ${expectedHash}. ` +
+          `Please get the latest note content and retry.`,
         matchesFound: 0,
         replacementsMade: 0,
         revisionCreated: false,
