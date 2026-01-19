@@ -2,7 +2,7 @@
 
 ⚠️ **DISCLAIMER: This is a prototype for https://github.com/TriliumNext/Notes/issues/705. Suggested only for developer use. Please backup your Trilium notes before using this tool.** ⚠️
 
-A model context protocol server for TriliumNext Notes. This server provides tools to interact with your Trilium Notes instance through MCP. You can use this MCP with [triliumnext-skills](https://github.com/tan-yong-sheng/triliumnext-skills)
+A model context protocol server for TriliumNext Notes. This server provides tools to interact with your Trilium Notes instance through MCP. You can use this MCP with [triliumnext-skills](https://github.com/tan-yong-sheng/triliumnext-skills).
 
 ## Quick Start
 
