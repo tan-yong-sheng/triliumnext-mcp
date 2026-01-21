@@ -427,22 +427,6 @@ describe('Data Type Validation', () => {
     });
   });
 
-  describe('Edge Cases and Complex Data Types', () => {
-    it('should validate date with smart expressions', () => {
-      const smartDateCriteria = {
-        searchCriteria: [
-          {
-            property: 'dateCreated',
-            type: 'noteProperty',
-            op: '>=',
-            value: 'TODAY-7',
-            logic: 'AND'
-          }
-        ]
-      };
-
-      const result = safeValidate(searchNotesSchema, smartDateCriteria);
-      assert.strictEqual(result.success, true);
     });
 
     it('should validate numeric edge cases', () => {
@@ -512,7 +496,6 @@ describe('Data Type Validation', () => {
       const result = safeValidate(searchNotesSchema, largeNumberCriteria);
       assert.strictEqual(result.success, true);
     });
-  });
 
   describe('Data Type Integration with Other Schemas', () => {
     it('should validate data types in attribute values', () => {
@@ -553,5 +536,3 @@ describe('Data Type Validation', () => {
       assert.strictEqual(result.data.attributes.length, 2);
     });
   });
-
-});

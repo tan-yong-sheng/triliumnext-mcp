@@ -130,7 +130,7 @@ function finalizeGroup(queries: string[], logic: 'AND' | 'OR'): string {
   if (queries.length === 1) {
     return queries[0];
   }
-  
+
   if (logic === 'OR') {
     // Join with OR and add ~ prefix for Trilium parser compatibility
     return `~(${queries.join(' OR ')})`;
@@ -170,7 +170,7 @@ function buildAttributeQuery(criteria: SearchCriteria): string {
 
   // Determine the prefix based on attribute type
   const prefix = type === 'label' ? '#' : '~';
-  
+
   switch (op) {
     case 'exists':
       return `${prefix}${escapedName}`;
@@ -307,26 +307,11 @@ function validateISODate(value: string, property: string): string {
   const isoDateRegex = /^\d{4}-\d{2}-\d{2}$/;
   const isoDateTimeRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/;
 
-  // TriliumNext smart date expressions
-  const smartDatePatterns = [
-    /^TODAY([+-]\d+)?$/,           // TODAY, TODAY-7, TODAY+30
-    /^MONTH([+-]\d+)?$/,          // MONTH, MONTH-1, MONTH+1
-    /^YEAR([+-]\d+)?$/,           // YEAR, YEAR+1, YEAR-1
-    /^MONDAY([+-]\d+)?$/,         // MONDAY, MONDAY-1
-    /^TUESDAY([+-]\d+)?$/,        // TUESDAY, TUESDAY+1
-    /^WEDNESDAY([+-]\d+)?$/,      // WEDNESDAY
-    /^THURSDAY([+-]\d+)?$/,       // THURSDAY
-    /^FRIDAY([+-]\d+)?$/,         // FRIDAY
-    /^SATURDAY([+-]\d+)?$/,       // SATURDAY
-    /^SUNDAY([+-]\d+)?$/          // SUNDAY
-  ];
-
-  // Check if it's a valid ISO date, ISO datetime, or smart date expression
+  // Check if it's a valid ISO date or ISO datetime
   const isValidISO = isoDateRegex.test(value) || isoDateTimeRegex.test(value);
-  const isValidSmartDate = smartDatePatterns.some(pattern => pattern.test(value.toUpperCase()));
 
-  if (!isValidISO && !isValidSmartDate) {
-    throw new Error(`Invalid date format for property '${property}'. Must use ISO format: 'YYYY-MM-DDTHH:mm:ss.sssZ' (e.g., '2024-01-01T00:00:00.000Z') or TriliumNext smart expressions like 'TODAY-7', 'MONTH-1', 'YEAR+1'.`);
+  if (!isValidISO) {
+    throw new Error(`Invalid date format for property '${property}'. Must use ISO format: 'YYYY-MM-DDTHH:mm:ss.sssZ' (e.g., '2024-01-01T00:00:00.000Z')`);
   }
 
   // For ISO dates, check if the date is actually valid
@@ -352,7 +337,7 @@ function buildNotePropertyQuery(criteria: SearchCriteria): string {
   if (!value && op !== 'exists' && op !== 'not_exists') {
     return ''; // Skip if no value provided for operators that need one
   }
-  
+
   // Map property names to Trilium note properties
   let triliumProperty: string;
   switch (property) {
@@ -415,7 +400,7 @@ function buildNotePropertyQuery(criteria: SearchCriteria): string {
       // Invalid property, skip this filter
       return '';
   }
-  
+
   // Map operators to Trilium syntax
   let triliumOperator: string;
   switch (op) {
@@ -456,7 +441,7 @@ function buildNotePropertyQuery(criteria: SearchCriteria): string {
       // Invalid operator, skip this filter
       return '';
   }
-  
+
   // Handle boolean values for isArchived and isProtected
   let processedValue: string;
   if (property === 'isArchived' || property === 'isProtected') {
@@ -470,8 +455,8 @@ function buildNotePropertyQuery(criteria: SearchCriteria): string {
       return '';
     }
   } else if (property === 'labelCount' || property === 'ownedLabelCount' || property === 'attributeCount' ||
-             property === 'relationCount' || property === 'parentCount' || property === 'childrenCount' ||
-             property === 'contentSize' || property === 'revisionCount') {
+    property === 'relationCount' || property === 'parentCount' || property === 'childrenCount' ||
+    property === 'contentSize' || property === 'revisionCount') {
     // Numeric properties - no quotes needed
     processedValue = value!;
   } else if (property === 'title' || property === 'content') {
@@ -493,7 +478,7 @@ function buildNotePropertyQuery(criteria: SearchCriteria): string {
     // For other properties, escape quotes and wrap in single quotes
     processedValue = `'${value!.replace(/'/g, "\\'")}'`;
   }
-  
+
   return `${triliumProperty} ${triliumOperator} ${processedValue}`;
 }
 
