@@ -1,0 +1,45 @@
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build output - commented out to allow copying pre-built files
+# build/
+dist/
+
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation
+*.md
+docs/
+.claude/
+
+# Test files
+tests/
+*.test.js
+*.test.ts
+
+# CI/CD
+.github/
+
+# Environment files (should be passed at runtime)
+.env
+.env.local
+.env.*.local
+
+# Misc
+*.log
+coverage/
+.nyc_output/

@@ -14,8 +14,82 @@ Make sure to set up your environment variables first:
 
 ## Installation
 
-
 Below are the installation guide for this MCP on different MCP clients, such as Claude Desktop, Claude Code, Cursor, Cline, etc.
+
+<details>
+<summary>Docker (Recommended for Self-Hosted)</summary>
+
+### Using Pre-built Image from GitHub Container Registry
+
+Pull and run the latest image:
+```bash
+docker run -d \
+  --name triliumnext-mcp \
+  --network host \
+  -e TRILIUM_API_URL=http://localhost:8080/etapi \
+  -e TRILIUM_API_TOKEN=your_api_token_here \
+  -e PERMISSIONS=READ;WRITE \
+  -e VERBOSE=false \
+  ghcr.io/tan-yong-sheng/triliumnext-mcp:latest
+```
+
+View logs:
+```bash
+docker logs -f triliumnext-mcp
+```
+
+Stop and remove:
+```bash
+docker stop triliumnext-mcp
+docker rm triliumnext-mcp
+```
+
+### Building from Source
+
+1. Clone the repository:
+```bash
+git clone https://github.com/tan-yong-sheng/triliumnext-mcp.git
+cd triliumnext-mcp
+```
+
+2. Build the application:
+```bash
+npm install
+npm run build
+```
+
+3. Build the Docker image:
+```bash
+docker build -t triliumnext-mcp:local .
+```
+
+4. Run your custom image:
+```bash
+docker run -d \
+  --name triliumnext-mcp \
+  --network host \
+  -e TRILIUM_API_URL=http://localhost:8080/etapi \
+  -e TRILIUM_API_TOKEN=your_api_token_here \
+  -e PERMISSIONS=READ;WRITE \
+  triliumnext-mcp:local
+```
+
+### Multi-Architecture Support
+
+The pre-built images support both **Linux AMD64** and **Linux ARM64** architectures, making them compatible with:
+- x86_64 servers and desktops
+- ARM-based systems (Raspberry Pi, Apple Silicon via Docker Desktop, AWS Graviton, etc.)
+
+Docker automatically pulls the correct architecture for your system.
+
+### Docker Notes
+
+- The container uses `host.docker.internal` by default to connect to TriliumNext running on your host machine
+- Use `--network host` for simplest setup when TriliumNext is on the same machine  
+- For separate TriliumNext containers, adjust `TRILIUM_API_URL` to point to the TriliumNext container (e.g., `http://trilium:8080/etapi`)
+- The server uses stdio transport for MCP protocol communication
+
+</details>
 
 <details>
 <summary>Claude Desktop</summary>
