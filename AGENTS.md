@@ -532,7 +532,7 @@ Uses TriliumNext's External API (ETAPI) with endpoints defined in `openapi.yaml`
 - **Date properties**: `dateCreated`, `dateModified` - support comparison operators (`>=`, `<=`, `>`, `<`, `=`, `!=`) with ISO date strings and smart date expressions
 - **Numeric properties**: `labelCount`, `ownedLabelCount`, `attributeCount`, `relationCount`, `parentCount`, `childrenCount`, `contentSize`, `revisionCount` - support numeric comparisons (`>`, `<`, `>=`, `<=`, `=`, `!=`) with unquoted numeric values
 - **Automatic type handling**: Query builder properly handles boolean, string, content, date, and numeric value formatting
-- **Smart date expressions**: Support TriliumNext native syntax like `TODAY-7`, `MONTH-1`, `YEAR+1` for dynamic date queries
+- **Smart date expressions**: Don't support TriliumNext native syntax like `TODAY-7`, `MONTH-1`, `YEAR+1` for dynamic date queries
 - **Examples**: `note.labelCount > 5`, `note.type = 'text'`, `note.isArchived = true`, `note.title *=* 'project'`, `note.content =* 'introduction'`, `note.dateCreated >= 'TODAY-7'`
 
 ## Attribute OR Logic Support
