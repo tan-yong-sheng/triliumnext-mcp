@@ -242,6 +242,7 @@ The server provides the following tools for note management:
 
 ## Documentation
 
+- [Docker Deployment Guide](docs/DOCKER.md) - Complete guide for running with Docker
 - [Note Management Guide](docs/manage-notes-examples/index.md) - Safe content editing with revision control
 - [User Query Examples](docs/user-query-examples.md) - Natural language query examples
 - [Search Query Examples](docs/search-examples/) - Advanced search syntax and filters
