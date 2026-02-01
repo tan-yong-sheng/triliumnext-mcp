@@ -4,7 +4,7 @@
 
 ### Step 1: Create file note
 ```bash
-curl -X POST "https://trilium.tanyongsheng.site/etapi/create-note" \
+curl -X POST "http://localhost:8080/etapi/create-note" \
     -H "Authorization: Bearer <TRILIUM_ETAPI_TOKEN>" \
     -H "Content-Type: application/json" \
     -d '{
@@ -20,7 +20,7 @@ curl -X POST "https://trilium.tanyongsheng.site/etapi/create-note" \
 
 ### Step 1: Create image note
 ```bash
-curl -X POST "https://trilium.tanyongsheng.site/etapi/create-note" \
+curl -X POST "http://localhost:8080/etapi/create-note" \
     -H "Authorization: Bearer <TRILIUM_ETAPI_TOKEN>" \
     -H "Content-Type: application/json" \
     -d '{
@@ -69,7 +69,7 @@ TriliumNext MCP automatically detects file types based on MIME types and extensi
 
 ### Step 2: Upload File/Image Content with These Exact Headers
 ```bash
-curl -v -X PUT "https://trilium.tanyongsheng.site/etapi/notes/{noteId}/content" \
+curl -v -X PUT "http://localhost:8080/etapi/notes/{noteId}/content" \
     -H "Authorization: Bearer <TRILIUM_ETAPI_TOKEN>" \
     -H "Content-Type: application/octet-stream" \
     -H "Content-Transfer-Encoding: binary" \
@@ -78,7 +78,7 @@ curl -v -X PUT "https://trilium.tanyongsheng.site/etapi/notes/{noteId}/content" 
 
 **For Images:**
 ```bash
-curl -v -X PUT "https://trilium.tanyongsheng.site/etapi/notes/{noteId}/content" \
+curl -v -X PUT "http://localhost:8080/etapi/notes/{noteId}/content" \
     -H "Authorization: Bearer <TRILIUM_ETAPI_TOKEN>" \
     -H "Content-Type: application/octet-stream" \
     -H "Content-Transfer-Encoding: binary" \
@@ -89,7 +89,7 @@ curl -v -X PUT "https://trilium.tanyongsheng.site/etapi/notes/{noteId}/content" 
 
 ### Get Note Content
 ```bash
-curl -i -X GET "https://trilium.tanyongsheng.site/etapi/notes/{noteId}/content" \
+curl -i -X GET "http://localhost:8080/etapi/notes/{noteId}/content" \
   -H "Authorization: Bearer <TRILIUM_ETAPI_TOKEN>"
 ```
 
@@ -100,7 +100,7 @@ curl -i -X GET "https://trilium.tanyongsheng.site/etapi/notes/{noteId}/content" 
 
 ### Get Attachment Details
 ```bash
-curl -i -X GET "https://trilium.tanyongsheng.site/etapi/attachments/{attachmentId}" \
+curl -i -X GET "http://localhost:8080/etapi/attachments/{attachmentId}" \
   -H "Authorization: Bearer <TRILIUM_ETAPI_TOKEN>"
 ```
 
@@ -132,7 +132,7 @@ Note type and MIME type are **immutable** after creation. You can only update th
 
 ### Update File/Image Note Title Only
 ```bash
-curl -X PATCH "https://trilium.tanyongsheng.site/etapi/notes/{noteId}" \
+curl -X PATCH "http://localhost:8080/etapi/notes/{noteId}" \
     -H "Authorization: Bearer <TRILIUM_ETAPI_TOKEN>" \
     -H "Content-Type: application/json" \
     -d '{
@@ -142,7 +142,7 @@ curl -X PATCH "https://trilium.tanyongsheng.site/etapi/notes/{noteId}" \
 
 ### Replace File Content (Same File Type Only)
 ```bash
-curl -v -X PUT "https://trilium.tanyongsheng.site/etapi/notes/{noteId}/content" \
+curl -v -X PUT "http://localhost:8080/etapi/notes/{noteId}/content" \
     -H "Authorization: Bearer <TRILIUM_ETAPI_TOKEN>" \
     -H "Content-Type: application/octet-stream" \
     -H "Content-Transfer-Encoding: binary" \
@@ -151,7 +151,7 @@ curl -v -X PUT "https://trilium.tanyongsheng.site/etapi/notes/{noteId}/content" 
 
 ### Replace Image Content (Same Image Type Only)
 ```bash
-curl -v -X PUT "https://trilium.tanyongsheng.site/etapi/notes/{noteId}/content" \
+curl -v -X PUT "http://localhost:8080/etapi/notes/{noteId}/content" \
     -H "Authorization: Bearer <TRILIUM_ETAPI_TOKEN>" \
     -H "Content-Type: application/octet-stream" \
     -H "Content-Transfer-Encoding: binary" \
@@ -173,13 +173,13 @@ If you need to change a file type (e.g., image → video):
 
 1. **Delete the old note**:
    ```bash
-   curl -X DELETE "https://trilium.tanyongsheng.site/etapi/notes/{oldNoteId}" \
+   curl -X DELETE "http://localhost:8080/etapi/notes/{oldNoteId}" \
        -H "Authorization: Bearer <TRILIUM_ETAPI_TOKEN>"
    ```
 
 2. **Create a new note** with the correct type:
    ```bash
-   curl -X POST "https://trilium.tanyongsheng.site/etapi/create-note" \
+   curl -X POST "http://localhost:8080/etapi/create-note" \
        -H "Authorization: Bearer <TRILIUM_ETAPI_TOKEN>" \
        -H "Content-Type: application/json" \
        -d '{
@@ -193,7 +193,7 @@ If you need to change a file type (e.g., image → video):
 
 3. **Upload the new content**:
    ```bash
-   curl -v -X PUT "https://trilium.tanyongsheng.site/etapi/notes/{newNoteId}/content" \
+   curl -v -X PUT "http://localhost:8080/etapi/notes/{newNoteId}/content" \
        -H "Authorization: Bearer <TRILIUM_ETAPI_TOKEN>" \
        -H "Content-Type: application/octet-stream" \
        -H "Content-Transfer-Encoding: binary" \
