@@ -4,6 +4,9 @@
 
 A model context protocol server for TriliumNext Notes. This server provides tools to interact with your Trilium Notes instance through MCP. You can use this MCP with [triliumnext-skills](https://github.com/tan-yong-sheng/triliumnext-skills).
 
+Also, if you would like to back up your trilium instances to multiple cloud storage providers such as cloudflare R2, AWS S3 and google drive simultaneously, please visit:
+https://github.com/tan-yong-sheng/trilium-backup
+
 ## Quick Start
 
 Make sure to set up your environment variables first:
