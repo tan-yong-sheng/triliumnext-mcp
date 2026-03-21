@@ -139,6 +139,28 @@ export function createWriteTools(): any[] {
       },
     },
     {
+      name: "move_note",
+      description: "Move a note to a new parent location in the note tree. IMPORTANT: In TriliumNext a note can exist in multiple locations (branches). If the note has only one parent it moves directly. If it has multiple parents you must specify 'branchId' to indicate which parent link to move. WORKFLOW: Call move_note without branchId first — if the note has multiple parents you will receive a list of branches to choose from, then call again with the specific branchId.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          noteId: {
+            type: "string",
+            description: "ID of the note to move"
+          },
+          newParentNoteId: {
+            type: "string",
+            description: "ID of the destination parent note"
+          },
+          branchId: {
+            type: "string",
+            description: "Optional: the specific branch ID to move. Required only when the note exists in multiple parent locations. If omitted and the note has multiple parents, the tool returns a list of available branches for you to choose from."
+          }
+        },
+        required: ["noteId", "newParentNoteId"]
+      }
+    },
+    {
       name: "search_and_replace_note",
       description: "Search and replace content within a single note. When someone wants to replace text in a note, first call get_note to get the current content and hash, then use this function to make the changes. This ensures you're working with the latest version of their note.",
       inputSchema: {
@@ -189,6 +211,20 @@ export function createReadTools(): any[] {
   const searchProperties = createSearchProperties();
 
   return [
+    {
+      name: "get_children",
+      description: "Retrieve all direct child notes of a given note. Returns an array of child note summaries including noteId, title, type, mime, and dateModified. Use this to explore the note hierarchy or list the contents of a folder/book note.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          noteId: {
+            type: "string",
+            description: "ID of the parent note whose children to retrieve"
+          }
+        },
+        required: ["noteId"]
+      }
+    },
     {
       name: "get_note",
       description: "Get a note and its content by ID. Perfect for when someone wants to see what's in a note, extract specific information, or prepare for search and replace operations. Getting the full content lets you see the context and create better regex patterns for extraction or replacement. ⚠️ SMART CONTENT INCLUSION: For file/image notes, binary content is automatically excluded by default for performance. Use includeBinaryContent: true to explicitly retrieve binary data when needed.",

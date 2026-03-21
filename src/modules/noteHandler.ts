@@ -11,7 +11,11 @@ import {
   handleUpdateNote,
   handleDeleteNote,
   handleGetNote,
-  handleSearchReplaceNote
+  handleSearchReplaceNote,
+  handleGetChildren,
+  GetChildrenOperation,
+  handleMoveNote,
+  MoveNoteOperation
 } from "./noteManager.js";
 
 /**
@@ -300,6 +304,70 @@ export async function handleGetNoteRequest(
     if (error instanceof McpError) {
       throw error;
     }
+    throw new McpError(ErrorCode.InvalidParams, error instanceof Error ? error.message : String(error));
+  }
+}
+
+/**
+ * Handle get_children tool requests
+ */
+export async function handleGetChildrenRequest(
+  args: any,
+  axiosInstance: any,
+  permissionChecker: PermissionChecker
+): Promise<{ content: Array<{ type: string; text: string }> }> {
+  if (!permissionChecker.hasPermission("READ")) {
+    throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to get note children.");
+  }
+
+  if (!args.noteId) {
+    throw new McpError(ErrorCode.InvalidParams, "Missing required parameter 'noteId'.");
+  }
+
+  try {
+    const operation: GetChildrenOperation = { noteId: args.noteId };
+    const result = await handleGetChildren(operation, axiosInstance);
+    return {
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
+    };
+  } catch (error) {
+    if (error instanceof McpError) throw error;
+    throw new McpError(ErrorCode.InvalidParams, error instanceof Error ? error.message : String(error));
+  }
+}
+
+/**
+ * Handle move_note tool requests
+ */
+export async function handleMoveNoteRequest(
+  args: any,
+  axiosInstance: any,
+  permissionChecker: PermissionChecker
+): Promise<{ content: Array<{ type: string; text: string }> }> {
+  if (!permissionChecker.hasPermission("WRITE")) {
+    throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to move notes.");
+  }
+
+  if (!args.noteId) {
+    throw new McpError(ErrorCode.InvalidParams, "Missing required parameter 'noteId'.");
+  }
+
+  if (!args.newParentNoteId) {
+    throw new McpError(ErrorCode.InvalidParams, "Missing required parameter 'newParentNoteId'.");
+  }
+
+  try {
+    const operation: MoveNoteOperation = {
+      noteId: args.noteId,
+      newParentNoteId: args.newParentNoteId,
+      branchId: args.branchId
+    };
+    const result = await handleMoveNote(operation, axiosInstance);
+    return {
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
+    };
+  } catch (error) {
+    if (error instanceof McpError) throw error;
     throw new McpError(ErrorCode.InvalidParams, error instanceof Error ? error.message : String(error));
   }
 }

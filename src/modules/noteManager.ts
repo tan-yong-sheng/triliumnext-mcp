@@ -861,6 +861,209 @@ export async function handleDeleteNote(
   };
 }
 
+// ─── get_children ────────────────────────────────────────────────────────────
+
+export interface GetChildrenOperation {
+  noteId: string;
+}
+
+export interface ChildNoteSummary {
+  noteId: string;
+  title: string;
+  type: string;
+  mime: string;
+  dateModified: string;
+}
+
+export interface GetChildrenResponse {
+  parentNoteId: string;
+  childCount: number;
+  children: ChildNoteSummary[];
+}
+
+/**
+ * Handle get_children operation – retrieve direct children of a note
+ */
+export async function handleGetChildren(
+  args: GetChildrenOperation,
+  axiosInstance: any
+): Promise<GetChildrenResponse> {
+  const { noteId } = args;
+
+  if (!noteId) {
+    throw new Error("noteId is required for get_children operation.");
+  }
+
+  logVerboseApi("GET", `/notes/${noteId}`);
+  const parentNote = await axiosInstance.get(`/notes/${noteId}`);
+  const childNoteIds: string[] = parentNote.data.childNoteIds || [];
+
+  if (childNoteIds.length === 0) {
+    return { parentNoteId: noteId, childCount: 0, children: [] };
+  }
+
+  logVerbose("handleGetChildren", `Fetching ${childNoteIds.length} children for ${noteId}`);
+
+  const results = await Promise.allSettled(
+    childNoteIds.map((childId: string) => {
+      logVerboseApi("GET", `/notes/${childId}`);
+      return axiosInstance.get(`/notes/${childId}`);
+    })
+  );
+
+  const children: ChildNoteSummary[] = [];
+  for (const result of results) {
+    if (result.status === 'fulfilled') {
+      const note = result.value.data;
+      children.push({
+        noteId: note.noteId,
+        title: note.title,
+        type: note.type,
+        mime: note.mime || '',
+        dateModified: note.dateModified
+      });
+    } else {
+      logVerboseError("handleGetChildren", result.reason);
+    }
+  }
+
+  return { parentNoteId: noteId, childCount: children.length, children };
+}
+
+// ─── move_note ────────────────────────────────────────────────────────────────
+
+export interface MoveNoteOperation {
+  noteId: string;
+  newParentNoteId: string;
+  branchId?: string;
+}
+
+export interface BranchInfo {
+  branchId: string;
+  parentNoteId: string;
+  notePosition?: number;
+}
+
+export interface MoveNoteResponse {
+  noteId: string;
+  oldParentNoteId: string;
+  newParentNoteId: string;
+  newBranchId: string;
+  message: string;
+}
+
+export interface MoveNoteAmbiguousResponse {
+  noteId: string;
+  message: string;
+  requiresBranchId: boolean;
+  branches: BranchInfo[];
+}
+
+export type MoveNoteResult = MoveNoteResponse | MoveNoteAmbiguousResponse;
+
+/**
+ * Handle move_note operation – move a note to a new parent location.
+ * Uses DELETE + POST branch pattern because PATCH /branches cannot change parentNoteId.
+ */
+export async function handleMoveNote(
+  args: MoveNoteOperation,
+  axiosInstance: any
+): Promise<MoveNoteResult> {
+  const { noteId, newParentNoteId, branchId: providedBranchId } = args;
+
+  if (!noteId || !newParentNoteId) {
+    throw new Error("noteId and newParentNoteId are required for move_note operation.");
+  }
+
+  logVerboseApi("GET", `/notes/${noteId}`);
+  const noteResponse = await axiosInstance.get(`/notes/${noteId}`);
+  const parentBranchIds: string[] = noteResponse.data.parentBranchIds || [];
+
+  if (parentBranchIds.length === 0) {
+    throw new Error(`Note ${noteId} has no parent branches and cannot be moved.`);
+  }
+
+  let targetBranchId: string;
+
+  if (parentBranchIds.length === 1) {
+    targetBranchId = parentBranchIds[0];
+  } else if (providedBranchId) {
+    if (!parentBranchIds.includes(providedBranchId)) {
+      throw new Error(
+        `Branch ${providedBranchId} does not belong to note ${noteId}. ` +
+        `Valid branches: ${parentBranchIds.join(', ')}`
+      );
+    }
+    targetBranchId = providedBranchId;
+  } else {
+    // Multiple branches, no branchId provided – ask user to choose
+    const branchDetails = await Promise.allSettled(
+      parentBranchIds.map((bid: string) => {
+        logVerboseApi("GET", `/branches/${bid}`);
+        return axiosInstance.get(`/branches/${bid}`);
+      })
+    );
+    const branches: BranchInfo[] = branchDetails
+      .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled')
+      .map(r => ({
+        branchId: r.value.data.branchId,
+        parentNoteId: r.value.data.parentNoteId,
+        notePosition: r.value.data.notePosition
+      }));
+
+    return {
+      noteId,
+      message:
+        `Note ${noteId} exists in ${parentBranchIds.length} locations. ` +
+        `Specify 'branchId' to indicate which parent link to move.`,
+      requiresBranchId: true,
+      branches
+    };
+  }
+
+  // Get current branch to record old parent
+  logVerboseApi("GET", `/branches/${targetBranchId}`);
+  const branchResponse = await axiosInstance.get(`/branches/${targetBranchId}`);
+  const oldParentNoteId: string = branchResponse.data.parentNoteId;
+
+  // No-op check
+  if (oldParentNoteId === newParentNoteId) {
+    return {
+      noteId,
+      oldParentNoteId,
+      newParentNoteId,
+      newBranchId: targetBranchId,
+      message: `Note ${noteId} is already a child of ${newParentNoteId}. No move performed.`
+    };
+  }
+
+  // POST new branch first (note keeps old branch during transition, so it cannot be auto-deleted)
+  const newBranchData = { noteId, parentNoteId: newParentNoteId };
+  logVerboseApi("POST", `/branches`, newBranchData);
+  const newBranchResponse = await axiosInstance.post(`/branches`, newBranchData);
+  const newBranchId: string = newBranchResponse.data.branchId;
+
+  // Delete old branch (note now has new branch, so it is safe to remove the old one)
+  logVerboseApi("DELETE", `/branches/${targetBranchId}`);
+  try {
+    await axiosInstance.delete(`/branches/${targetBranchId}`);
+  } catch (deleteError) {
+    // New branch already created; log warning but return partial success
+    logVerboseError("handleMoveNote", deleteError);
+    logVerbose("handleMoveNote", `Note ${noteId} cloned to ${newParentNoteId} but old branch ${targetBranchId} could not be removed`);
+  }
+
+  return {
+    noteId,
+    oldParentNoteId,
+    newParentNoteId,
+    newBranchId,
+    message: `Note ${noteId} moved from ${oldParentNoteId} to ${newParentNoteId} (branch: ${newBranchId})`
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
  * Handle get note operation
  */
