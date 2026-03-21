@@ -949,8 +949,9 @@ export interface MoveNoteOperation {
 
 export interface BranchInfo {
   branchId: string;
-  parentNoteId: string;
+  parentNoteId?: string;  // absent when details could not be fetched
   notePosition?: number;
+  error?: string;          // present when branch details could not be fetched
 }
 
 export interface MoveNoteResponse {
@@ -1012,13 +1013,20 @@ export async function handleMoveNote(
         return axiosInstance.get(`/branches/${bid}`);
       })
     );
-    const branches: BranchInfo[] = branchDetails
-      .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled')
-      .map(r => ({
-        branchId: r.value.data.branchId,
-        parentNoteId: r.value.data.parentNoteId,
-        notePosition: r.value.data.notePosition
-      }));
+    const branches: BranchInfo[] = branchDetails.map((r, idx) => {
+      if (r.status === 'fulfilled') {
+        return {
+          branchId: r.value.data.branchId,
+          parentNoteId: r.value.data.parentNoteId,
+          notePosition: r.value.data.notePosition
+        };
+      }
+      logVerboseError("handleMoveNote", r.reason);
+      return {
+        branchId: parentBranchIds[idx],
+        error: `Could not fetch branch details: ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`
+      };
+    });
 
     return {
       noteId,
@@ -1046,6 +1054,52 @@ export async function handleMoveNote(
     };
   }
 
+  // Check if note already has a branch to newParentNoteId via a different branch.
+  // If so, reuse that branch rather than creating a duplicate link.
+  const otherBranchIds = parentBranchIds.filter(bid => bid !== targetBranchId);
+  let existingDestBranchId: string | null = null;
+  if (otherBranchIds.length > 0) {
+    const otherBranchDetails = await Promise.allSettled(
+      otherBranchIds.map(bid => {
+        logVerboseApi("GET", `/branches/${bid}`);
+        return axiosInstance.get(`/branches/${bid}`);
+      })
+    );
+    for (let i = 0; i < otherBranchDetails.length; i++) {
+      const r = otherBranchDetails[i];
+      if (r.status === 'fulfilled' && r.value.data.parentNoteId === newParentNoteId) {
+        existingDestBranchId = r.value.data.branchId;
+        break;
+      }
+    }
+  }
+
+  if (existingDestBranchId) {
+    // Note is already a child of newParentNoteId via another branch — just remove the old link.
+    logVerboseApi("DELETE", `/branches/${targetBranchId}`);
+    try {
+      await axiosInstance.delete(`/branches/${targetBranchId}`);
+    } catch (deleteError: any) {
+      if (deleteError?.response?.status === 404) {
+        // Branch already gone — state is already correct.
+      } else {
+        logVerboseError("handleMoveNote", deleteError);
+        throw new Error(
+          `Move failed: note ${noteId} is already a child of ${newParentNoteId} (via ${existingDestBranchId}) ` +
+          `but the old branch ${targetBranchId} could not be removed from ${oldParentNoteId}. ` +
+          `Delete it manually.`
+        );
+      }
+    }
+    return {
+      noteId,
+      oldParentNoteId,
+      newParentNoteId,
+      newBranchId: existingDestBranchId,
+      message: `Note ${noteId} moved from ${oldParentNoteId} to ${newParentNoteId} (existing branch ${existingDestBranchId} reused; old branch ${targetBranchId} removed)`
+    };
+  }
+
   // POST new branch first (note keeps old branch during transition, so it cannot be auto-deleted)
   const newBranchData = { noteId, parentNoteId: newParentNoteId };
   logVerboseApi("POST", `/branches`, newBranchData);
@@ -1056,7 +1110,18 @@ export async function handleMoveNote(
   logVerboseApi("DELETE", `/branches/${targetBranchId}`);
   try {
     await axiosInstance.delete(`/branches/${targetBranchId}`);
-  } catch (deleteError) {
+  } catch (deleteError: any) {
+    // 404 means the branch was already removed concurrently — the note is now only
+    // accessible via the new branch, so the move is effectively complete.
+    if (deleteError?.response?.status === 404) {
+      return {
+        noteId,
+        oldParentNoteId,
+        newParentNoteId,
+        newBranchId,
+        message: `Note ${noteId} moved from ${oldParentNoteId} to ${newParentNoteId} (old branch was already removed; branch: ${newBranchId})`
+      };
+    }
     logVerboseError("handleMoveNote", deleteError);
     logVerbose("handleMoveNote", `Failed to delete old branch ${targetBranchId}; attempting rollback of new branch ${newBranchId}`);
     // Rollback: remove the newly-created branch so the note is not left in both locations
@@ -1190,10 +1255,10 @@ function applyLinePatch(lines: string[], patch: NotePatch, patchIndex: number): 
   const newLines = [...lines];
   switch (patch.operation) {
     case 'replace':
-      newLines[lineIndex] = patch.content ?? '';
+      newLines.splice(lineIndex, 1, ...(patch.content ?? '').split('\n'));
       break;
     case 'insert_after':
-      newLines.splice(lineIndex + 1, 0, patch.content ?? '');
+      newLines.splice(lineIndex + 1, 0, ...(patch.content ?? '').split('\n'));
       break;
     case 'delete':
       newLines.splice(lineIndex, 1);

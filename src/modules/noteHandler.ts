@@ -335,7 +335,7 @@ export async function handleGetChildrenRequest(
     };
   } catch (error) {
     if (error instanceof McpError) throw error;
-    throw new McpError(ErrorCode.InvalidParams, error instanceof Error ? error.message : String(error));
+    throw new McpError(ErrorCode.InternalError, error instanceof Error ? error.message : String(error));
   }
 }
 
@@ -371,7 +371,7 @@ export async function handleMoveNoteRequest(
     };
   } catch (error) {
     if (error instanceof McpError) throw error;
-    throw new McpError(ErrorCode.InvalidParams, error instanceof Error ? error.message : String(error));
+    throw new McpError(ErrorCode.InternalError, error instanceof Error ? error.message : String(error));
   }
 }
 
