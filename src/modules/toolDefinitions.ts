@@ -161,6 +161,48 @@ export function createWriteTools(): any[] {
       }
     },
     {
+      name: "patch_note",
+      description: "Apply targeted patches to note content without replacing the entire content. WORKFLOW: 1) Call get_note to obtain current content and contentHash (blobId), 2) Design patches, 3) Call patch_note with expectedHash. For text/HTML notes use CSS selectors (e.g. 'p', 'h1', '#my-id', '.my-class'). For code/plaintext notes use a 1-based line number as a string (e.g. '5') or a unique text fragment that appears on exactly one line. Patches are applied in array order.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          noteId: {
+            type: "string",
+            description: "ID of the note to patch"
+          },
+          expectedHash: {
+            type: "string",
+            description: "REQUIRED: blobId from get_note response. Prevents conflicts by ensuring you are patching the version you examined."
+          },
+          patches: {
+            type: "array",
+            description: "Ordered list of patch operations to apply.",
+            minItems: 1,
+            items: {
+              type: "object",
+              properties: {
+                operation: {
+                  type: "string",
+                  enum: ["replace", "insert_after", "delete"],
+                  description: "'replace' replaces the matched element/line. 'insert_after' inserts after it. 'delete' removes it."
+                },
+                selector: {
+                  type: "string",
+                  description: "For text/HTML notes: CSS selector (e.g. 'p', 'h2', '.class', '#id'). For code/plaintext notes: 1-based line number as string (e.g. '3') or unique text fragment from the target line."
+                },
+                content: {
+                  type: "string",
+                  description: "Replacement or insertion content. Required for 'replace' and 'insert_after'. For HTML notes provide HTML; for code notes provide plain text. Not required for 'delete'."
+                }
+              },
+              required: ["operation", "selector"]
+            }
+          }
+        },
+        required: ["noteId", "expectedHash", "patches"]
+      }
+    },
+    {
       name: "search_and_replace_note",
       description: "Search and replace content within a single note. When someone wants to replace text in a note, first call get_note to get the current content and hash, then use this function to make the changes. This ensures you're working with the latest version of their note.",
       inputSchema: {

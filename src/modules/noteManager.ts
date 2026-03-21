@@ -3,6 +3,7 @@
  * Handles CRUD operations for TriliumNext notes
  */
 
+import { parse as parseHtml } from 'node-html-parser';
 import { processContentArray } from '../utils/contentProcessor.js';
 import { logVerbose, logVerboseError, logVerboseApi } from '../utils/verboseUtils.js';
 import { getContentRequirements, validateContentForNoteType, extractTemplateRelation } from '../utils/contentRules.js';
@@ -1059,6 +1060,206 @@ export async function handleMoveNote(
     newParentNoteId,
     newBranchId,
     message: `Note ${noteId} moved from ${oldParentNoteId} to ${newParentNoteId} (branch: ${newBranchId})`
+  };
+}
+
+// ─── patch_note ───────────────────────────────────────────────────────────────
+
+export type PatchOperation = 'replace' | 'insert_after' | 'delete';
+
+export interface NotePatch {
+  operation: PatchOperation;
+  selector: string;
+  content?: string;
+}
+
+export interface PatchNoteOperation {
+  noteId: string;
+  expectedHash: string;
+  patches: NotePatch[];
+}
+
+export interface PatchResult {
+  patchIndex: number;
+  operation: PatchOperation;
+  selector: string;
+  applied: boolean;
+  message: string;
+}
+
+export interface PatchNoteResponse {
+  noteId: string;
+  revisionCreated: boolean;
+  patchResults: PatchResult[];
+  appliedCount: number;
+  failedCount: number;
+  message: string;
+  conflict?: boolean;
+}
+
+/**
+ * Apply HTML patches to a note parsed as a DOM tree.
+ * Returns the modified HTML string.
+ */
+function applyHtmlPatches(content: string, patches: NotePatch[]): { content: string; results: PatchResult[] } {
+  const root = parseHtml(content, { lowerCaseTagName: false, comment: true });
+  const results: PatchResult[] = [];
+
+  for (let i = 0; i < patches.length; i++) {
+    const patch = patches[i];
+    try {
+      const elements = root.querySelectorAll(patch.selector);
+      if (elements.length === 0) {
+        results.push({ patchIndex: i, operation: patch.operation, selector: patch.selector, applied: false, message: `Selector '${patch.selector}' matched 0 elements` });
+        continue;
+      }
+      const target = elements[0];
+      switch (patch.operation) {
+        case 'replace':
+          target.replaceWith(patch.content ?? '');
+          break;
+        case 'insert_after':
+          target.insertAdjacentHTML('afterend', patch.content ?? '');
+          break;
+        case 'delete':
+          target.remove();
+          break;
+      }
+      results.push({ patchIndex: i, operation: patch.operation, selector: patch.selector, applied: true, message: `Applied ${patch.operation} on first element matching '${patch.selector}'` });
+    } catch (err) {
+      results.push({ patchIndex: i, operation: patch.operation, selector: patch.selector, applied: false, message: `Error: ${err instanceof Error ? err.message : String(err)}` });
+    }
+  }
+
+  return { content: root.toString(), results };
+}
+
+/**
+ * Apply line-based patches to plain-text / code note content.
+ * selector is either a 1-based line number string ("5") or a unique text fragment.
+ */
+function applyLinePatch(lines: string[], patch: NotePatch, patchIndex: number): { lines: string[]; result: PatchResult } {
+  const selector = patch.selector;
+  const asNum = parseInt(selector, 10);
+  let lineIndex: number;
+
+  if (!isNaN(asNum) && String(asNum) === selector) {
+    lineIndex = asNum - 1;
+    if (lineIndex < 0 || lineIndex >= lines.length) {
+      return { lines, result: { patchIndex, operation: patch.operation, selector, applied: false, message: `Line ${asNum} is out of range (note has ${lines.length} lines)` } };
+    }
+  } else {
+    lineIndex = lines.findIndex(l => l.includes(selector));
+    if (lineIndex === -1) {
+      return { lines, result: { patchIndex, operation: patch.operation, selector, applied: false, message: `No line contains '${selector}'` } };
+    }
+  }
+
+  const newLines = [...lines];
+  switch (patch.operation) {
+    case 'replace':
+      newLines[lineIndex] = patch.content ?? '';
+      break;
+    case 'insert_after':
+      newLines.splice(lineIndex + 1, 0, patch.content ?? '');
+      break;
+    case 'delete':
+      newLines.splice(lineIndex, 1);
+      break;
+  }
+
+  return { lines: newLines, result: { patchIndex, operation: patch.operation, selector, applied: true, message: `Applied ${patch.operation} at line ${lineIndex + 1}` } };
+}
+
+/**
+ * Handle patch_note operation – apply targeted patches to note content.
+ * Requires expectedHash (blobId from get_note) for conflict detection.
+ * Creates a revision backup before writing.
+ */
+export async function handlePatchNote(
+  args: PatchNoteOperation,
+  axiosInstance: any
+): Promise<PatchNoteResponse> {
+  const { noteId, expectedHash, patches } = args;
+
+  if (!noteId || !expectedHash || !patches?.length) {
+    throw new Error("noteId, expectedHash, and at least one patch are required.");
+  }
+
+  // Step 1: Conflict detection via blobId
+  logVerboseApi("GET", `/notes/${noteId}`);
+  const noteResponse = await axiosInstance.get(`/notes/${noteId}`);
+  const noteData = noteResponse.data;
+  const currentBlobId: string = noteData.blobId;
+
+  if (currentBlobId !== expectedHash) {
+    return {
+      noteId,
+      revisionCreated: false,
+      patchResults: [],
+      appliedCount: 0,
+      failedCount: patches.length,
+      message: `CONFLICT: Note has been modified. Current blobId: ${currentBlobId}, expected: ${expectedHash}. Call get_note again to get the latest content.`,
+      conflict: true
+    };
+  }
+
+  // Step 2: Fetch content
+  logVerboseApi("GET", `/notes/${noteId}/content`);
+  const contentResponse = await axiosInstance.get(`/notes/${noteId}/content`, { responseType: 'text' });
+  const originalContent: string = contentResponse.data;
+
+  // Step 3: Create revision backup (best-effort)
+  let revisionCreated = false;
+  try {
+    logVerboseApi("POST", `/notes/${noteId}/revision`);
+    await axiosInstance.post(`/notes/${noteId}/revision`);
+    revisionCreated = true;
+  } catch (revErr) {
+    logVerboseError("handlePatchNote", revErr);
+  }
+
+  // Step 4: Apply patches
+  const isHtmlNote = noteData.type === 'text';
+  let patchedContent: string;
+  let patchResults: PatchResult[];
+
+  if (isHtmlNote) {
+    const result = applyHtmlPatches(originalContent, patches);
+    patchedContent = result.content;
+    patchResults = result.results;
+  } else {
+    let lines = originalContent.split('\n');
+    patchResults = [];
+    for (let i = 0; i < patches.length; i++) {
+      const { lines: newLines, result } = applyLinePatch(lines, patches[i], i);
+      lines = newLines;
+      patchResults.push(result);
+    }
+    patchedContent = lines.join('\n');
+  }
+
+  const appliedCount = patchResults.filter(r => r.applied).length;
+  const failedCount = patchResults.filter(r => !r.applied).length;
+
+  // Step 5: Write only if something changed
+  if (appliedCount > 0) {
+    logVerboseApi("PUT", `/notes/${noteId}/content`);
+    const putResponse = await axiosInstance.put(`/notes/${noteId}/content`, patchedContent, {
+      headers: { 'Content-Type': 'text/plain' }
+    });
+    if (putResponse.status !== 204) {
+      throw new Error(`Unexpected status from content PUT: ${putResponse.status}`);
+    }
+  }
+
+  return {
+    noteId,
+    revisionCreated,
+    patchResults,
+    appliedCount,
+    failedCount,
+    message: `Applied ${appliedCount}/${patches.length} patches to note ${noteId}` + (failedCount > 0 ? ` (${failedCount} failed)` : '')
   };
 }
 

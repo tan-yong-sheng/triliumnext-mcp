@@ -15,7 +15,10 @@ import {
   handleGetChildren,
   GetChildrenOperation,
   handleMoveNote,
-  MoveNoteOperation
+  MoveNoteOperation,
+  handlePatchNote,
+  PatchNoteOperation,
+  NotePatch
 } from "./noteManager.js";
 
 /**
@@ -363,6 +366,62 @@ export async function handleMoveNoteRequest(
       branchId: args.branchId
     };
     const result = await handleMoveNote(operation, axiosInstance);
+    return {
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
+    };
+  } catch (error) {
+    if (error instanceof McpError) throw error;
+    throw new McpError(ErrorCode.InvalidParams, error instanceof Error ? error.message : String(error));
+  }
+}
+
+/**
+ * Handle patch_note tool requests
+ */
+export async function handlePatchNoteRequest(
+  args: any,
+  axiosInstance: any,
+  permissionChecker: PermissionChecker
+): Promise<{ content: Array<{ type: string; text: string }> }> {
+  if (!permissionChecker.hasPermission("WRITE")) {
+    throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to patch notes.");
+  }
+
+  if (!args.noteId) {
+    throw new McpError(ErrorCode.InvalidParams, "Missing required parameter 'noteId'.");
+  }
+
+  if (!args.expectedHash) {
+    throw new McpError(
+      ErrorCode.InvalidParams,
+      "Missing required parameter 'expectedHash'. Call get_note first to obtain the current blobId."
+    );
+  }
+
+  if (!Array.isArray(args.patches) || args.patches.length === 0) {
+    throw new McpError(ErrorCode.InvalidParams, "Missing or empty required parameter 'patches'. At least one patch is required.");
+  }
+
+  for (let i = 0; i < args.patches.length; i++) {
+    const p = args.patches[i];
+    if (!['replace', 'insert_after', 'delete'].includes(p.operation)) {
+      throw new McpError(ErrorCode.InvalidParams, `patches[${i}].operation must be 'replace', 'insert_after', or 'delete'.`);
+    }
+    if (!p.selector) {
+      throw new McpError(ErrorCode.InvalidParams, `patches[${i}].selector is required.`);
+    }
+    if (p.operation !== 'delete' && p.content === undefined) {
+      throw new McpError(ErrorCode.InvalidParams, `patches[${i}].content is required for operation '${p.operation}'.`);
+    }
+  }
+
+  try {
+    const operation: PatchNoteOperation = {
+      noteId: args.noteId,
+      expectedHash: args.expectedHash,
+      patches: args.patches as NotePatch[]
+    };
+    const result = await handlePatchNote(operation, axiosInstance);
     return {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
     };

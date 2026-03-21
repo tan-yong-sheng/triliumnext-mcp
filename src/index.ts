@@ -19,7 +19,8 @@ import {
   handleGetNoteRequest,
   handleSearchReplaceNoteRequest,
   handleGetChildrenRequest,
-  handleMoveNoteRequest
+  handleMoveNoteRequest,
+  handlePatchNoteRequest
 } from "./modules/noteHandler.js";
 import {
   handleSearchNotesRequest
@@ -46,7 +47,7 @@ class TriliumServer {
     this.server = new Server(
       {
         name: "triliumnext-mcp",
-        version: "0.3.17",
+        version: "0.3.18",
       },
       {
         capabilities: {
@@ -112,6 +113,9 @@ class TriliumServer {
 
           case "move_note":
             return await handleMoveNoteRequest(request.params.arguments, this.axiosInstance, this);
+
+          case "patch_note":
+            return await handlePatchNoteRequest(request.params.arguments, this.axiosInstance, this);
 
           // Search and listing operations
           case "search_notes":

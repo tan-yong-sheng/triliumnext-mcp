@@ -1,6 +1,6 @@
 {
   "name": "triliumnext-mcp",
-  "version": "0.3.17",
+  "version": "0.3.18",
   "description": "A model context protocol server for TriliumNext Notes",
   "type": "module",
   "bin": {
@@ -24,7 +24,8 @@
     "@modelcontextprotocol/sdk": "^1.25.2",
     "axios": "^1.8.3",
     "marked": "^16.3.0",
-    "mime-db": "^1.54.0"
+    "mime-db": "^1.54.0",
+    "node-html-parser": "^7.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.24",
