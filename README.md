@@ -7,6 +7,11 @@ A model context protocol server for TriliumNext Notes. This server provides tool
 Also, if you would like to back up your trilium instances to multiple cloud storage providers such as cloudflare R2, AWS S3 and google drive simultaneously, please visit:
 https://github.com/tan-yong-sheng/trilium-backup
 
+## Alternatives to suggest:
+
+- [perfectra1n/triliumnext-mcp](https://github.com/perfectra1n/triliumnext-mcp)
+- [perfectra1n/triliumnext-cli](https://github.com/perfectra1n/triliumnext-cli)
+
 ## Quick Start
 
 Make sure to set up your environment variables first:
