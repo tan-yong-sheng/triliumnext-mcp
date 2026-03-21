@@ -1136,6 +1136,10 @@ function applyHtmlPatches(content: string, patches: NotePatch[]): { content: str
         results.push({ patchIndex: i, operation: patch.operation, selector: patch.selector, applied: false, message: `Selector '${patch.selector}' matched 0 elements` });
         continue;
       }
+      if (elements.length > 1) {
+        results.push({ patchIndex: i, operation: patch.operation, selector: patch.selector, applied: false, message: `Selector '${patch.selector}' matches ${elements.length} elements — selector must be unique` });
+        continue;
+      }
       const target = elements[0];
       switch (patch.operation) {
         case 'replace':
@@ -1148,7 +1152,7 @@ function applyHtmlPatches(content: string, patches: NotePatch[]): { content: str
           target.remove();
           break;
       }
-      results.push({ patchIndex: i, operation: patch.operation, selector: patch.selector, applied: true, message: `Applied ${patch.operation} on first element matching '${patch.selector}'` });
+      results.push({ patchIndex: i, operation: patch.operation, selector: patch.selector, applied: true, message: `Applied ${patch.operation} on '${patch.selector}'` });
     } catch (err) {
       results.push({ patchIndex: i, operation: patch.operation, selector: patch.selector, applied: false, message: `Error: ${err instanceof Error ? err.message : String(err)}` });
     }
@@ -1166,16 +1170,21 @@ function applyLinePatch(lines: string[], patch: NotePatch, patchIndex: number): 
   const asNum = parseInt(selector, 10);
   let lineIndex: number;
 
-  if (!isNaN(asNum) && String(asNum) === selector) {
+  if (/^\d+$/.test(selector)) {
     lineIndex = asNum - 1;
     if (lineIndex < 0 || lineIndex >= lines.length) {
       return { lines, result: { patchIndex, operation: patch.operation, selector, applied: false, message: `Line ${asNum} is out of range (note has ${lines.length} lines)` } };
     }
   } else {
-    lineIndex = lines.findIndex(l => l.includes(selector));
-    if (lineIndex === -1) {
+    const matches = lines.reduce<number[]>((acc, line, idx) =>
+      line.includes(selector) ? [...acc, idx] : acc, []);
+    if (matches.length === 0) {
       return { lines, result: { patchIndex, operation: patch.operation, selector, applied: false, message: `No line contains '${selector}'` } };
     }
+    if (matches.length > 1) {
+      return { lines, result: { patchIndex, operation: patch.operation, selector, applied: false, message: `Fragment selector '${selector}' matches ${matches.length} lines — selector must be unique` } };
+    }
+    lineIndex = matches[0];
   }
 
   const newLines = [...lines];
@@ -1227,12 +1236,20 @@ export async function handlePatchNote(
     };
   }
 
-  // Step 2: Fetch content
+  // Step 2: Validate note type before any content fetch or side effects
+  const PATCHABLE_TYPES = ['text', 'code', 'mermaid'];
+  if (!PATCHABLE_TYPES.includes(noteData.type)) {
+    throw new Error(
+      `patch_note only supports text, code, and mermaid note types. Note ${noteId} is type '${noteData.type}'.`
+    );
+  }
+
+  // Step 3: Fetch content
   logVerboseApi("GET", `/notes/${noteId}/content`);
   const contentResponse = await axiosInstance.get(`/notes/${noteId}/content`, { responseType: 'text' });
   const originalContent: string = contentResponse.data;
 
-  // Step 3: Create revision backup (best-effort)
+  // Step 4: Create revision backup (best-effort)
   let revisionCreated = false;
   try {
     logVerboseApi("POST", `/notes/${noteId}/revision`);
@@ -1242,7 +1259,7 @@ export async function handlePatchNote(
     logVerboseError("handlePatchNote", revErr);
   }
 
-  // Step 4: Apply patches
+  // Step 5: Apply patches
   const isHtmlNote = noteData.type === 'text';
   let patchedContent: string;
   let patchResults: PatchResult[];
@@ -1265,7 +1282,7 @@ export async function handlePatchNote(
   const appliedCount = patchResults.filter(r => r.applied).length;
   const failedCount = patchResults.filter(r => !r.applied).length;
 
-  // Step 5: Write only if something changed
+  // Step 6: Write only if something changed
   if (appliedCount > 0) {
     logVerboseApi("PUT", `/notes/${noteId}/content`);
     const putResponse = await axiosInstance.put(`/notes/${noteId}/content`, patchedContent, {

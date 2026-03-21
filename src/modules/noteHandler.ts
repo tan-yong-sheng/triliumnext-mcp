@@ -404,6 +404,9 @@ export async function handlePatchNoteRequest(
 
   for (let i = 0; i < args.patches.length; i++) {
     const p = args.patches[i];
+    if (typeof p !== 'object' || p === null) {
+      throw new McpError(ErrorCode.InvalidParams, `patches[${i}] must be a non-null object.`);
+    }
     if (!['replace', 'insert_after', 'delete'].includes(p.operation)) {
       throw new McpError(ErrorCode.InvalidParams, `patches[${i}].operation must be 'replace', 'insert_after', or 'delete'.`);
     }
