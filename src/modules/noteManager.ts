@@ -1353,6 +1353,20 @@ export async function handlePatchNote(
 
   // Step 6: Write only if something changed
   if (appliedCount > 0) {
+    // Re-check blobId immediately before the PUT to narrow the TOCTOU window.
+    logVerboseApi("GET", `/notes/${noteId}`);
+    const recheckResponse = await axiosInstance.get(`/notes/${noteId}`);
+    if (recheckResponse.data.blobId !== expectedHash) {
+      return {
+        noteId,
+        revisionCreated,
+        patchResults: [],
+        appliedCount: 0,
+        failedCount: patches.length,
+        message: `CONFLICT: Note was modified after patches were computed. Current blobId: ${recheckResponse.data.blobId}, expected: ${expectedHash}. Call get_note again to get the latest content.`,
+        conflict: true
+      };
+    }
     logVerboseApi("PUT", `/notes/${noteId}/content`);
     const putResponse = await axiosInstance.put(`/notes/${noteId}/content`, patchedContent, {
       headers: { 'Content-Type': 'text/plain' }

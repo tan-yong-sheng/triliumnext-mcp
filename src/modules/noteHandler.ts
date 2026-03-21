@@ -51,24 +51,6 @@ export async function handleCreateNoteRequest(
     );
   }
 
-  // Validate file upload requirements
-  if (args.type === 'file' || args.type === 'image') {
-    if (!args.fileUri) {
-      throw new McpError(
-        ErrorCode.InvalidParams,
-        `Parameter 'fileUri' is required when type='${args.type}'.`
-      );
-    }
-  }
-
-  // For non-file/image notes, fileUri should not be provided
-  if (args.fileUri && !['file', 'image'].includes(args.type)) {
-    throw new McpError(
-      ErrorCode.InvalidParams,
-      "Parameter 'fileUri' can only be used when type='file' or type='image'."
-    );
-  }
-
   try {
     const noteOperation: NoteOperation = {
       parentNoteId: args.parentNoteId || "root", // Use default value if not provided
