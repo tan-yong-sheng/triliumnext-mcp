@@ -410,11 +410,11 @@ export async function handlePatchNoteRequest(
     if (!['replace', 'insert_after', 'delete'].includes(p.operation)) {
       throw new McpError(ErrorCode.InvalidParams, `patches[${i}].operation must be 'replace', 'insert_after', or 'delete'.`);
     }
-    if (!p.selector) {
-      throw new McpError(ErrorCode.InvalidParams, `patches[${i}].selector is required.`);
+    if (typeof p.selector !== 'string' || p.selector.length === 0) {
+      throw new McpError(ErrorCode.InvalidParams, `patches[${i}].selector must be a non-empty string.`);
     }
-    if (p.operation !== 'delete' && p.content === undefined) {
-      throw new McpError(ErrorCode.InvalidParams, `patches[${i}].content is required for operation '${p.operation}'.`);
+    if (p.operation !== 'delete' && typeof p.content !== 'string') {
+      throw new McpError(ErrorCode.InvalidParams, `patches[${i}].content must be a string for operation '${p.operation}'.`);
     }
   }
 
@@ -430,7 +430,7 @@ export async function handlePatchNoteRequest(
     };
   } catch (error) {
     if (error instanceof McpError) throw error;
-    throw new McpError(ErrorCode.InvalidParams, error instanceof Error ? error.message : String(error));
+    throw new McpError(ErrorCode.InternalError, error instanceof Error ? error.message : String(error));
   }
 }
 

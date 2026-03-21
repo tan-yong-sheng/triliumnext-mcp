@@ -1310,6 +1310,10 @@ export async function handlePatchNote(
   }
 
   // Step 3: Fetch content
+  // Note: there is an inherent TOCTOU window between the blobId check above and the
+  // content PUT below — ETAPI does not support conditional writes (If-Match / ETag),
+  // so a concurrent update that lands here will overwrite the other writer's changes.
+  // This is the best optimistic-concurrency guarantee available with the current API.
   logVerboseApi("GET", `/notes/${noteId}/content`);
   const contentResponse = await axiosInstance.get(`/notes/${noteId}/content`, { responseType: 'text' });
   const originalContent: string = contentResponse.data;
