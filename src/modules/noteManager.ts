@@ -878,7 +878,9 @@ export interface ChildNoteSummary {
 
 export interface GetChildrenResponse {
   parentNoteId: string;
-  childCount: number;
+  totalChildCount: number;
+  fetchedCount: number;
+  failedCount: number;
   children: ChildNoteSummary[];
 }
 
@@ -900,7 +902,7 @@ export async function handleGetChildren(
   const childNoteIds: string[] = parentNote.data.childNoteIds || [];
 
   if (childNoteIds.length === 0) {
-    return { parentNoteId: noteId, childCount: 0, children: [] };
+    return { parentNoteId: noteId, totalChildCount: 0, fetchedCount: 0, failedCount: 0, children: [] };
   }
 
   logVerbose("handleGetChildren", `Fetching ${childNoteIds.length} children for ${noteId}`);
@@ -928,7 +930,13 @@ export async function handleGetChildren(
     }
   }
 
-  return { parentNoteId: noteId, childCount: children.length, children };
+  return {
+    parentNoteId: noteId,
+    totalChildCount: childNoteIds.length,
+    fetchedCount: children.length,
+    failedCount: childNoteIds.length - children.length,
+    children
+  };
 }
 
 // ─── move_note ────────────────────────────────────────────────────────────────
@@ -1049,9 +1057,24 @@ export async function handleMoveNote(
   try {
     await axiosInstance.delete(`/branches/${targetBranchId}`);
   } catch (deleteError) {
-    // New branch already created; log warning but return partial success
     logVerboseError("handleMoveNote", deleteError);
-    logVerbose("handleMoveNote", `Note ${noteId} cloned to ${newParentNoteId} but old branch ${targetBranchId} could not be removed`);
+    logVerbose("handleMoveNote", `Failed to delete old branch ${targetBranchId}; attempting rollback of new branch ${newBranchId}`);
+    // Rollback: remove the newly-created branch so the note is not left in both locations
+    try {
+      logVerboseApi("DELETE", `/branches/${newBranchId}`);
+      await axiosInstance.delete(`/branches/${newBranchId}`);
+      logVerbose("handleMoveNote", `Rollback successful: removed new branch ${newBranchId}`);
+    } catch (rollbackError) {
+      logVerboseError("handleMoveNote", rollbackError);
+      throw new Error(
+        `Move failed and rollback failed: note ${noteId} now exists in both ${oldParentNoteId} and ${newParentNoteId}. ` +
+        `Manually delete one of the branches (old: ${targetBranchId}, new: ${newBranchId}).`
+      );
+    }
+    throw new Error(
+      `Move failed: could not delete old branch ${targetBranchId} from ${oldParentNoteId}. ` +
+      `Rollback successful — note ${noteId} remains at ${oldParentNoteId}.`
+    );
   }
 
   return {
