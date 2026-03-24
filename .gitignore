@@ -7,9 +7,6 @@ build/
 
 
 .playwright-mcp/
-
-package-lock.json
-
 .claude/*
 #!.claude/agents/
 #!.claude/rules/
