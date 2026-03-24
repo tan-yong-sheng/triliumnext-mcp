@@ -11,17 +11,17 @@ build/
 package-lock.json
 
 .claude/*
-!.claude/agents/
-!.claude/rules/
-!.claude/skills/
-!.claude/settings.local.json
+#!.claude/agents/
+#!.claude/rules/
+#!.claude/skills/
+#!.claude/settings.local.json
 
 .agents/*
-!.agents/agents/
-!.agents/rules/
-!.agents/skills/
+#!.agents/agents/
+#!.agents/rules/
+#!.agents/skills/
 
 .codex/*
-!.codex/agents/
-!.codex/rules/
-!.codex/skills/
+#!.codex/agents/
+#!.codex/rules/
+#!.codex/skills/
