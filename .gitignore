@@ -1,24 +1,18 @@
-Trilium/
-triliumnext-mcp/
+.env*
 node_modules/
 build/
 *.log
-.env*
-
-
 .playwright-mcp/
+
 .claude/*
-#!.claude/agents/
-#!.claude/rules/
-#!.claude/skills/
-#!.claude/settings.local.json
+!.claude/rules/
+!.claude/skills/
+!.claude/settings.local.json
 
 .agents/*
-#!.agents/agents/
-#!.agents/rules/
-#!.agents/skills/
+!.agents/rules/
+!.agents/skills/
 
 .codex/*
-#!.codex/agents/
-#!.codex/rules/
-#!.codex/skills/
+!.codex/rules/
+!.codex/skills/
