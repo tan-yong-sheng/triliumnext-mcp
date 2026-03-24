@@ -214,6 +214,9 @@ function escapeRegExp(string: string): string {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+/**
+ * Escape a literal value for safe insertion into a Trilium search query string.
+ */
 function escapeSearchQueryLiteral(value: string): string {
   return value.replace(/'/g, "''");
 }
@@ -932,6 +935,9 @@ export async function handleListChildrenNotes(
 
 export type GetChildrenOperation = ListChildrenNotesOperation;
 export type GetChildrenResponse = ListChildrenNotesResponse;
+/**
+ * Backward-compatible alias for list_children_notes.
+ */
 export const handleGetChildren = handleListChildrenNotes;
 
 // ─── move_note ────────────────────────────────────────────────────────────────
@@ -1196,6 +1202,9 @@ export interface PatchNoteResponse {
 
 const PATCHABLE_NOTE_TYPES = new Set(['text', 'code', 'mermaid']);
 
+/**
+ * Normalize regex flags for the requested patch scope.
+ */
 function normalizeFlags(flags: string | undefined, scope: PatchScope): string {
   const normalized = new Set((flags || '').split('').filter(Boolean));
 
@@ -1208,10 +1217,16 @@ function normalizeFlags(flags: string | undefined, scope: PatchScope): string {
   return Array.from(normalized).join('');
 }
 
+/**
+ * Count the number of regex matches in a content string.
+ */
 function countMatches(content: string, regex: RegExp): number {
   return content.match(regex)?.length || 0;
 }
 
+/**
+ * Collect all regex matches with position and length metadata.
+ */
 function collectMatches(content: string, regex: RegExp): Array<{ index: number; length: number; match: string }> {
   const matches: Array<{ index: number; length: number; match: string }> = [];
   const scanRegex = regex.global ? regex : new RegExp(regex.source, `${regex.flags}g`);
@@ -1232,6 +1247,9 @@ function collectMatches(content: string, regex: RegExp): Array<{ index: number; 
   return matches;
 }
 
+/**
+ * Validate the literal context structure used for disambiguation.
+ */
 function isLiteralContext(value: any): value is PatchLiteralContext {
   if (typeof value !== 'object' || value === null) {
     return false;
@@ -1255,6 +1273,9 @@ function isLiteralContext(value: any): value is PatchLiteralContext {
   return true;
 }
 
+/**
+ * Check whether a literal match satisfies the requested context anchors.
+ */
 function literalMatchHasContext(
   content: string,
   candidate: { index: number; length: number },
@@ -1277,6 +1298,9 @@ function literalMatchHasContext(
   return true;
 }
 
+/**
+ * Translate a supported subset of XPath expressions into CSS selectors.
+ */
 function translateXPathToCss(xpath: string): string {
   const trimmed = xpath.trim();
   const simpleTransforms: Array<{ pattern: RegExp; build: (...groups: string[]) => string }> = [
@@ -1299,6 +1323,9 @@ function translateXPathToCss(xpath: string): string {
   throw new Error(`XPath selector '${xpath}' is not supported yet. Use a CSS selector instead.`);
 }
 
+/**
+ * Validate a patch item and normalize its shape before application.
+ */
 function validatePatchShape(patch: any, patchIndex: number): NotePatch {
   if (typeof patch !== 'object' || patch === null) {
     throw new Error(`patches[${patchIndex}] must be a non-null object.`);
@@ -1368,6 +1395,9 @@ function validatePatchShape(patch: any, patchIndex: number): NotePatch {
   };
 }
 
+/**
+ * Apply a patch to HTML content using the parsed DOM tree.
+ */
 function applyHtmlPatch(content: string, patch: NotePatch, patchIndex: number): { content: string; result: PatchResult } {
   const selector = patch.mode === 'xpath' ? translateXPathToCss(patch.selector) : patch.selector;
   const root = parseHtml(content, { lowerCaseTagName: false, comment: true });
@@ -1408,6 +1438,9 @@ function applyHtmlPatch(content: string, patch: NotePatch, patchIndex: number): 
   };
 }
 
+/**
+ * Apply a line-based patch to plaintext or code content.
+ */
 function applyLinePatch(content: string, patch: NotePatch, patchIndex: number): { content: string; result: PatchResult } {
   const lines = content.split('\n');
   const selector = patch.selector;
@@ -1460,6 +1493,9 @@ function applyLinePatch(content: string, patch: NotePatch, patchIndex: number): 
   };
 }
 
+/**
+ * Apply a literal-text patch with optional context and occurrence selection.
+ */
 function applyLiteralPatch(content: string, patch: NotePatch, patchIndex: number): { content: string; result: PatchResult } {
   const scope: PatchScope = patch.scope ?? 'one';
   const searchRegex = new RegExp(escapeRegExp(patch.selector), normalizeFlags(patch.flags, 'all'));
@@ -1550,6 +1586,9 @@ function applyLiteralPatch(content: string, patch: NotePatch, patchIndex: number
   };
 }
 
+/**
+ * Apply a regex-backed search patch to the current content.
+ */
 function applySearchPatch(content: string, patch: NotePatch, patchIndex: number): { content: string; result: PatchResult } {
   const scope: PatchScope = patch.scope ?? 'one';
   const searchPattern = patch.selector;

@@ -321,6 +321,9 @@ export async function handleListChildrenNotesRequest(
   }
 }
 
+/**
+ * Backward-compatible alias for list_children_notes request handling.
+ */
 export const handleGetChildrenRequest = handleListChildrenNotesRequest;
 
 /**
