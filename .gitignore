@@ -1,6 +1,26 @@
+Trilium/
+triliumnext-mcp/
 node_modules/
 build/
 *.log
 .env*
 
+
 .playwright-mcp/
+
+package-lock.json
+
+.claude/ 
+!.claude/agents/
+!.claude/rules/
+!.claude/skills/
+
+.agents/
+!.agents/agents/
+!.agents/rules/
+!.agents/skills/
+
+.codex/
+!.codex/agents/
+!.codex/rules/
+!.codex/skills/

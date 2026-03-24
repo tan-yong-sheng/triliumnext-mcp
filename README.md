@@ -187,12 +187,15 @@ The server provides the following tools for note management:
 
 - `search_notes` - Unified search with comprehensive filtering capabilities including keyword search, date ranges, field-specific searches, attribute searches, note properties, template-based searches, note type filtering, MIME type filtering, and hierarchy navigation.
 - `resolve_note_id` - Find a note's ID by its title. Essential for getting a note's ID to use with other tools.
+- `list_children_notes` - List the direct child notes of a parent note using a deterministic search query. Returns child summaries sorted by creation date and title.
 
 ### Note Management Tools
 
 - `get_note` - Retrieve a note and its content by ID. Can also be used with regex to extract specific patterns from the content.
-- `create_note` - Create a new note. Supports 9 note types and allows creating attributes (labels and relations) in the same step.
+- `create_note` - Create a new note. Supports 10 note types and allows creating attributes (labels and relations) in the same step.
 - `update_note` - Updates a note's title or content. Requires a `mode` (`'overwrite'` or `'append'`) to specify the update type and an `expectedHash` to prevent conflicts.
+- `move_note` - Move a note to a new parent folder. Use `branchId` only when the note has multiple parent branches.
+- `patch_note` - Apply targeted batched edits using mode-based patches (`css`, `xpath`, `line`, `fragment`, `literal`, `regex`) with atomic validation. Literal patches can use `occurrence` and optional `context` to target repeated text.
 - `delete_note` - Permanently delete a note (⚠️ cannot be undone).
 
 ### Attribute Management Tools
@@ -208,6 +211,7 @@ The server provides the following tools for note management:
 - "Find my most recent 10 notes about 'n8n' since the beginning of 2024"
 - "Show me notes I've edited in the last 7 days"
 - "List all notes under 'n8n Template' folder, including subfolders"
+- "List the direct child notes of this folder"
 
 ### Content Management
 - "Add today's update to my work log" (uses `update_note` with `mode: 'append'`)
@@ -220,6 +224,9 @@ The server provides the following tools for note management:
 
 - [Docker Deployment Guide](docs/DOCKER.md) - Complete guide for running with Docker
 - [Note Management Guide](docs/manage-notes-examples/index.md) - Safe content editing with revision control
+- [Patch Note Guide](docs/manage-notes-examples/patch-note-guide.md) - Targeted batched note editing
+- [Move Note Guide](docs/manage-notes-examples/move-note-guide.md) - Moving notes between parents
+- [List Children Notes Guide](docs/manage-notes-examples/list-children-notes-guide.md) - Direct child listing
 - [User Query Examples](docs/user-query-examples.md) - Natural language query examples
 - [Search Query Examples](docs/search-examples/) - Advanced search syntax and filters
 

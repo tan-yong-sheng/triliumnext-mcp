@@ -862,9 +862,9 @@ export async function handleDeleteNote(
   };
 }
 
-// ─── get_children ────────────────────────────────────────────────────────────
+// ─── list_children_notes ─────────────────────────────────────────────────────
 
-export interface GetChildrenOperation {
+export interface ListChildrenNotesOperation {
   noteId: string;
 }
 
@@ -876,7 +876,7 @@ export interface ChildNoteSummary {
   dateModified: string;
 }
 
-export interface GetChildrenResponse {
+export interface ListChildrenNotesResponse {
   parentNoteId: string;
   totalChildCount: number;
   fetchedCount: number;
@@ -885,59 +885,48 @@ export interface GetChildrenResponse {
 }
 
 /**
- * Handle get_children operation – retrieve direct children of a note
+ * Handle list_children_notes operation – retrieve direct children of a note
  */
-export async function handleGetChildren(
-  args: GetChildrenOperation,
+export async function handleListChildrenNotes(
+  args: ListChildrenNotesOperation,
   axiosInstance: any
-): Promise<GetChildrenResponse> {
+): Promise<ListChildrenNotesResponse> {
   const { noteId } = args;
 
   if (!noteId) {
-    throw new Error("noteId is required for get_children operation.");
+    throw new Error("noteId is required for list_children_notes operation.");
   }
 
-  logVerboseApi("GET", `/notes/${noteId}`);
-  const parentNote = await axiosInstance.get(`/notes/${noteId}`);
-  const childNoteIds: string[] = parentNote.data.childNoteIds || [];
+  const searchQuery = `note.parents.noteId = '${noteId}' orderBy note.dateCreated desc, note.title`;
+  const params = new URLSearchParams();
+  params.append("search", searchQuery);
+  params.append("fastSearch", "false");
+  params.append("includeArchivedNotes", "true");
 
-  if (childNoteIds.length === 0) {
-    return { parentNoteId: noteId, totalChildCount: 0, fetchedCount: 0, failedCount: 0, children: [] };
-  }
+  const url = `/notes?${params.toString()}`;
+  logVerboseApi("GET", url);
+  const response = await axiosInstance.get(url);
 
-  logVerbose("handleGetChildren", `Fetching ${childNoteIds.length} children for ${noteId}`);
-
-  const results = await Promise.allSettled(
-    childNoteIds.map((childId: string) => {
-      logVerboseApi("GET", `/notes/${childId}`);
-      return axiosInstance.get(`/notes/${childId}`);
-    })
-  );
-
-  const children: ChildNoteSummary[] = [];
-  for (const result of results) {
-    if (result.status === 'fulfilled') {
-      const note = result.value.data;
-      children.push({
-        noteId: note.noteId,
-        title: note.title,
-        type: note.type,
-        mime: note.mime || '',
-        dateModified: note.dateModified
-      });
-    } else {
-      logVerboseError("handleGetChildren", result.reason);
-    }
-  }
+  const children: ChildNoteSummary[] = (response.data.results || []).map((note: any) => ({
+    noteId: note.noteId,
+    title: note.title,
+    type: note.type,
+    mime: note.mime || '',
+    dateModified: note.dateModified
+  }));
 
   return {
     parentNoteId: noteId,
-    totalChildCount: childNoteIds.length,
+    totalChildCount: children.length,
     fetchedCount: children.length,
-    failedCount: childNoteIds.length - children.length,
+    failedCount: 0,
     children
   };
 }
+
+export type GetChildrenOperation = ListChildrenNotesOperation;
+export type GetChildrenResponse = ListChildrenNotesResponse;
+export const handleGetChildren = handleListChildrenNotes;
 
 // ─── move_note ────────────────────────────────────────────────────────────────
 
@@ -1154,11 +1143,23 @@ export async function handleMoveNote(
 // ─── patch_note ───────────────────────────────────────────────────────────────
 
 export type PatchOperation = 'replace' | 'insert_after' | 'delete';
+export type PatchMode = 'css' | 'xpath' | 'line' | 'fragment' | 'literal' | 'regex';
+export type PatchScope = 'one' | 'all';
+
+export interface PatchLiteralContext {
+  before?: string;
+  after?: string;
+}
 
 export interface NotePatch {
+  mode: PatchMode;
   operation: PatchOperation;
   selector: string;
   content?: string;
+  scope?: PatchScope;
+  flags?: string;
+  occurrence?: number;
+  context?: PatchLiteralContext;
 }
 
 export interface PatchNoteOperation {
@@ -1169,10 +1170,12 @@ export interface PatchNoteOperation {
 
 export interface PatchResult {
   patchIndex: number;
+  mode: PatchMode;
   operation: PatchOperation;
   selector: string;
   applied: boolean;
   message: string;
+  scope?: PatchScope;
 }
 
 export interface PatchNoteResponse {
@@ -1185,70 +1188,239 @@ export interface PatchNoteResponse {
   conflict?: boolean;
 }
 
-/**
- * Apply HTML patches to a note parsed as a DOM tree.
- * Returns the modified HTML string.
- */
-function applyHtmlPatches(content: string, patches: NotePatch[]): { content: string; results: PatchResult[] } {
-  const root = parseHtml(content, { lowerCaseTagName: false, comment: true });
-  const results: PatchResult[] = [];
+const PATCHABLE_NOTE_TYPES = new Set(['text', 'code', 'mermaid']);
 
-  for (let i = 0; i < patches.length; i++) {
-    const patch = patches[i];
-    try {
-      const elements = root.querySelectorAll(patch.selector);
-      if (elements.length === 0) {
-        results.push({ patchIndex: i, operation: patch.operation, selector: patch.selector, applied: false, message: `Selector '${patch.selector}' matched 0 elements` });
-        continue;
-      }
-      if (elements.length > 1) {
-        results.push({ patchIndex: i, operation: patch.operation, selector: patch.selector, applied: false, message: `Selector '${patch.selector}' matches ${elements.length} elements — selector must be unique` });
-        continue;
-      }
-      const target = elements[0];
-      switch (patch.operation) {
-        case 'replace':
-          target.replaceWith(patch.content ?? '');
-          break;
-        case 'insert_after':
-          target.insertAdjacentHTML('afterend', patch.content ?? '');
-          break;
-        case 'delete':
-          target.remove();
-          break;
-      }
-      results.push({ patchIndex: i, operation: patch.operation, selector: patch.selector, applied: true, message: `Applied ${patch.operation} on '${patch.selector}'` });
-    } catch (err) {
-      results.push({ patchIndex: i, operation: patch.operation, selector: patch.selector, applied: false, message: `Error: ${err instanceof Error ? err.message : String(err)}` });
+function normalizeFlags(flags: string | undefined, scope: PatchScope): string {
+  const normalized = new Set((flags || '').split('').filter(Boolean));
+
+  if (scope === 'all') {
+    normalized.add('g');
+  } else {
+    normalized.delete('g');
+  }
+
+  return Array.from(normalized).join('');
+}
+
+function countMatches(content: string, regex: RegExp): number {
+  return content.match(regex)?.length || 0;
+}
+
+function collectMatches(content: string, regex: RegExp): Array<{ index: number; length: number; match: string }> {
+  const matches: Array<{ index: number; length: number; match: string }> = [];
+  const scanRegex = regex.global ? regex : new RegExp(regex.source, `${regex.flags}g`);
+
+  let result: RegExpExecArray | null;
+  while ((result = scanRegex.exec(content)) !== null) {
+    matches.push({
+      index: result.index,
+      length: result[0].length,
+      match: result[0]
+    });
+
+    if (result[0].length === 0) {
+      scanRegex.lastIndex += 1;
     }
   }
 
-  return { content: root.toString(), results };
+  return matches;
 }
 
-/**
- * Apply line-based patches to plain-text / code note content.
- * selector is either a 1-based line number string ("5") or a unique text fragment.
- */
-function applyLinePatch(lines: string[], patch: NotePatch, patchIndex: number): { lines: string[]; result: PatchResult } {
+function isLiteralContext(value: any): value is PatchLiteralContext {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  const hasBefore = value.before !== undefined;
+  const hasAfter = value.after !== undefined;
+
+  if (!hasBefore && !hasAfter) {
+    return false;
+  }
+
+  if (hasBefore && (typeof value.before !== 'string' || value.before.length === 0)) {
+    return false;
+  }
+
+  if (hasAfter && (typeof value.after !== 'string' || value.after.length === 0)) {
+    return false;
+  }
+
+  return true;
+}
+
+function literalMatchHasContext(
+  content: string,
+  candidate: { index: number; length: number },
+  context: PatchLiteralContext
+): boolean {
+  if (context.before !== undefined) {
+    const beforeIndex = content.lastIndexOf(context.before, candidate.index);
+    if (beforeIndex === -1 || beforeIndex + context.before.length > candidate.index) {
+      return false;
+    }
+  }
+
+  if (context.after !== undefined) {
+    const afterIndex = content.indexOf(context.after, candidate.index + candidate.length);
+    if (afterIndex === -1 || afterIndex < candidate.index + candidate.length) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function translateXPathToCss(xpath: string): string {
+  const trimmed = xpath.trim();
+  const simpleTransforms: Array<{ pattern: RegExp; build: (...groups: string[]) => string }> = [
+    { pattern: /^\/\/([a-zA-Z][\w-]*)$/, build: (tag) => tag },
+    { pattern: /^\/\/\*\[@id=['"]([^'"]+)['"]\]$/, build: (id) => `#${id}` },
+    { pattern: /^\/\/([a-zA-Z][\w-]*)\[@id=['"]([^'"]+)['"]\]$/, build: (tag, id) => `${tag}#${id}` },
+    { pattern: /^\/\/\*\[@class=['"]([^'"]+)['"]\]$/, build: (cls) => `.${cls}` },
+    { pattern: /^\/\/([a-zA-Z][\w-]*)\[@class=['"]([^'"]+)['"]\]$/, build: (tag, cls) => `${tag}.${cls}` },
+    { pattern: /^\/\/\*\[contains\(@class,\s*['"]([^'"]+)['"]\)\]$/, build: (cls) => `[class*="${cls}"]` },
+    { pattern: /^\/\/([a-zA-Z][\w-]*)\[contains\(@class,\s*['"]([^'"]+)['"]\)\]$/, build: (tag, cls) => `${tag}[class*="${cls}"]` }
+  ];
+
+  for (const transform of simpleTransforms) {
+    const match = trimmed.match(transform.pattern);
+    if (match) {
+      return transform.build(...match.slice(1));
+    }
+  }
+
+  throw new Error(`XPath selector '${xpath}' is not supported yet. Use a CSS selector instead.`);
+}
+
+function validatePatchShape(patch: any, patchIndex: number): NotePatch {
+  if (typeof patch !== 'object' || patch === null) {
+    throw new Error(`patches[${patchIndex}] must be a non-null object.`);
+  }
+
+  if (!['css', 'xpath', 'line', 'fragment', 'literal', 'regex'].includes(patch.mode)) {
+    throw new Error(`patches[${patchIndex}].mode must be one of 'css', 'xpath', 'line', 'fragment', 'literal', or 'regex'.`);
+  }
+
+  if (!['replace', 'insert_after', 'delete'].includes(patch.operation)) {
+    throw new Error(`patches[${patchIndex}].operation must be 'replace', 'insert_after', or 'delete'.`);
+  }
+
+  if (typeof patch.selector !== 'string' || patch.selector.trim().length === 0) {
+    throw new Error(`patches[${patchIndex}].selector must be a non-empty string.`);
+  }
+
+  if (patch.operation !== 'delete' && typeof patch.content !== 'string') {
+    throw new Error(`patches[${patchIndex}].content must be a string for operation '${patch.operation}'.`);
+  }
+
+  if (patch.scope !== undefined && patch.scope !== 'one' && patch.scope !== 'all') {
+    throw new Error(`patches[${patchIndex}].scope must be either 'one' or 'all'.`);
+  }
+
+  if (patch.scope === 'all' && !['literal', 'regex'].includes(patch.mode)) {
+    throw new Error(`patches[${patchIndex}].scope='all' is only supported for literal and regex patches.`);
+  }
+
+  if (patch.occurrence !== undefined) {
+    if (patch.mode !== 'literal') {
+      throw new Error(`patches[${patchIndex}].occurrence is only supported for literal patches.`);
+    }
+
+    if (!Number.isInteger(patch.occurrence) || patch.occurrence < 1) {
+      throw new Error(`patches[${patchIndex}].occurrence must be a positive integer.`);
+    }
+  }
+
+  if (patch.context !== undefined) {
+    if (patch.mode !== 'literal') {
+      throw new Error(`patches[${patchIndex}].context is only supported for literal patches.`);
+    }
+
+    if (!isLiteralContext(patch.context)) {
+      throw new Error(`patches[${patchIndex}].context must include a non-empty 'before' or 'after' string.`);
+    }
+  }
+
+  if (patch.scope === 'all' && (patch.occurrence !== undefined || patch.context !== undefined)) {
+    throw new Error(`patches[${patchIndex}].occurrence and context cannot be used with scope='all'.`);
+  }
+
+  return {
+    mode: patch.mode,
+    operation: patch.operation,
+    selector: patch.selector,
+    content: patch.content,
+    scope: patch.scope,
+    flags: patch.flags,
+    occurrence: patch.occurrence,
+    context: patch.context
+  };
+}
+
+function applyHtmlPatch(content: string, patch: NotePatch, patchIndex: number): { content: string; result: PatchResult } {
+  const selector = patch.mode === 'xpath' ? translateXPathToCss(patch.selector) : patch.selector;
+  const root = parseHtml(content, { lowerCaseTagName: false, comment: true });
+  const elements = root.querySelectorAll(selector);
+
+  if (elements.length === 0) {
+    throw new Error(`patches[${patchIndex}].selector '${patch.selector}' matched 0 elements.`);
+  }
+
+  if (elements.length > 1) {
+    throw new Error(`patches[${patchIndex}].selector '${patch.selector}' matched ${elements.length} elements; the selector must be unique.`);
+  }
+
+  const target = elements[0];
+
+  switch (patch.operation) {
+    case 'replace':
+      target.replaceWith(patch.content ?? '');
+      break;
+    case 'insert_after':
+      target.insertAdjacentHTML('afterend', patch.content ?? '');
+      break;
+    case 'delete':
+      target.remove();
+      break;
+  }
+
+  return {
+    content: root.toString(),
+    result: {
+      patchIndex,
+      mode: patch.mode,
+      operation: patch.operation,
+      selector: patch.selector,
+      applied: true,
+      message: `Applied ${patch.mode} ${patch.operation} on '${patch.selector}'`
+    }
+  };
+}
+
+function applyLinePatch(content: string, patch: NotePatch, patchIndex: number): { content: string; result: PatchResult } {
+  const lines = content.split('\n');
   const selector = patch.selector;
-  const asNum = parseInt(selector, 10);
-  let lineIndex: number;
+  let lineIndex: number | null = null;
 
   if (/^\d+$/.test(selector)) {
-    lineIndex = asNum - 1;
+    lineIndex = Number(selector) - 1;
     if (lineIndex < 0 || lineIndex >= lines.length) {
-      return { lines, result: { patchIndex, operation: patch.operation, selector, applied: false, message: `Line ${asNum} is out of range (note has ${lines.length} lines)` } };
+      throw new Error(`patches[${patchIndex}].selector line ${selector} is out of range for a note with ${lines.length} lines.`);
     }
   } else {
-    const matches = lines.reduce<number[]>((acc, line, idx) =>
-      line.includes(selector) ? [...acc, idx] : acc, []);
+    const matches = lines.reduce<number[]>((acc, line, idx) => (
+      line.includes(selector) ? [...acc, idx] : acc
+    ), []);
+
     if (matches.length === 0) {
-      return { lines, result: { patchIndex, operation: patch.operation, selector, applied: false, message: `No line contains '${selector}'` } };
+      throw new Error(`patches[${patchIndex}].selector '${selector}' matched no lines.`);
     }
+
     if (matches.length > 1) {
-      return { lines, result: { patchIndex, operation: patch.operation, selector, applied: false, message: `Fragment selector '${selector}' matches ${matches.length} lines — selector must be unique` } };
+      throw new Error(`patches[${patchIndex}].selector '${selector}' matched ${matches.length} lines; the selector must be unique.`);
     }
+
     lineIndex = matches[0];
   }
 
@@ -1265,13 +1437,158 @@ function applyLinePatch(lines: string[], patch: NotePatch, patchIndex: number): 
       break;
   }
 
-  return { lines: newLines, result: { patchIndex, operation: patch.operation, selector, applied: true, message: `Applied ${patch.operation} at line ${lineIndex + 1}` } };
+  return {
+    content: newLines.join('\n'),
+    result: {
+      patchIndex,
+      mode: patch.mode,
+      operation: patch.operation,
+      selector,
+      applied: true,
+      message: `Applied ${patch.mode} ${patch.operation} at line ${lineIndex + 1}`
+    }
+  };
+}
+
+function applyLiteralPatch(content: string, patch: NotePatch, patchIndex: number): { content: string; result: PatchResult } {
+  const scope: PatchScope = patch.scope ?? 'one';
+  const searchRegex = new RegExp(escapeRegExp(patch.selector), normalizeFlags(patch.flags, 'all'));
+  const matches = collectMatches(content, searchRegex);
+
+  if (matches.length === 0) {
+    throw new Error(`patches[${patchIndex}].selector '${patch.selector}' matched no text.`);
+  }
+
+  const filteredMatches = patch.context
+    ? matches.filter((match) => literalMatchHasContext(content, match, patch.context!))
+    : matches;
+
+  if (filteredMatches.length === 0) {
+    throw new Error(`patches[${patchIndex}].context did not match any occurrence of '${patch.selector}'.`);
+  }
+
+  if (scope === 'all') {
+    const replaceRegex = new RegExp(escapeRegExp(patch.selector), normalizeFlags(patch.flags, 'all'));
+
+    let nextContent = content;
+    switch (patch.operation) {
+      case 'replace':
+        nextContent = content.replace(replaceRegex, patch.content ?? '');
+        break;
+      case 'insert_after':
+        nextContent = content.replace(replaceRegex, (match) => match + (patch.content ?? ''));
+        break;
+      case 'delete':
+        nextContent = content.replace(replaceRegex, '');
+        break;
+    }
+
+    return {
+      content: nextContent,
+      result: {
+        patchIndex,
+        mode: patch.mode,
+        operation: patch.operation,
+        selector: patch.selector,
+        applied: true,
+        scope,
+        message: `Applied ${patch.mode} ${patch.operation} on '${patch.selector}' (${scope})`
+      }
+    };
+  }
+
+  let targetMatch = filteredMatches[0];
+
+  if (patch.occurrence !== undefined) {
+    if (patch.occurrence > filteredMatches.length) {
+      throw new Error(`patches[${patchIndex}].occurrence ${patch.occurrence} exceeds the ${filteredMatches.length} matching literal occurrences for '${patch.selector}'.`);
+    }
+
+    targetMatch = filteredMatches[patch.occurrence - 1];
+  } else if (filteredMatches.length !== 1) {
+    const suffix = patch.context ? 'Add occurrence to choose one of the matching literal occurrences.' : 'Add occurrence or context to disambiguate the target.';
+    throw new Error(`patches[${patchIndex}].selector '${patch.selector}' matched ${filteredMatches.length} times. ${suffix}`);
+  }
+
+  const before = content.slice(0, targetMatch.index);
+  const after = content.slice(targetMatch.index + targetMatch.length);
+  let nextContent = content;
+
+  switch (patch.operation) {
+    case 'replace':
+      nextContent = before + (patch.content ?? '') + after;
+      break;
+    case 'insert_after':
+      nextContent = before + targetMatch.match + (patch.content ?? '') + after;
+      break;
+    case 'delete':
+      nextContent = before + after;
+      break;
+  }
+
+  return {
+    content: nextContent,
+    result: {
+      patchIndex,
+      mode: patch.mode,
+      operation: patch.operation,
+      selector: patch.selector,
+      applied: true,
+      scope,
+      message: `Applied ${patch.mode} ${patch.operation} on '${patch.selector}'${patch.context ? ' with context' : ''}${patch.occurrence ? ` (occurrence ${patch.occurrence})` : ''}`
+    }
+  };
+}
+
+function applySearchPatch(content: string, patch: NotePatch, patchIndex: number): { content: string; result: PatchResult } {
+  const scope: PatchScope = patch.scope ?? 'one';
+  const searchPattern = patch.selector;
+  const flags = normalizeFlags(patch.flags, scope);
+  const countFlags = flags.includes('g') ? flags : `${flags}g`;
+  const countRegex = new RegExp(searchPattern, countFlags);
+  const matchCount = countMatches(content, countRegex);
+
+  if (matchCount === 0) {
+    throw new Error(`patches[${patchIndex}].selector '${patch.selector}' matched no text.`);
+  }
+
+  if (scope === 'one' && matchCount !== 1) {
+    throw new Error(`patches[${patchIndex}].selector '${patch.selector}' matched ${matchCount} times; set scope='all' only for broad literal/regex replacements.`);
+  }
+
+  const replaceFlags = scope === 'all' ? countFlags : flags.replace(/g/g, '');
+  const replaceRegex = new RegExp(searchPattern, replaceFlags);
+
+  let nextContent = content;
+  switch (patch.operation) {
+    case 'replace':
+      nextContent = content.replace(replaceRegex, patch.content ?? '');
+      break;
+    case 'insert_after':
+      nextContent = content.replace(replaceRegex, (match) => match + (patch.content ?? ''));
+      break;
+    case 'delete':
+      nextContent = content.replace(replaceRegex, '');
+      break;
+  }
+
+  return {
+    content: nextContent,
+    result: {
+      patchIndex,
+      mode: patch.mode,
+      operation: patch.operation,
+      selector: patch.selector,
+      applied: true,
+      scope,
+      message: `Applied ${patch.mode} ${patch.operation} on '${patch.selector}' (${scope})`
+    }
+  };
 }
 
 /**
  * Handle patch_note operation – apply targeted patches to note content.
- * Requires expectedHash (blobId from get_note) for conflict detection.
- * Creates a revision backup before writing.
+ * Uses a single batch schema and rejects the batch before writing if any patch is invalid.
  */
 export async function handlePatchNote(
   args: PatchNoteOperation,
@@ -1283,7 +1600,6 @@ export async function handlePatchNote(
     throw new Error("noteId, expectedHash, and at least one patch are required.");
   }
 
-  // Step 1: Conflict detection via blobId
   logVerboseApi("GET", `/notes/${noteId}`);
   const noteResponse = await axiosInstance.get(`/notes/${noteId}`);
   const noteData = noteResponse.data;
@@ -1301,24 +1617,83 @@ export async function handlePatchNote(
     };
   }
 
-  // Step 2: Validate note type before any content fetch or side effects
-  const PATCHABLE_TYPES = ['text', 'code', 'mermaid'];
-  if (!PATCHABLE_TYPES.includes(noteData.type)) {
+  if (!PATCHABLE_NOTE_TYPES.has(noteData.type)) {
     throw new Error(
       `patch_note only supports text, code, and mermaid note types. Note ${noteId} is type '${noteData.type}'.`
     );
   }
 
-  // Step 3: Fetch content
-  // Note: there is an inherent TOCTOU window between the blobId check above and the
-  // content PUT below — ETAPI does not support conditional writes (If-Match / ETag),
-  // so a concurrent update that lands here will overwrite the other writer's changes.
-  // This is the best optimistic-concurrency guarantee available with the current API.
   logVerboseApi("GET", `/notes/${noteId}/content`);
   const contentResponse = await axiosInstance.get(`/notes/${noteId}/content`, { responseType: 'text' });
   const originalContent: string = contentResponse.data;
 
-  // Step 4: Create revision backup (best-effort)
+  let workingContent = originalContent;
+  const patchResults: PatchResult[] = [];
+
+  for (let i = 0; i < patches.length; i++) {
+    const patch = validatePatchShape(patches[i], i);
+
+    if (noteData.type === 'text' && ['line', 'fragment'].includes(patch.mode)) {
+      throw new Error(`patches[${i}].mode='${patch.mode}' is not supported for text notes. Use css, xpath, literal, or regex.`);
+    }
+
+    if ((noteData.type === 'code' || noteData.type === 'mermaid') && ['css', 'xpath'].includes(patch.mode)) {
+      throw new Error(`patches[${i}].mode='${patch.mode}' is not supported for ${noteData.type} notes. Use line, fragment, literal, or regex.`);
+    }
+
+    if (noteData.type === 'text' && ['css', 'xpath'].includes(patch.mode)) {
+      const result = applyHtmlPatch(workingContent, patch, i);
+      workingContent = result.content;
+      patchResults.push(result.result);
+      continue;
+    }
+
+    if ((noteData.type === 'code' || noteData.type === 'mermaid') && ['line', 'fragment'].includes(patch.mode)) {
+      const result = applyLinePatch(workingContent, patch, i);
+      workingContent = result.content;
+      patchResults.push(result.result);
+      continue;
+    }
+
+    if (patch.mode === 'literal') {
+      const result = applyLiteralPatch(workingContent, patch, i);
+      workingContent = result.content;
+      patchResults.push(result.result);
+      continue;
+    }
+
+    const result = applySearchPatch(workingContent, patch, i);
+    workingContent = result.content;
+    patchResults.push(result.result);
+  }
+
+  const validationResult = await validateContentForNoteType(
+    workingContent,
+    noteData.type as NoteType,
+    originalContent
+  );
+
+  if (!validationResult.valid) {
+    throw new Error(`CONTENT_TYPE_MISMATCH: ${validationResult.error}`);
+  }
+
+  const finalContent = validationResult.content;
+  const correctionMsg = finalContent !== workingContent ? " (content auto-corrected)" : "";
+
+  logVerboseApi("GET", `/notes/${noteId}`);
+  const recheckResponse = await axiosInstance.get(`/notes/${noteId}`);
+  if (recheckResponse.data.blobId !== expectedHash) {
+    return {
+      noteId,
+      revisionCreated: false,
+      patchResults: [],
+      appliedCount: 0,
+      failedCount: patches.length,
+      message: `CONFLICT: Note was modified after patches were computed. Current blobId: ${recheckResponse.data.blobId}, expected: ${expectedHash}. Call get_note again to get the latest content.`,
+      conflict: true
+    };
+  }
+
   let revisionCreated = false;
   try {
     logVerboseApi("POST", `/notes/${noteId}/revision`);
@@ -1328,53 +1703,18 @@ export async function handlePatchNote(
     logVerboseError("handlePatchNote", revErr);
   }
 
-  // Step 5: Apply patches
-  const isHtmlNote = noteData.type === 'text';
-  let patchedContent: string;
-  let patchResults: PatchResult[];
+  logVerboseApi("PUT", `/notes/${noteId}/content`);
+  const putResponse = await axiosInstance.put(`/notes/${noteId}/content`, finalContent, {
+    headers: { 'Content-Type': 'text/plain' }
+  });
 
-  if (isHtmlNote) {
-    const result = applyHtmlPatches(originalContent, patches);
-    patchedContent = result.content;
-    patchResults = result.results;
-  } else {
-    let lines = originalContent.split('\n');
-    patchResults = [];
-    for (let i = 0; i < patches.length; i++) {
-      const { lines: newLines, result } = applyLinePatch(lines, patches[i], i);
-      lines = newLines;
-      patchResults.push(result);
-    }
-    patchedContent = lines.join('\n');
+  if (putResponse.status !== 204) {
+    throw new Error(`Unexpected status from content PUT: ${putResponse.status}`);
   }
 
-  const appliedCount = patchResults.filter(r => r.applied).length;
-  const failedCount = patchResults.filter(r => !r.applied).length;
-
-  // Step 6: Write only if something changed
-  if (appliedCount > 0) {
-    // Re-check blobId immediately before the PUT to narrow the TOCTOU window.
-    logVerboseApi("GET", `/notes/${noteId}`);
-    const recheckResponse = await axiosInstance.get(`/notes/${noteId}`);
-    if (recheckResponse.data.blobId !== expectedHash) {
-      return {
-        noteId,
-        revisionCreated,
-        patchResults: [],
-        appliedCount: 0,
-        failedCount: patches.length,
-        message: `CONFLICT: Note was modified after patches were computed. Current blobId: ${recheckResponse.data.blobId}, expected: ${expectedHash}. Call get_note again to get the latest content.`,
-        conflict: true
-      };
-    }
-    logVerboseApi("PUT", `/notes/${noteId}/content`);
-    const putResponse = await axiosInstance.put(`/notes/${noteId}/content`, patchedContent, {
-      headers: { 'Content-Type': 'text/plain' }
-    });
-    if (putResponse.status !== 204) {
-      throw new Error(`Unexpected status from content PUT: ${putResponse.status}`);
-    }
-  }
+  const appliedCount = patchResults.length;
+  const failedCount = 0;
+  const revisionMsg = revisionCreated ? " (revision created)" : " (no revision)";
 
   return {
     noteId,
@@ -1382,7 +1722,7 @@ export async function handlePatchNote(
     patchResults,
     appliedCount,
     failedCount,
-    message: `Applied ${appliedCount}/${patches.length} patches to note ${noteId}` + (failedCount > 0 ? ` (${failedCount} failed)` : '')
+    message: `Applied ${appliedCount}/${patches.length} patches to note ${noteId}${correctionMsg}${revisionMsg}`
   };
 }
 

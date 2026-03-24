@@ -31,7 +31,7 @@ export function createWriteTools(): any[] {
           },
           type: {
             type: "string",
-            enum: ["text", "code", "render", "search", "relationMap", "book", "noteMap", "mermaid", "webView", "file", "image"],
+            enum: ["text", "code", "canvas", "render", "search", "relationMap", "book", "noteMap", "mermaid", "webView", "file", "image"],
             description: "Type of note (aligned with TriliumNext ETAPI specification). For file uploads: Use 'image' for Images (JPG/JPEG/PNG/WebP), 'file' for Documents & Audio (PDF/DOCX/MP3/WAV/M4A). Other types: 'text', 'code', 'render', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView'.",
           },
           mime: {
@@ -162,7 +162,7 @@ export function createWriteTools(): any[] {
     },
     {
       name: "patch_note",
-      description: "Apply targeted patches to note content without replacing the entire content. WORKFLOW: 1) Call get_note to obtain current content and contentHash (blobId), 2) Design patches, 3) Call patch_note with expectedHash. For text/HTML notes use CSS selectors (e.g. 'p', 'h1', '#my-id', '.my-class'). For code/plaintext notes use a 1-based line number as a string (e.g. '5') or a unique text fragment that appears on exactly one line. Patches are applied in array order.",
+      description: "Apply targeted patches to a note using one unified batch schema. WORKFLOW: 1) Call get_note to obtain current content and contentHash (blobId), 2) Design patches, 3) Call patch_note with expectedHash. Use mode='css' for HTML/text selectors, mode='xpath' for simple XPath expressions, mode='line' or mode='fragment' for code/plaintext line edits, and mode='literal' or mode='regex' for text search-replace. Literal mode supports optional occurrence/context disambiguation for repeated text. patch_note always creates a revision before writing and does not expose a revision toggle. Each patch item uses the same selector field, so the model only needs one schema family. Set scope='all' only when you explicitly want multiple matches replaced. Patches are validated as a batch before any write occurs.",
       inputSchema: {
         type: "object",
         properties: {
@@ -176,71 +176,63 @@ export function createWriteTools(): any[] {
           },
           patches: {
             type: "array",
-            description: "Ordered list of patch operations to apply.",
+            description: "Batch list of patch operations to apply atomically.",
             minItems: 1,
             items: {
               type: "object",
               properties: {
+                mode: {
+                  type: "string",
+                  enum: ["css", "xpath", "line", "fragment", "literal", "regex"],
+                  description: "Patch mode: css/xpath for structure-aware editing, line/fragment for code/plaintext targeting, literal/regex for search-and-replace editing."
+                },
                 operation: {
                   type: "string",
                   enum: ["replace", "insert_after", "delete"],
-                  description: "'replace' replaces the matched element/line. 'insert_after' inserts after it. 'delete' removes it."
+                  description: "'replace' replaces the matched target. 'insert_after' inserts after it. 'delete' removes it."
                 },
                 selector: {
                   type: "string",
-                  description: "For text/HTML notes: CSS selector (e.g. 'p', 'h2', '.class', '#id'). For code/plaintext notes: 1-based line number as string (e.g. '3') or unique text fragment from the target line."
+                  description: "Target selector/pattern for the chosen mode: CSS selector, XPath expression, 1-based line number, unique fragment, literal search text, or regex pattern."
                 },
                 content: {
                   type: "string",
                   description: "Replacement or insertion content. Required for 'replace' and 'insert_after'. For HTML notes provide HTML; for code notes provide plain text. Not required for 'delete'."
+                },
+                scope: {
+                  type: "string",
+                  enum: ["one", "all"],
+                  description: "Optional match scope. Use 'all' only for literal/regex replacements when you explicitly want every match replaced. Defaults to a single-match, precision-first behavior. For literal patches, use occurrence/context when you need to pick one match out of many."
+                },
+                flags: {
+                  type: "string",
+                  description: "Optional regex flags for literal/regex modes. Use when you need case-insensitive or global search behavior."
+                },
+                occurrence: {
+                  type: "number",
+                  minimum: 1,
+                  description: "Literal-only 1-based match index after filtering by context. Use when the same text appears multiple times and you want the nth occurrence."
+                },
+                context: {
+                  type: "object",
+                  description: "Literal-only surrounding text hints that must appear around the selected match. Provide before and/or after snippets to narrow repeated text to one location.",
+                  properties: {
+                    before: {
+                      type: "string",
+                      description: "Text that must appear before the selected literal match."
+                    },
+                    after: {
+                      type: "string",
+                      description: "Text that must appear after the selected literal match."
+                    }
+                  }
                 }
               },
-              required: ["operation", "selector"]
+              required: ["mode", "operation", "selector"]
             }
           }
         },
         required: ["noteId", "expectedHash", "patches"]
-      }
-    },
-    {
-      name: "search_and_replace_note",
-      description: "Search and replace content within a single note. When someone wants to replace text in a note, first call get_note to get the current content and hash, then use this function to make the changes. This ensures you're working with the latest version of their note.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          noteId: {
-            type: "string",
-            description: "ID of the note to perform search and replace on"
-          },
-          searchPattern: {
-            type: "string",
-            description: "What to search for in the note.",
-          },
-          replacePattern: {
-            type: "string",
-            description: "What to replace it with. For regex: supports patterns like '$1' for captured groups.",
-          },
-          useRegex: {
-            type: "boolean",
-            description: "Whether to use regex patterns (default: true).",
-            default: true
-          },
-          searchFlags: {
-            type: "string",
-            description: "Search options. Defaults to 'gi' (global, case-insensitive). Remove 'i' for exact case matching.",
-            default: "gi"
-          },
-          expectedHash: {
-            type: "string",
-            description: "⚠️ REQUIRED: Content hash from get_note response. Always get the note content first to obtain this hash.",
-          },
-          revision: {
-            type: "boolean",
-            description: "Whether to create a backup before replacing (default: true for safety).",
-            default: true
-          }
-        },
-        required: ["noteId", "searchPattern", "replacePattern", "expectedHash"]
       }
     },
   ];
@@ -254,14 +246,14 @@ export function createReadTools(): any[] {
 
   return [
     {
-      name: "get_children",
-      description: "Retrieve all direct child notes of a given note. Returns an array of child note summaries including noteId, title, type, mime, and dateModified. Use this to explore the note hierarchy or list the contents of a folder/book note.",
+      name: "list_children_notes",
+      description: "List all direct child notes of a given note using a deterministic Trilium search query. Returns child note summaries including noteId, title, type, mime, and dateModified, sorted by dateCreated desc then title.",
       inputSchema: {
         type: "object",
         properties: {
           noteId: {
             type: "string",
-            description: "ID of the parent note whose children to retrieve"
+            description: "ID of the parent note whose direct children to list"
           }
         },
         required: ["noteId"]
@@ -338,7 +330,7 @@ export function createReadTools(): any[] {
     },
     {
       name: "search_notes",
-      description: "Unified search with comprehensive filtering capabilities including keyword search, date ranges, field-specific searches, attribute searches, note properties, template-based searches, note type filtering, MIME type filtering, and hierarchy navigation through unified searchCriteria structure. For simple keyword searches, use the 'text' parameter. For complex boolean logic like 'docker OR kubernetes', use searchCriteria with proper OR logic. For template search: use relation type with 'template.title' property and built-in template values like 'Calendar', 'Board', 'Text Snippet', 'Grid View', 'List View', 'Table', 'Geo Map'. For note type search: use noteProperty type with 'type' property and values from the 9 supported ETAPI types: 'text', 'code', 'render', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView'. For MIME type search: use noteProperty type with 'mime' property and MIME values like 'text/javascript', 'text/x-python', 'text/vnd.mermaid', 'application/json'. Use hierarchy properties like 'parents.noteId', 'children.noteId', or 'ancestors.noteId' for navigation.",
+      description: "Unified search with comprehensive filtering capabilities including keyword search, date ranges, field-specific searches, attribute searches, note properties, template-based searches, note type filtering, MIME type filtering, and hierarchy navigation through unified searchCriteria structure. For simple keyword searches, use the 'text' parameter. For complex boolean logic like 'docker OR kubernetes', use searchCriteria with proper OR logic. For template search: use relation type with 'template.title' property and built-in template values like 'Calendar', 'Board', 'Text Snippet', 'Grid View', 'List View', 'Table', 'Geo Map'. For note type search: use noteProperty type with 'type' property and values from the 10 supported ETAPI types: 'text', 'code', 'canvas', 'render', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView'. For MIME type search: use noteProperty type with 'mime' property and MIME values like 'text/javascript', 'text/x-python', 'text/vnd.mermaid', 'application/json'. Use hierarchy properties like 'parents.noteId', 'children.noteId', or 'ancestors.noteId' for navigation.",
       inputSchema: {
         type: "object",
         properties: searchProperties,

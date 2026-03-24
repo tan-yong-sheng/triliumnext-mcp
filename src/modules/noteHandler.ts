@@ -12,8 +12,8 @@ import {
   handleDeleteNote,
   handleGetNote,
   handleSearchReplaceNote,
-  handleGetChildren,
-  GetChildrenOperation,
+  handleListChildrenNotes,
+  ListChildrenNotesOperation,
   handleMoveNote,
   MoveNoteOperation,
   handlePatchNote,
@@ -294,15 +294,15 @@ export async function handleGetNoteRequest(
 }
 
 /**
- * Handle get_children tool requests
+ * Handle list_children_notes tool requests
  */
-export async function handleGetChildrenRequest(
+export async function handleListChildrenNotesRequest(
   args: any,
   axiosInstance: any,
   permissionChecker: PermissionChecker
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
   if (!permissionChecker.hasPermission("READ")) {
-    throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to get note children.");
+    throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to list note children.");
   }
 
   if (!args.noteId) {
@@ -310,8 +310,8 @@ export async function handleGetChildrenRequest(
   }
 
   try {
-    const operation: GetChildrenOperation = { noteId: args.noteId };
-    const result = await handleGetChildren(operation, axiosInstance);
+    const operation: ListChildrenNotesOperation = { noteId: args.noteId };
+    const result = await handleListChildrenNotes(operation, axiosInstance);
     return {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
     };
@@ -320,6 +320,8 @@ export async function handleGetChildrenRequest(
     throw new McpError(ErrorCode.InternalError, error instanceof Error ? error.message : String(error));
   }
 }
+
+export const handleGetChildrenRequest = handleListChildrenNotesRequest;
 
 /**
  * Handle move_note tool requests
@@ -389,6 +391,9 @@ export async function handlePatchNoteRequest(
     if (typeof p !== 'object' || p === null) {
       throw new McpError(ErrorCode.InvalidParams, `patches[${i}] must be a non-null object.`);
     }
+    if (!['css', 'xpath', 'line', 'fragment', 'literal', 'regex'].includes(p.mode)) {
+      throw new McpError(ErrorCode.InvalidParams, `patches[${i}].mode must be one of 'css', 'xpath', 'line', 'fragment', 'literal', or 'regex'.`);
+    }
     if (!['replace', 'insert_after', 'delete'].includes(p.operation)) {
       throw new McpError(ErrorCode.InvalidParams, `patches[${i}].operation must be 'replace', 'insert_after', or 'delete'.`);
     }
@@ -397,6 +402,30 @@ export async function handlePatchNoteRequest(
     }
     if (p.operation !== 'delete' && typeof p.content !== 'string') {
       throw new McpError(ErrorCode.InvalidParams, `patches[${i}].content must be a string for operation '${p.operation}'.`);
+    }
+    if (p.scope !== undefined && p.scope !== 'one' && p.scope !== 'all') {
+      throw new McpError(ErrorCode.InvalidParams, `patches[${i}].scope must be either 'one' or 'all'.`);
+    }
+    if (p.occurrence !== undefined) {
+      if (p.mode !== 'literal') {
+        throw new McpError(ErrorCode.InvalidParams, `patches[${i}].occurrence is only supported for literal patches.`);
+      }
+      if (!Number.isInteger(p.occurrence) || p.occurrence < 1) {
+        throw new McpError(ErrorCode.InvalidParams, `patches[${i}].occurrence must be a positive integer.`);
+      }
+    }
+    if (p.context !== undefined) {
+      if (p.mode !== 'literal') {
+        throw new McpError(ErrorCode.InvalidParams, `patches[${i}].context is only supported for literal patches.`);
+      }
+      const hasBefore = typeof p.context.before === 'string' && p.context.before.length > 0;
+      const hasAfter = typeof p.context.after === 'string' && p.context.after.length > 0;
+      if (!hasBefore && !hasAfter) {
+        throw new McpError(ErrorCode.InvalidParams, `patches[${i}].context must include a non-empty 'before' or 'after' string.`);
+      }
+    }
+    if (p.scope === 'all' && (p.occurrence !== undefined || p.context !== undefined)) {
+      throw new McpError(ErrorCode.InvalidParams, `patches[${i}].occurrence and context cannot be used with scope='all'.`);
     }
   }
 
@@ -417,7 +446,7 @@ export async function handlePatchNoteRequest(
 }
 
 /**
- * Handle search_and_replace_note tool requests
+ * Handle legacy search/replace helper requests
  */
 export async function handleSearchReplaceNoteRequest(
   args: any,

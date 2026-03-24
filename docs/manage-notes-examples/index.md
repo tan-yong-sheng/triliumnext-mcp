@@ -1,15 +1,18 @@
-# TriliumNext MCP - Note Creation Guide
+# TriliumNext MCP - Note Management Guide
 
-This guide provides a complete reference for creating and managing notes in TriliumNext using the MCP server's simplified, string-based content interface.
+This guide provides a complete reference for creating, editing, moving, and listing notes in TriliumNext using the MCP server's simplified, string-based content interface.
 
 ## Overview
 
-The `create_note` and `update_note` tools use a simplified string-based interface for content. While the internal TypeScript interfaces support more complex structures, the MCP tools expose a streamlined string-based API that's easier to use.
+The MCP note tools use a simplified string-based interface for content where possible. While the internal TypeScript interfaces support more complex structures, the MCP tools expose a streamlined API that's easier to use.
 
 - **String-based Content**: The `content` parameter accepts a single string for all note types.
 - **Smart Content Processing**: For `text` notes, the server auto-detects Markdown, HTML, or plain text and processes accordingly.
 - **Hash Validation**: `update_note` requires an `expectedHash` (the `blobId` from `get_note`) to prevent overwriting concurrent changes.
 - **Update Modes**: `update_note` requires a `mode` parameter (`'overwrite'` or `'append'`) to specify how content should be updated.
+- **Targeted Editing**: `patch_note` supports batched, mode-based edits with atomic validation, one shared schema, and literal disambiguation for repeated text.
+- **Hierarchy Movement**: `move_note` moves a note to a new parent folder and uses `branchId` only when a note has multiple parents.
+- **Child Listing**: `list_children_notes` returns direct child note summaries with deterministic ordering, without position metadata.
 - **Attribute Management**: Create notes with labels and relations in a single step for better performance.
 
 ## Internal vs External Content Interfaces
@@ -30,7 +33,7 @@ The server automatically converts the simple string input to the appropriate int
 {
   "parentNoteId": "string",
   "title": "string",
-  "type": "text | code | render | search | relationMap | book | noteMap | mermaid | webView",
+  "type": "text | code | canvas | render | search | relationMap | book | noteMap | mermaid | webView",
   "content": "string",
   "mime": "string (optional, required for code notes)",
   "attributes": "array (optional)"
@@ -48,6 +51,45 @@ The server automatically converts the simple string input to the appropriate int
   "content": "string (optional)",
   "mime": "string (optional)",
   "revision": "boolean (optional, default: true)"
+}
+```
+
+### `patch_note`
+```json
+{
+  "noteId": "string",
+  "expectedHash": "string (required)",
+  "patches": [
+    {
+      "mode": "css | xpath | line | fragment | literal | regex",
+      "operation": "replace | insert_after | delete",
+      "selector": "string",
+      "content": "string (required for replace/insert_after)",
+      "scope": "one | all (optional, literal/regex only)",
+      "flags": "string (optional, literal/regex only)",
+      "occurrence": "number (optional, literal only)",
+      "context": {
+        "before": "string (optional, literal only)",
+        "after": "string (optional, literal only)"
+      }
+    }
+  ]
+}
+```
+
+### `move_note`
+```json
+{
+  "noteId": "string",
+  "newParentNoteId": "string",
+  "branchId": "string (optional)"
+}
+```
+
+### `list_children_notes`
+```json
+{
+  "noteId": "string"
 }
 ```
 
@@ -206,5 +248,7 @@ For detailed error handling and content validation rules, see the individual too
 - **[Note Type Reference](./note-type-reference.md)** - Detailed information about supported note types
 - **[Template Relations Guide](./template-guide.md)** - Working with built-in templates
 - **[Attribute Management Guide](./attribute-management-guide.md)** - Managing labels and relations
-- **[Search and Replace Guide](./search-and-replace-guide.md)** - Advanced content editing
+- **[Patch Note Guide](./patch-note-guide.md)** - Targeted batched note editing
+- **[Move Note Guide](./move-note-guide.md)** - Moving notes between folders and branches
+- **[List Children Notes Guide](./list-children-notes-guide.md)** - Direct child listing with deterministic ordering
 ```
