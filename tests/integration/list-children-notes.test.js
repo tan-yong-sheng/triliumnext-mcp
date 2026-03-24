@@ -79,6 +79,32 @@ describe('list_children_notes migration', () => {
     });
   });
 
+  it('escapes quotes in the parent note id search query', async () => {
+    const calls = [];
+    const axiosInstance = {
+      get: async (url) => {
+        calls.push(url);
+        const parsed = new URL(url, 'http://localhost');
+        assert.strictEqual(
+          parsed.searchParams.get('search'),
+          "note.parents.noteId = 'parent''123' orderBy note.dateCreated desc, note.title"
+        );
+
+        return {
+          data: {
+            results: []
+          }
+        };
+      }
+    };
+
+    const result = await handleListChildrenNotes({ noteId: "parent'123" }, axiosInstance);
+
+    assert.strictEqual(calls.length, 1);
+    assert.strictEqual(result.parentNoteId, "parent'123");
+    assert.strictEqual(result.totalChildCount, 0);
+  });
+
   it('routes list_children_notes requests through the note handler', async () => {
     const axiosInstance = {
       get: async () => ({

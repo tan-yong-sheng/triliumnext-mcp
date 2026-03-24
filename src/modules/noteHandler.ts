@@ -397,7 +397,7 @@ export async function handlePatchNoteRequest(
     if (!['replace', 'insert_after', 'delete'].includes(p.operation)) {
       throw new McpError(ErrorCode.InvalidParams, `patches[${i}].operation must be 'replace', 'insert_after', or 'delete'.`);
     }
-    if (typeof p.selector !== 'string' || p.selector.length === 0) {
+    if (typeof p.selector !== 'string' || p.selector.trim().length === 0) {
       throw new McpError(ErrorCode.InvalidParams, `patches[${i}].selector must be a non-empty string.`);
     }
     if (p.operation !== 'delete' && typeof p.content !== 'string') {

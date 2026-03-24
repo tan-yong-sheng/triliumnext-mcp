@@ -2,6 +2,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 
 import { createWriteTools } from '../../build/modules/toolDefinitions.js';
 import { handlePatchNote } from '../../build/modules/noteManager.js';
@@ -181,6 +182,84 @@ describe('patch_note unification', () => {
     );
 
     assert.strictEqual(revisionCalls, 0);
+    assert.strictEqual(putCalls, 0);
+  });
+
+  it('rejects whitespace-only selectors in the handler before dispatching', async () => {
+    let getCalls = 0;
+
+    const axiosInstance = {
+      get: async () => {
+        getCalls += 1;
+        throw new Error('should not be called');
+      }
+    };
+
+    const permissionChecker = {
+      hasPermission: (permission) => permission === 'WRITE'
+    };
+
+    await assert.rejects(
+      () => handlePatchNoteRequest(
+        {
+          noteId: 'abc123',
+          expectedHash: 'hash-1',
+          patches: [
+            {
+              mode: 'css',
+              operation: 'replace',
+              selector: '   ',
+              content: '<h1>New Title</h1>'
+            }
+          ]
+        },
+        axiosInstance,
+        permissionChecker
+      ),
+      (error) => error.code === ErrorCode.InvalidParams && /selector/.test(error.message)
+    );
+
+    assert.strictEqual(getCalls, 0);
+  });
+
+  it('rejects unsafe regex patterns before applying search patches', async () => {
+    let putCalls = 0;
+
+    const axiosInstance = {
+      get: async (url) => {
+        if (url === '/notes/abc123') {
+          return { data: { blobId: 'hash-4', type: 'text' } };
+        }
+
+        if (url === '/notes/abc123/content') {
+          return { data: 'aaaaab' };
+        }
+
+        throw new Error(`Unexpected GET ${url}`);
+      },
+      post: async () => ({ status: 204 }),
+      put: async () => {
+        putCalls += 1;
+        return { status: 204 };
+      }
+    };
+
+    await assert.rejects(
+      () => handlePatchNote({
+        noteId: 'abc123',
+        expectedHash: 'hash-4',
+        patches: [
+          {
+            mode: 'regex',
+            operation: 'replace',
+            selector: '(a+)+$',
+            content: 'x'
+          }
+        ]
+      }, axiosInstance),
+      /safe regular expression/
+    );
+
     assert.strictEqual(putCalls, 0);
   });
 

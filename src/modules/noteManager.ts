@@ -4,6 +4,7 @@
  */
 
 import { parse as parseHtml } from 'node-html-parser';
+import safeRegex from 'safe-regex2';
 import { processContentArray } from '../utils/contentProcessor.js';
 import { logVerbose, logVerboseError, logVerboseApi } from '../utils/verboseUtils.js';
 import { getContentRequirements, validateContentForNoteType, extractTemplateRelation } from '../utils/contentRules.js';
@@ -211,6 +212,10 @@ function executeSearchReplace(
  */
 function escapeRegExp(string: string): string {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function escapeSearchQueryLiteral(value: string): string {
+  return value.replace(/'/g, "''");
 }
 
 /**
@@ -897,7 +902,8 @@ export async function handleListChildrenNotes(
     throw new Error("noteId is required for list_children_notes operation.");
   }
 
-  const searchQuery = `note.parents.noteId = '${noteId}' orderBy note.dateCreated desc, note.title`;
+  const safeNoteId = escapeSearchQueryLiteral(noteId);
+  const searchQuery = `note.parents.noteId = '${safeNoteId}' orderBy note.dateCreated desc, note.title`;
   const params = new URLSearchParams();
   params.append("search", searchQuery);
   params.append("fastSearch", "false");
@@ -1346,6 +1352,10 @@ function validatePatchShape(patch: any, patchIndex: number): NotePatch {
     throw new Error(`patches[${patchIndex}].occurrence and context cannot be used with scope='all'.`);
   }
 
+  if (patch.mode === 'regex' && !safeRegex(patch.selector)) {
+    throw new Error(`patches[${patchIndex}].selector '${patch.selector}' is not a safe regular expression.`);
+  }
+
   return {
     mode: patch.mode,
     operation: patch.operation,
@@ -1545,8 +1555,16 @@ function applySearchPatch(content: string, patch: NotePatch, patchIndex: number)
   const searchPattern = patch.selector;
   const flags = normalizeFlags(patch.flags, scope);
   const countFlags = flags.includes('g') ? flags : `${flags}g`;
-  const countRegex = new RegExp(searchPattern, countFlags);
-  const matchCount = countMatches(content, countRegex);
+
+  let matchCount: number;
+  try {
+    const countRegex = new RegExp(searchPattern, countFlags);
+    matchCount = countMatches(content, countRegex);
+  } catch (error) {
+    throw new Error(
+      `patches[${patchIndex}].selector '${patch.selector}' failed during regex search/replace: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
 
   if (matchCount === 0) {
     throw new Error(`patches[${patchIndex}].selector '${patch.selector}' matched no text.`);
@@ -1557,33 +1575,40 @@ function applySearchPatch(content: string, patch: NotePatch, patchIndex: number)
   }
 
   const replaceFlags = scope === 'all' ? countFlags : flags.replace(/g/g, '');
-  const replaceRegex = new RegExp(searchPattern, replaceFlags);
 
-  let nextContent = content;
-  switch (patch.operation) {
-    case 'replace':
-      nextContent = content.replace(replaceRegex, patch.content ?? '');
-      break;
-    case 'insert_after':
-      nextContent = content.replace(replaceRegex, (match) => match + (patch.content ?? ''));
-      break;
-    case 'delete':
-      nextContent = content.replace(replaceRegex, '');
-      break;
-  }
+  try {
+    const replaceRegex = new RegExp(searchPattern, replaceFlags);
 
-  return {
-    content: nextContent,
-    result: {
-      patchIndex,
-      mode: patch.mode,
-      operation: patch.operation,
-      selector: patch.selector,
-      applied: true,
-      scope,
-      message: `Applied ${patch.mode} ${patch.operation} on '${patch.selector}' (${scope})`
+    let nextContent = content;
+    switch (patch.operation) {
+      case 'replace':
+        nextContent = content.replace(replaceRegex, patch.content ?? '');
+        break;
+      case 'insert_after':
+        nextContent = content.replace(replaceRegex, (match) => match + (patch.content ?? ''));
+        break;
+      case 'delete':
+        nextContent = content.replace(replaceRegex, '');
+        break;
     }
-  };
+
+    return {
+      content: nextContent,
+      result: {
+        patchIndex,
+        mode: patch.mode,
+        operation: patch.operation,
+        selector: patch.selector,
+        applied: true,
+        scope,
+        message: `Applied ${patch.mode} ${patch.operation} on '${patch.selector}' (${scope})`
+      }
+    };
+  } catch (error) {
+    throw new Error(
+      `patches[${patchIndex}].selector '${patch.selector}' failed during regex search/replace: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
 }
 
 /**
