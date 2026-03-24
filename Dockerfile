@@ -21,7 +21,7 @@ ENV TRILIUM_API_URL=http://host.docker.internal:8080/etapi \
 
 # Note: This server uses stdio transport for MCP protocol
 LABEL description="TriliumNext MCP Server - Model Context Protocol server for TriliumNext Notes" \
-      version="0.3.15" \
+      version="0.3.17" \
       maintainer="tan-yong-sheng"
 
 # Run the MCP server

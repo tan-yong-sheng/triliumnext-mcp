@@ -11,7 +11,14 @@ import {
   handleUpdateNote,
   handleDeleteNote,
   handleGetNote,
-  handleSearchReplaceNote
+  handleSearchReplaceNote,
+  handleListChildrenNotes,
+  ListChildrenNotesOperation,
+  handleMoveNote,
+  MoveNoteOperation,
+  handlePatchNote,
+  PatchNoteOperation,
+  NotePatch
 } from "./noteManager.js";
 
 /**
@@ -24,24 +31,6 @@ export async function handleCreateNoteRequest(
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
   if (!permissionChecker.hasPermission("WRITE")) {
     throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to create notes.");
-  }
-
-  // Validate file upload requirements
-  if (args.type === 'file' || args.type === 'image') {
-    if (!args.fileUri) {
-      throw new McpError(
-        ErrorCode.InvalidParams,
-        `Parameter 'fileUri' is required when type='${args.type}'.`
-      );
-    }
-  }
-
-  // For non-file/image notes, fileUri should not be provided
-  if (args.fileUri && !['file', 'image'].includes(args.type)) {
-    throw new McpError(
-      ErrorCode.InvalidParams,
-      "Parameter 'fileUri' can only be used when type='file' or type='image'."
-    );
   }
 
   // Validate file upload requirements
@@ -305,7 +294,162 @@ export async function handleGetNoteRequest(
 }
 
 /**
- * Handle search_and_replace_note tool requests
+ * Handle list_children_notes tool requests
+ */
+export async function handleListChildrenNotesRequest(
+  args: any,
+  axiosInstance: any,
+  permissionChecker: PermissionChecker
+): Promise<{ content: Array<{ type: string; text: string }> }> {
+  if (!permissionChecker.hasPermission("READ")) {
+    throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to list note children.");
+  }
+
+  if (!args.noteId) {
+    throw new McpError(ErrorCode.InvalidParams, "Missing required parameter 'noteId'.");
+  }
+
+  try {
+    const operation: ListChildrenNotesOperation = { noteId: args.noteId };
+    const result = await handleListChildrenNotes(operation, axiosInstance);
+    return {
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
+    };
+  } catch (error) {
+    if (error instanceof McpError) throw error;
+    throw new McpError(ErrorCode.InternalError, error instanceof Error ? error.message : String(error));
+  }
+}
+
+/**
+ * Backward-compatible alias for list_children_notes request handling.
+ */
+export const handleGetChildrenRequest = handleListChildrenNotesRequest;
+
+/**
+ * Handle move_note tool requests
+ */
+export async function handleMoveNoteRequest(
+  args: any,
+  axiosInstance: any,
+  permissionChecker: PermissionChecker
+): Promise<{ content: Array<{ type: string; text: string }> }> {
+  if (!permissionChecker.hasPermission("WRITE")) {
+    throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to move notes.");
+  }
+
+  if (!args.noteId) {
+    throw new McpError(ErrorCode.InvalidParams, "Missing required parameter 'noteId'.");
+  }
+
+  if (!args.newParentNoteId) {
+    throw new McpError(ErrorCode.InvalidParams, "Missing required parameter 'newParentNoteId'.");
+  }
+
+  try {
+    const operation: MoveNoteOperation = {
+      noteId: args.noteId,
+      newParentNoteId: args.newParentNoteId,
+      branchId: args.branchId
+    };
+    const result = await handleMoveNote(operation, axiosInstance);
+    return {
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
+    };
+  } catch (error) {
+    if (error instanceof McpError) throw error;
+    throw new McpError(ErrorCode.InternalError, error instanceof Error ? error.message : String(error));
+  }
+}
+
+/**
+ * Handle patch_note tool requests
+ */
+export async function handlePatchNoteRequest(
+  args: any,
+  axiosInstance: any,
+  permissionChecker: PermissionChecker
+): Promise<{ content: Array<{ type: string; text: string }> }> {
+  if (!permissionChecker.hasPermission("WRITE")) {
+    throw new McpError(ErrorCode.InvalidRequest, "Permission denied: Not authorized to patch notes.");
+  }
+
+  if (!args.noteId) {
+    throw new McpError(ErrorCode.InvalidParams, "Missing required parameter 'noteId'.");
+  }
+
+  if (!args.expectedHash) {
+    throw new McpError(
+      ErrorCode.InvalidParams,
+      "Missing required parameter 'expectedHash'. Call get_note first to obtain the current blobId."
+    );
+  }
+
+  if (!Array.isArray(args.patches) || args.patches.length === 0) {
+    throw new McpError(ErrorCode.InvalidParams, "Missing or empty required parameter 'patches'. At least one patch is required.");
+  }
+
+  for (let i = 0; i < args.patches.length; i++) {
+    const p = args.patches[i];
+    if (typeof p !== 'object' || p === null) {
+      throw new McpError(ErrorCode.InvalidParams, `patches[${i}] must be a non-null object.`);
+    }
+    if (!['css', 'xpath', 'line', 'fragment', 'literal', 'regex'].includes(p.mode)) {
+      throw new McpError(ErrorCode.InvalidParams, `patches[${i}].mode must be one of 'css', 'xpath', 'line', 'fragment', 'literal', or 'regex'.`);
+    }
+    if (!['replace', 'insert_after', 'delete'].includes(p.operation)) {
+      throw new McpError(ErrorCode.InvalidParams, `patches[${i}].operation must be 'replace', 'insert_after', or 'delete'.`);
+    }
+    if (typeof p.selector !== 'string' || p.selector.trim().length === 0) {
+      throw new McpError(ErrorCode.InvalidParams, `patches[${i}].selector must be a non-empty string.`);
+    }
+    if (p.operation !== 'delete' && typeof p.content !== 'string') {
+      throw new McpError(ErrorCode.InvalidParams, `patches[${i}].content must be a string for operation '${p.operation}'.`);
+    }
+    if (p.scope !== undefined && p.scope !== 'one' && p.scope !== 'all') {
+      throw new McpError(ErrorCode.InvalidParams, `patches[${i}].scope must be either 'one' or 'all'.`);
+    }
+    if (p.occurrence !== undefined) {
+      if (p.mode !== 'literal') {
+        throw new McpError(ErrorCode.InvalidParams, `patches[${i}].occurrence is only supported for literal patches.`);
+      }
+      if (!Number.isInteger(p.occurrence) || p.occurrence < 1) {
+        throw new McpError(ErrorCode.InvalidParams, `patches[${i}].occurrence must be a positive integer.`);
+      }
+    }
+    if (p.context !== undefined) {
+      if (p.mode !== 'literal') {
+        throw new McpError(ErrorCode.InvalidParams, `patches[${i}].context is only supported for literal patches.`);
+      }
+      const hasBefore = typeof p.context.before === 'string' && p.context.before.length > 0;
+      const hasAfter = typeof p.context.after === 'string' && p.context.after.length > 0;
+      if (!hasBefore && !hasAfter) {
+        throw new McpError(ErrorCode.InvalidParams, `patches[${i}].context must include a non-empty 'before' or 'after' string.`);
+      }
+    }
+    if (p.scope === 'all' && (p.occurrence !== undefined || p.context !== undefined)) {
+      throw new McpError(ErrorCode.InvalidParams, `patches[${i}].occurrence and context cannot be used with scope='all'.`);
+    }
+  }
+
+  try {
+    const operation: PatchNoteOperation = {
+      noteId: args.noteId,
+      expectedHash: args.expectedHash,
+      patches: args.patches as NotePatch[]
+    };
+    const result = await handlePatchNote(operation, axiosInstance);
+    return {
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
+    };
+  } catch (error) {
+    if (error instanceof McpError) throw error;
+    throw new McpError(ErrorCode.InternalError, error instanceof Error ? error.message : String(error));
+  }
+}
+
+/**
+ * Handle legacy search/replace helper requests
  */
 export async function handleSearchReplaceNoteRequest(
   args: any,

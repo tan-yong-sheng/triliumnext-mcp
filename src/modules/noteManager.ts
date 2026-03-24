@@ -3,6 +3,8 @@
  * Handles CRUD operations for TriliumNext notes
  */
 
+import { parse as parseHtml } from 'node-html-parser';
+import safeRegex from 'safe-regex2';
 import { processContentArray } from '../utils/contentProcessor.js';
 import { logVerbose, logVerboseError, logVerboseApi } from '../utils/verboseUtils.js';
 import { getContentRequirements, validateContentForNoteType, extractTemplateRelation } from '../utils/contentRules.js';
@@ -210,6 +212,13 @@ function executeSearchReplace(
  */
 function escapeRegExp(string: string): string {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Escape a literal value for safe insertion into a Trilium search query string.
+ */
+function escapeSearchQueryLiteral(value: string): string {
+  return value.replace(/'/g, "''");
 }
 
 /**
@@ -860,6 +869,928 @@ export async function handleDeleteNote(
     message: `Deleted note: ${noteId}`
   };
 }
+
+// ─── list_children_notes ─────────────────────────────────────────────────────
+
+export interface ListChildrenNotesOperation {
+  noteId: string;
+}
+
+export interface ChildNoteSummary {
+  noteId: string;
+  title: string;
+  type: string;
+  mime: string;
+  dateModified: string;
+}
+
+export interface ListChildrenNotesResponse {
+  parentNoteId: string;
+  totalChildCount: number;
+  fetchedCount: number;
+  failedCount: number;
+  children: ChildNoteSummary[];
+}
+
+/**
+ * Handle list_children_notes operation – retrieve direct children of a note
+ */
+export async function handleListChildrenNotes(
+  args: ListChildrenNotesOperation,
+  axiosInstance: any
+): Promise<ListChildrenNotesResponse> {
+  const { noteId } = args;
+
+  if (!noteId) {
+    throw new Error("noteId is required for list_children_notes operation.");
+  }
+
+  const safeNoteId = escapeSearchQueryLiteral(noteId);
+  const searchQuery = `note.parents.noteId = '${safeNoteId}' orderBy note.dateCreated desc, note.title`;
+  const params = new URLSearchParams();
+  params.append("search", searchQuery);
+  params.append("fastSearch", "false");
+  params.append("includeArchivedNotes", "true");
+
+  const url = `/notes?${params.toString()}`;
+  logVerboseApi("GET", url);
+  const response = await axiosInstance.get(url);
+
+  const children: ChildNoteSummary[] = (response.data.results || []).map((note: any) => ({
+    noteId: note.noteId,
+    title: note.title,
+    type: note.type,
+    mime: note.mime || '',
+    dateModified: note.dateModified
+  }));
+
+  return {
+    parentNoteId: noteId,
+    totalChildCount: children.length,
+    fetchedCount: children.length,
+    failedCount: 0,
+    children
+  };
+}
+
+export type GetChildrenOperation = ListChildrenNotesOperation;
+export type GetChildrenResponse = ListChildrenNotesResponse;
+/**
+ * Backward-compatible alias for list_children_notes.
+ */
+export const handleGetChildren = handleListChildrenNotes;
+
+// ─── move_note ────────────────────────────────────────────────────────────────
+
+export interface MoveNoteOperation {
+  noteId: string;
+  newParentNoteId: string;
+  branchId?: string;
+}
+
+export interface BranchInfo {
+  branchId: string;
+  parentNoteId?: string;  // absent when details could not be fetched
+  notePosition?: number;
+  error?: string;          // present when branch details could not be fetched
+}
+
+export interface MoveNoteResponse {
+  noteId: string;
+  oldParentNoteId: string;
+  newParentNoteId: string;
+  newBranchId: string;
+  message: string;
+}
+
+export interface MoveNoteAmbiguousResponse {
+  noteId: string;
+  message: string;
+  requiresBranchId: boolean;
+  branches: BranchInfo[];
+}
+
+export type MoveNoteResult = MoveNoteResponse | MoveNoteAmbiguousResponse;
+
+/**
+ * Handle move_note operation – move a note to a new parent location.
+ * Uses DELETE + POST branch pattern because PATCH /branches cannot change parentNoteId.
+ */
+export async function handleMoveNote(
+  args: MoveNoteOperation,
+  axiosInstance: any
+): Promise<MoveNoteResult> {
+  const { noteId, newParentNoteId, branchId: providedBranchId } = args;
+
+  if (!noteId || !newParentNoteId) {
+    throw new Error("noteId and newParentNoteId are required for move_note operation.");
+  }
+
+  logVerboseApi("GET", `/notes/${noteId}`);
+  const noteResponse = await axiosInstance.get(`/notes/${noteId}`);
+  const parentBranchIds: string[] = noteResponse.data.parentBranchIds || [];
+
+  if (parentBranchIds.length === 0) {
+    throw new Error(`Note ${noteId} has no parent branches and cannot be moved.`);
+  }
+
+  let targetBranchId: string;
+
+  if (parentBranchIds.length === 1) {
+    targetBranchId = parentBranchIds[0];
+  } else if (providedBranchId) {
+    if (!parentBranchIds.includes(providedBranchId)) {
+      throw new Error(
+        `Branch ${providedBranchId} does not belong to note ${noteId}. ` +
+        `Valid branches: ${parentBranchIds.join(', ')}`
+      );
+    }
+    targetBranchId = providedBranchId;
+  } else {
+    // Multiple branches, no branchId provided – ask user to choose
+    const branchDetails = await Promise.allSettled(
+      parentBranchIds.map((bid: string) => {
+        logVerboseApi("GET", `/branches/${bid}`);
+        return axiosInstance.get(`/branches/${bid}`);
+      })
+    );
+    const branches: BranchInfo[] = branchDetails.map((r, idx) => {
+      if (r.status === 'fulfilled') {
+        return {
+          branchId: r.value.data.branchId,
+          parentNoteId: r.value.data.parentNoteId,
+          notePosition: r.value.data.notePosition
+        };
+      }
+      logVerboseError("handleMoveNote", r.reason);
+      return {
+        branchId: parentBranchIds[idx],
+        error: `Could not fetch branch details: ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`
+      };
+    });
+
+    return {
+      noteId,
+      message:
+        `Note ${noteId} exists in ${parentBranchIds.length} locations. ` +
+        `Specify 'branchId' to indicate which parent link to move.`,
+      requiresBranchId: true,
+      branches
+    };
+  }
+
+  // Get current branch to record old parent
+  logVerboseApi("GET", `/branches/${targetBranchId}`);
+  const branchResponse = await axiosInstance.get(`/branches/${targetBranchId}`);
+  const oldParentNoteId: string = branchResponse.data.parentNoteId;
+
+  // No-op check
+  if (oldParentNoteId === newParentNoteId) {
+    return {
+      noteId,
+      oldParentNoteId,
+      newParentNoteId,
+      newBranchId: targetBranchId,
+      message: `Note ${noteId} is already a child of ${newParentNoteId}. No move performed.`
+    };
+  }
+
+  // Check if note already has a branch to newParentNoteId via a different branch.
+  // If so, reuse that branch rather than creating a duplicate link.
+  const otherBranchIds = parentBranchIds.filter(bid => bid !== targetBranchId);
+  let existingDestBranchId: string | null = null;
+  if (otherBranchIds.length > 0) {
+    const otherBranchDetails = await Promise.allSettled(
+      otherBranchIds.map(bid => {
+        logVerboseApi("GET", `/branches/${bid}`);
+        return axiosInstance.get(`/branches/${bid}`);
+      })
+    );
+    for (let i = 0; i < otherBranchDetails.length; i++) {
+      const r = otherBranchDetails[i];
+      if (r.status === 'fulfilled' && r.value.data.parentNoteId === newParentNoteId) {
+        existingDestBranchId = r.value.data.branchId;
+        break;
+      }
+    }
+  }
+
+  if (existingDestBranchId) {
+    // Note is already a child of newParentNoteId via another branch — just remove the old link.
+    logVerboseApi("DELETE", `/branches/${targetBranchId}`);
+    try {
+      await axiosInstance.delete(`/branches/${targetBranchId}`);
+    } catch (deleteError: any) {
+      if (deleteError?.response?.status === 404) {
+        // Branch already gone — state is already correct.
+      } else {
+        logVerboseError("handleMoveNote", deleteError);
+        throw new Error(
+          `Move failed: note ${noteId} is already a child of ${newParentNoteId} (via ${existingDestBranchId}) ` +
+          `but the old branch ${targetBranchId} could not be removed from ${oldParentNoteId}. ` +
+          `Delete it manually.`
+        );
+      }
+    }
+    return {
+      noteId,
+      oldParentNoteId,
+      newParentNoteId,
+      newBranchId: existingDestBranchId,
+      message: `Note ${noteId} moved from ${oldParentNoteId} to ${newParentNoteId} (existing branch ${existingDestBranchId} reused; old branch ${targetBranchId} removed)`
+    };
+  }
+
+  // POST new branch first (note keeps old branch during transition, so it cannot be auto-deleted)
+  const newBranchData = { noteId, parentNoteId: newParentNoteId };
+  logVerboseApi("POST", `/branches`, newBranchData);
+  const newBranchResponse = await axiosInstance.post(`/branches`, newBranchData);
+  const newBranchId: string = newBranchResponse.data.branchId;
+
+  // Delete old branch (note now has new branch, so it is safe to remove the old one)
+  logVerboseApi("DELETE", `/branches/${targetBranchId}`);
+  try {
+    await axiosInstance.delete(`/branches/${targetBranchId}`);
+  } catch (deleteError: any) {
+    // 404 means the branch was already removed concurrently — the note is now only
+    // accessible via the new branch, so the move is effectively complete.
+    if (deleteError?.response?.status === 404) {
+      return {
+        noteId,
+        oldParentNoteId,
+        newParentNoteId,
+        newBranchId,
+        message: `Note ${noteId} moved from ${oldParentNoteId} to ${newParentNoteId} (old branch was already removed; branch: ${newBranchId})`
+      };
+    }
+    logVerboseError("handleMoveNote", deleteError);
+    logVerbose("handleMoveNote", `Failed to delete old branch ${targetBranchId}; attempting rollback of new branch ${newBranchId}`);
+    // Rollback: remove the newly-created branch so the note is not left in both locations
+    try {
+      logVerboseApi("DELETE", `/branches/${newBranchId}`);
+      await axiosInstance.delete(`/branches/${newBranchId}`);
+      logVerbose("handleMoveNote", `Rollback successful: removed new branch ${newBranchId}`);
+    } catch (rollbackError) {
+      logVerboseError("handleMoveNote", rollbackError);
+      throw new Error(
+        `Move failed and rollback failed: note ${noteId} now exists in both ${oldParentNoteId} and ${newParentNoteId}. ` +
+        `Manually delete one of the branches (old: ${targetBranchId}, new: ${newBranchId}).`
+      );
+    }
+    throw new Error(
+      `Move failed: could not delete old branch ${targetBranchId} from ${oldParentNoteId}. ` +
+      `Rollback successful — note ${noteId} remains at ${oldParentNoteId}.`
+    );
+  }
+
+  return {
+    noteId,
+    oldParentNoteId,
+    newParentNoteId,
+    newBranchId,
+    message: `Note ${noteId} moved from ${oldParentNoteId} to ${newParentNoteId} (branch: ${newBranchId})`
+  };
+}
+
+// ─── patch_note ───────────────────────────────────────────────────────────────
+
+export type PatchOperation = 'replace' | 'insert_after' | 'delete';
+export type PatchMode = 'css' | 'xpath' | 'line' | 'fragment' | 'literal' | 'regex';
+export type PatchScope = 'one' | 'all';
+
+export interface PatchLiteralContext {
+  before?: string;
+  after?: string;
+}
+
+export interface NotePatch {
+  mode: PatchMode;
+  operation: PatchOperation;
+  selector: string;
+  content?: string;
+  scope?: PatchScope;
+  flags?: string;
+  occurrence?: number;
+  context?: PatchLiteralContext;
+}
+
+export interface PatchNoteOperation {
+  noteId: string;
+  expectedHash: string;
+  patches: NotePatch[];
+}
+
+export interface PatchResult {
+  patchIndex: number;
+  mode: PatchMode;
+  operation: PatchOperation;
+  selector: string;
+  applied: boolean;
+  message: string;
+  scope?: PatchScope;
+}
+
+export interface PatchNoteResponse {
+  noteId: string;
+  revisionCreated: boolean;
+  patchResults: PatchResult[];
+  appliedCount: number;
+  failedCount: number;
+  message: string;
+  conflict?: boolean;
+}
+
+const PATCHABLE_NOTE_TYPES = new Set(['text', 'code', 'mermaid']);
+
+/**
+ * Normalize regex flags for the requested patch scope.
+ */
+function normalizeFlags(flags: string | undefined, scope: PatchScope): string {
+  const normalized = new Set((flags || '').split('').filter(Boolean));
+
+  if (scope === 'all') {
+    normalized.add('g');
+  } else {
+    normalized.delete('g');
+  }
+
+  return Array.from(normalized).join('');
+}
+
+/**
+ * Count the number of regex matches in a content string.
+ */
+function countMatches(content: string, regex: RegExp): number {
+  return content.match(regex)?.length || 0;
+}
+
+/**
+ * Collect all regex matches with position and length metadata.
+ */
+function collectMatches(content: string, regex: RegExp): Array<{ index: number; length: number; match: string }> {
+  const matches: Array<{ index: number; length: number; match: string }> = [];
+  const scanRegex = regex.global ? regex : new RegExp(regex.source, `${regex.flags}g`);
+
+  let result: RegExpExecArray | null;
+  while ((result = scanRegex.exec(content)) !== null) {
+    matches.push({
+      index: result.index,
+      length: result[0].length,
+      match: result[0]
+    });
+
+    if (result[0].length === 0) {
+      scanRegex.lastIndex += 1;
+    }
+  }
+
+  return matches;
+}
+
+/**
+ * Validate the literal context structure used for disambiguation.
+ */
+function isLiteralContext(value: any): value is PatchLiteralContext {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  const hasBefore = value.before !== undefined;
+  const hasAfter = value.after !== undefined;
+
+  if (!hasBefore && !hasAfter) {
+    return false;
+  }
+
+  if (hasBefore && (typeof value.before !== 'string' || value.before.length === 0)) {
+    return false;
+  }
+
+  if (hasAfter && (typeof value.after !== 'string' || value.after.length === 0)) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Check whether a literal match satisfies the requested context anchors.
+ */
+function literalMatchHasContext(
+  content: string,
+  candidate: { index: number; length: number },
+  context: PatchLiteralContext
+): boolean {
+  if (context.before !== undefined) {
+    const beforeIndex = content.lastIndexOf(context.before, candidate.index);
+    if (beforeIndex === -1 || beforeIndex + context.before.length > candidate.index) {
+      return false;
+    }
+  }
+
+  if (context.after !== undefined) {
+    const afterIndex = content.indexOf(context.after, candidate.index + candidate.length);
+    if (afterIndex === -1 || afterIndex < candidate.index + candidate.length) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Translate a supported subset of XPath expressions into CSS selectors.
+ */
+function translateXPathToCss(xpath: string): string {
+  const trimmed = xpath.trim();
+  const simpleTransforms: Array<{ pattern: RegExp; build: (...groups: string[]) => string }> = [
+    { pattern: /^\/\/([a-zA-Z][\w-]*)$/, build: (tag) => tag },
+    { pattern: /^\/\/\*\[@id=['"]([^'"]+)['"]\]$/, build: (id) => `#${id}` },
+    { pattern: /^\/\/([a-zA-Z][\w-]*)\[@id=['"]([^'"]+)['"]\]$/, build: (tag, id) => `${tag}#${id}` },
+    { pattern: /^\/\/\*\[@class=['"]([^'"]+)['"]\]$/, build: (cls) => `.${cls}` },
+    { pattern: /^\/\/([a-zA-Z][\w-]*)\[@class=['"]([^'"]+)['"]\]$/, build: (tag, cls) => `${tag}.${cls}` },
+    { pattern: /^\/\/\*\[contains\(@class,\s*['"]([^'"]+)['"]\)\]$/, build: (cls) => `[class*="${cls}"]` },
+    { pattern: /^\/\/([a-zA-Z][\w-]*)\[contains\(@class,\s*['"]([^'"]+)['"]\)\]$/, build: (tag, cls) => `${tag}[class*="${cls}"]` }
+  ];
+
+  for (const transform of simpleTransforms) {
+    const match = trimmed.match(transform.pattern);
+    if (match) {
+      return transform.build(...match.slice(1));
+    }
+  }
+
+  throw new Error(`XPath selector '${xpath}' is not supported yet. Use a CSS selector instead.`);
+}
+
+/**
+ * Validate a patch item and normalize its shape before application.
+ */
+function validatePatchShape(patch: any, patchIndex: number): NotePatch {
+  if (typeof patch !== 'object' || patch === null) {
+    throw new Error(`patches[${patchIndex}] must be a non-null object.`);
+  }
+
+  if (!['css', 'xpath', 'line', 'fragment', 'literal', 'regex'].includes(patch.mode)) {
+    throw new Error(`patches[${patchIndex}].mode must be one of 'css', 'xpath', 'line', 'fragment', 'literal', or 'regex'.`);
+  }
+
+  if (!['replace', 'insert_after', 'delete'].includes(patch.operation)) {
+    throw new Error(`patches[${patchIndex}].operation must be 'replace', 'insert_after', or 'delete'.`);
+  }
+
+  if (typeof patch.selector !== 'string' || patch.selector.trim().length === 0) {
+    throw new Error(`patches[${patchIndex}].selector must be a non-empty string.`);
+  }
+
+  if (patch.operation !== 'delete' && typeof patch.content !== 'string') {
+    throw new Error(`patches[${patchIndex}].content must be a string for operation '${patch.operation}'.`);
+  }
+
+  if (patch.scope !== undefined && patch.scope !== 'one' && patch.scope !== 'all') {
+    throw new Error(`patches[${patchIndex}].scope must be either 'one' or 'all'.`);
+  }
+
+  if (patch.scope === 'all' && !['literal', 'regex'].includes(patch.mode)) {
+    throw new Error(`patches[${patchIndex}].scope='all' is only supported for literal and regex patches.`);
+  }
+
+  if (patch.occurrence !== undefined) {
+    if (patch.mode !== 'literal') {
+      throw new Error(`patches[${patchIndex}].occurrence is only supported for literal patches.`);
+    }
+
+    if (!Number.isInteger(patch.occurrence) || patch.occurrence < 1) {
+      throw new Error(`patches[${patchIndex}].occurrence must be a positive integer.`);
+    }
+  }
+
+  if (patch.context !== undefined) {
+    if (patch.mode !== 'literal') {
+      throw new Error(`patches[${patchIndex}].context is only supported for literal patches.`);
+    }
+
+    if (!isLiteralContext(patch.context)) {
+      throw new Error(`patches[${patchIndex}].context must include a non-empty 'before' or 'after' string.`);
+    }
+  }
+
+  if (patch.scope === 'all' && (patch.occurrence !== undefined || patch.context !== undefined)) {
+    throw new Error(`patches[${patchIndex}].occurrence and context cannot be used with scope='all'.`);
+  }
+
+  if (patch.mode === 'regex' && !safeRegex(patch.selector)) {
+    throw new Error(`patches[${patchIndex}].selector '${patch.selector}' is not a safe regular expression.`);
+  }
+
+  return {
+    mode: patch.mode,
+    operation: patch.operation,
+    selector: patch.selector,
+    content: patch.content,
+    scope: patch.scope,
+    flags: patch.flags,
+    occurrence: patch.occurrence,
+    context: patch.context
+  };
+}
+
+/**
+ * Apply a patch to HTML content using the parsed DOM tree.
+ */
+function applyHtmlPatch(content: string, patch: NotePatch, patchIndex: number): { content: string; result: PatchResult } {
+  const selector = patch.mode === 'xpath' ? translateXPathToCss(patch.selector) : patch.selector;
+  const root = parseHtml(content, { lowerCaseTagName: false, comment: true });
+  const elements = root.querySelectorAll(selector);
+
+  if (elements.length === 0) {
+    throw new Error(`patches[${patchIndex}].selector '${patch.selector}' matched 0 elements.`);
+  }
+
+  if (elements.length > 1) {
+    throw new Error(`patches[${patchIndex}].selector '${patch.selector}' matched ${elements.length} elements; the selector must be unique.`);
+  }
+
+  const target = elements[0];
+
+  switch (patch.operation) {
+    case 'replace':
+      target.replaceWith(patch.content ?? '');
+      break;
+    case 'insert_after':
+      target.insertAdjacentHTML('afterend', patch.content ?? '');
+      break;
+    case 'delete':
+      target.remove();
+      break;
+  }
+
+  return {
+    content: root.toString(),
+    result: {
+      patchIndex,
+      mode: patch.mode,
+      operation: patch.operation,
+      selector: patch.selector,
+      applied: true,
+      message: `Applied ${patch.mode} ${patch.operation} on '${patch.selector}'`
+    }
+  };
+}
+
+/**
+ * Apply a line-based patch to plaintext or code content.
+ */
+function applyLinePatch(content: string, patch: NotePatch, patchIndex: number): { content: string; result: PatchResult } {
+  const lines = content.split('\n');
+  const selector = patch.selector;
+  let lineIndex: number | null = null;
+
+  if (/^\d+$/.test(selector)) {
+    lineIndex = Number(selector) - 1;
+    if (lineIndex < 0 || lineIndex >= lines.length) {
+      throw new Error(`patches[${patchIndex}].selector line ${selector} is out of range for a note with ${lines.length} lines.`);
+    }
+  } else {
+    const matches = lines.reduce<number[]>((acc, line, idx) => (
+      line.includes(selector) ? [...acc, idx] : acc
+    ), []);
+
+    if (matches.length === 0) {
+      throw new Error(`patches[${patchIndex}].selector '${selector}' matched no lines.`);
+    }
+
+    if (matches.length > 1) {
+      throw new Error(`patches[${patchIndex}].selector '${selector}' matched ${matches.length} lines; the selector must be unique.`);
+    }
+
+    lineIndex = matches[0];
+  }
+
+  const newLines = [...lines];
+  switch (patch.operation) {
+    case 'replace':
+      newLines.splice(lineIndex, 1, ...(patch.content ?? '').split('\n'));
+      break;
+    case 'insert_after':
+      newLines.splice(lineIndex + 1, 0, ...(patch.content ?? '').split('\n'));
+      break;
+    case 'delete':
+      newLines.splice(lineIndex, 1);
+      break;
+  }
+
+  return {
+    content: newLines.join('\n'),
+    result: {
+      patchIndex,
+      mode: patch.mode,
+      operation: patch.operation,
+      selector,
+      applied: true,
+      message: `Applied ${patch.mode} ${patch.operation} at line ${lineIndex + 1}`
+    }
+  };
+}
+
+/**
+ * Apply a literal-text patch with optional context and occurrence selection.
+ */
+function applyLiteralPatch(content: string, patch: NotePatch, patchIndex: number): { content: string; result: PatchResult } {
+  const scope: PatchScope = patch.scope ?? 'one';
+  const searchRegex = new RegExp(escapeRegExp(patch.selector), normalizeFlags(patch.flags, 'all'));
+  const matches = collectMatches(content, searchRegex);
+
+  if (matches.length === 0) {
+    throw new Error(`patches[${patchIndex}].selector '${patch.selector}' matched no text.`);
+  }
+
+  const filteredMatches = patch.context
+    ? matches.filter((match) => literalMatchHasContext(content, match, patch.context!))
+    : matches;
+
+  if (filteredMatches.length === 0) {
+    throw new Error(`patches[${patchIndex}].context did not match any occurrence of '${patch.selector}'.`);
+  }
+
+  if (scope === 'all') {
+    const replaceRegex = new RegExp(escapeRegExp(patch.selector), normalizeFlags(patch.flags, 'all'));
+
+    let nextContent = content;
+    switch (patch.operation) {
+      case 'replace':
+        nextContent = content.replace(replaceRegex, patch.content ?? '');
+        break;
+      case 'insert_after':
+        nextContent = content.replace(replaceRegex, (match) => match + (patch.content ?? ''));
+        break;
+      case 'delete':
+        nextContent = content.replace(replaceRegex, '');
+        break;
+    }
+
+    return {
+      content: nextContent,
+      result: {
+        patchIndex,
+        mode: patch.mode,
+        operation: patch.operation,
+        selector: patch.selector,
+        applied: true,
+        scope,
+        message: `Applied ${patch.mode} ${patch.operation} on '${patch.selector}' (${scope})`
+      }
+    };
+  }
+
+  let targetMatch = filteredMatches[0];
+
+  if (patch.occurrence !== undefined) {
+    if (patch.occurrence > filteredMatches.length) {
+      throw new Error(`patches[${patchIndex}].occurrence ${patch.occurrence} exceeds the ${filteredMatches.length} matching literal occurrences for '${patch.selector}'.`);
+    }
+
+    targetMatch = filteredMatches[patch.occurrence - 1];
+  } else if (filteredMatches.length !== 1) {
+    const suffix = patch.context ? 'Add occurrence to choose one of the matching literal occurrences.' : 'Add occurrence or context to disambiguate the target.';
+    throw new Error(`patches[${patchIndex}].selector '${patch.selector}' matched ${filteredMatches.length} times. ${suffix}`);
+  }
+
+  const before = content.slice(0, targetMatch.index);
+  const after = content.slice(targetMatch.index + targetMatch.length);
+  let nextContent = content;
+
+  switch (patch.operation) {
+    case 'replace':
+      nextContent = before + (patch.content ?? '') + after;
+      break;
+    case 'insert_after':
+      nextContent = before + targetMatch.match + (patch.content ?? '') + after;
+      break;
+    case 'delete':
+      nextContent = before + after;
+      break;
+  }
+
+  return {
+    content: nextContent,
+    result: {
+      patchIndex,
+      mode: patch.mode,
+      operation: patch.operation,
+      selector: patch.selector,
+      applied: true,
+      scope,
+      message: `Applied ${patch.mode} ${patch.operation} on '${patch.selector}'${patch.context ? ' with context' : ''}${patch.occurrence ? ` (occurrence ${patch.occurrence})` : ''}`
+    }
+  };
+}
+
+/**
+ * Apply a regex-backed search patch to the current content.
+ */
+function applySearchPatch(content: string, patch: NotePatch, patchIndex: number): { content: string; result: PatchResult } {
+  const scope: PatchScope = patch.scope ?? 'one';
+  const searchPattern = patch.selector;
+  const flags = normalizeFlags(patch.flags, scope);
+  const countFlags = flags.includes('g') ? flags : `${flags}g`;
+
+  let matchCount: number;
+  try {
+    const countRegex = new RegExp(searchPattern, countFlags);
+    matchCount = countMatches(content, countRegex);
+  } catch (error) {
+    throw new Error(
+      `patches[${patchIndex}].selector '${patch.selector}' failed during regex search/replace: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+
+  if (matchCount === 0) {
+    throw new Error(`patches[${patchIndex}].selector '${patch.selector}' matched no text.`);
+  }
+
+  if (scope === 'one' && matchCount !== 1) {
+    throw new Error(`patches[${patchIndex}].selector '${patch.selector}' matched ${matchCount} times; set scope='all' only for broad literal/regex replacements.`);
+  }
+
+  const replaceFlags = scope === 'all' ? countFlags : flags.replace(/g/g, '');
+
+  try {
+    const replaceRegex = new RegExp(searchPattern, replaceFlags);
+
+    let nextContent = content;
+    switch (patch.operation) {
+      case 'replace':
+        nextContent = content.replace(replaceRegex, patch.content ?? '');
+        break;
+      case 'insert_after':
+        nextContent = content.replace(replaceRegex, (match) => match + (patch.content ?? ''));
+        break;
+      case 'delete':
+        nextContent = content.replace(replaceRegex, '');
+        break;
+    }
+
+    return {
+      content: nextContent,
+      result: {
+        patchIndex,
+        mode: patch.mode,
+        operation: patch.operation,
+        selector: patch.selector,
+        applied: true,
+        scope,
+        message: `Applied ${patch.mode} ${patch.operation} on '${patch.selector}' (${scope})`
+      }
+    };
+  } catch (error) {
+    throw new Error(
+      `patches[${patchIndex}].selector '${patch.selector}' failed during regex search/replace: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
+
+/**
+ * Handle patch_note operation – apply targeted patches to note content.
+ * Uses a single batch schema and rejects the batch before writing if any patch is invalid.
+ */
+export async function handlePatchNote(
+  args: PatchNoteOperation,
+  axiosInstance: any
+): Promise<PatchNoteResponse> {
+  const { noteId, expectedHash, patches } = args;
+
+  if (!noteId || !expectedHash || !patches?.length) {
+    throw new Error("noteId, expectedHash, and at least one patch are required.");
+  }
+
+  logVerboseApi("GET", `/notes/${noteId}`);
+  const noteResponse = await axiosInstance.get(`/notes/${noteId}`);
+  const noteData = noteResponse.data;
+  const currentBlobId: string = noteData.blobId;
+
+  if (currentBlobId !== expectedHash) {
+    return {
+      noteId,
+      revisionCreated: false,
+      patchResults: [],
+      appliedCount: 0,
+      failedCount: patches.length,
+      message: `CONFLICT: Note has been modified. Current blobId: ${currentBlobId}, expected: ${expectedHash}. Call get_note again to get the latest content.`,
+      conflict: true
+    };
+  }
+
+  if (!PATCHABLE_NOTE_TYPES.has(noteData.type)) {
+    throw new Error(
+      `patch_note only supports text, code, and mermaid note types. Note ${noteId} is type '${noteData.type}'.`
+    );
+  }
+
+  logVerboseApi("GET", `/notes/${noteId}/content`);
+  const contentResponse = await axiosInstance.get(`/notes/${noteId}/content`, { responseType: 'text' });
+  const originalContent: string = contentResponse.data;
+
+  let workingContent = originalContent;
+  const patchResults: PatchResult[] = [];
+
+  for (let i = 0; i < patches.length; i++) {
+    const patch = validatePatchShape(patches[i], i);
+
+    if (noteData.type === 'text' && ['line', 'fragment'].includes(patch.mode)) {
+      throw new Error(`patches[${i}].mode='${patch.mode}' is not supported for text notes. Use css, xpath, literal, or regex.`);
+    }
+
+    if ((noteData.type === 'code' || noteData.type === 'mermaid') && ['css', 'xpath'].includes(patch.mode)) {
+      throw new Error(`patches[${i}].mode='${patch.mode}' is not supported for ${noteData.type} notes. Use line, fragment, literal, or regex.`);
+    }
+
+    if (noteData.type === 'text' && ['css', 'xpath'].includes(patch.mode)) {
+      const result = applyHtmlPatch(workingContent, patch, i);
+      workingContent = result.content;
+      patchResults.push(result.result);
+      continue;
+    }
+
+    if ((noteData.type === 'code' || noteData.type === 'mermaid') && ['line', 'fragment'].includes(patch.mode)) {
+      const result = applyLinePatch(workingContent, patch, i);
+      workingContent = result.content;
+      patchResults.push(result.result);
+      continue;
+    }
+
+    if (patch.mode === 'literal') {
+      const result = applyLiteralPatch(workingContent, patch, i);
+      workingContent = result.content;
+      patchResults.push(result.result);
+      continue;
+    }
+
+    const result = applySearchPatch(workingContent, patch, i);
+    workingContent = result.content;
+    patchResults.push(result.result);
+  }
+
+  const validationResult = await validateContentForNoteType(
+    workingContent,
+    noteData.type as NoteType,
+    originalContent
+  );
+
+  if (!validationResult.valid) {
+    throw new Error(`CONTENT_TYPE_MISMATCH: ${validationResult.error}`);
+  }
+
+  const finalContent = validationResult.content;
+  const correctionMsg = finalContent !== workingContent ? " (content auto-corrected)" : "";
+
+  logVerboseApi("GET", `/notes/${noteId}`);
+  const recheckResponse = await axiosInstance.get(`/notes/${noteId}`);
+  if (recheckResponse.data.blobId !== expectedHash) {
+    return {
+      noteId,
+      revisionCreated: false,
+      patchResults: [],
+      appliedCount: 0,
+      failedCount: patches.length,
+      message: `CONFLICT: Note was modified after patches were computed. Current blobId: ${recheckResponse.data.blobId}, expected: ${expectedHash}. Call get_note again to get the latest content.`,
+      conflict: true
+    };
+  }
+
+  let revisionCreated = false;
+  try {
+    logVerboseApi("POST", `/notes/${noteId}/revision`);
+    await axiosInstance.post(`/notes/${noteId}/revision`);
+    revisionCreated = true;
+  } catch (revErr) {
+    logVerboseError("handlePatchNote", revErr);
+  }
+
+  logVerboseApi("PUT", `/notes/${noteId}/content`);
+  const putResponse = await axiosInstance.put(`/notes/${noteId}/content`, finalContent, {
+    headers: { 'Content-Type': 'text/plain' }
+  });
+
+  if (putResponse.status !== 204) {
+    throw new Error(`Unexpected status from content PUT: ${putResponse.status}`);
+  }
+
+  const appliedCount = patchResults.length;
+  const failedCount = 0;
+  const revisionMsg = revisionCreated ? " (revision created)" : " (no revision)";
+
+  return {
+    noteId,
+    revisionCreated,
+    patchResults,
+    appliedCount,
+    failedCount,
+    message: `Applied ${appliedCount}/${patches.length} patches to note ${noteId}${correctionMsg}${revisionMsg}`
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Handle get note operation

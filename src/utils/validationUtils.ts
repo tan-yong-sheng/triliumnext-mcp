@@ -31,7 +31,7 @@ export const manageAttributesSchema = z.object({
 export const createNoteSchema = z.object({
   parentNoteId: z.string().min(1, 'Parent note ID cannot be empty'),
   title: z.string().min(1, 'Title cannot be empty'),
-  type: z.enum(['text', 'code', 'render', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView']),
+  type: z.enum(['text', 'code', 'canvas', 'render', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView']),
   content: z.string().optional(),
   mime: z.string().optional(),
   attributes: z.array(attributeSchema).optional(),
@@ -47,7 +47,7 @@ export const searchNotesSchema = z.object({
 export const updateNoteSchema = z.object({
   noteId: z.string().min(1, 'Note ID cannot be empty'),
   title: z.string().min(1, 'Title cannot be empty').optional(),
-  type: z.enum(['text', 'code', 'render', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView']).optional(),
+  type: z.enum(['text', 'code', 'canvas', 'render', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView']).optional(),
   content: z.string().optional(),
   mime: z.string().optional(),
   revision: z.boolean().optional(),
@@ -160,8 +160,8 @@ export function createValidationError(error: unknown): string {
  * Specific validators for common patterns
  */
 
-export function validateNoteType(type: unknown): 'text' | 'code' | 'render' | 'file' | 'image' | 'search' | 'relationMap' | 'book' | 'noteMap' | 'mermaid' | 'webView' {
-  const validTypes = ['text', 'code', 'render', 'file', 'image', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView'];
+export function validateNoteType(type: unknown): 'text' | 'code' | 'canvas' | 'render' | 'file' | 'image' | 'search' | 'relationMap' | 'book' | 'noteMap' | 'mermaid' | 'webView' {
+  const validTypes = ['text', 'code', 'canvas', 'render', 'file', 'image', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView'];
 
   if (typeof type !== 'string' || !validTypes.includes(type)) {
     throw new Error(`Invalid note type: ${type}. Must be one of: ${validTypes.join(', ')}`);

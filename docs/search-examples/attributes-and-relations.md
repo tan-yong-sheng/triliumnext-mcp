@@ -18,7 +18,7 @@ Trilium supports searching by attributes (labels and relations) using the `#` an
 - `~relation.property`: Search relations by target note properties
 - `~relation *=* value`: String operators for relation searches
 
-### 21) Book Label Search
+### 1) Book Label Search
 - Composed query: Find all notes with "book" label
 ```
 #book
@@ -33,7 +33,7 @@ Trilium supports searching by attributes (labels and relations) using the `#` an
 ```
 - Use case: Find all book-related notes
 
-### 22) Combined Keyword and Attribute Search
+### 2) Combined Keyword and Attribute Search
 - Composed query: Find notes containing "tolkien" with book label
 ```
 tolkien #book
@@ -48,7 +48,7 @@ tolkien #book
 }
 ```
 
-### 23) Cross-Type OR Logic - Book OR Author Label
+### 3) Cross-Type OR Logic - Book OR Author Label
 - Composed query: Find notes containing "towers" with book OR author label
 ```
 towers ~(#book OR #author)
@@ -65,7 +65,7 @@ towers ~(#book OR #author)
 ```
 - Use case: Find notes about "towers" that are either books or authored content
 
-### 24) Genre Contains Search
+### 4) Genre Contains Search
 - Composed query: Find notes with genre containing "fan"
 ```
 #genre *=* fan
@@ -79,7 +79,7 @@ towers ~(#book OR #author)
 }
 ```
 
-### 25) Numeric Range Search
+### 5) Numeric Range Search
 - Composed query: Find books published in the 1950s
 ```
 #book #publicationYear >= 1950 #publicationYear < 1960
@@ -95,7 +95,7 @@ towers ~(#book OR #author)
 }
 ```
 
-### 26) Combined Attributes Search - TriliumNext Pattern
+### 6) Combined Attributes Search - TriliumNext Pattern
 - Composed query: Find Tolkien books
 ```
 #author=Tolkien limit 10
@@ -111,7 +111,7 @@ towers ~(#book OR #author)
 ```
 - Use case: Attribute-based searches with limit
 
-### 27) Multiple OR Attributes with Values
+### 7) Multiple OR Attributes with Values
 - Composed query: Find notes with genre fantasy OR science fiction
 ```
 ~(#genre = 'fantasy' OR #genre = 'science fiction')
@@ -127,7 +127,7 @@ towers ~(#book OR #author)
 ```
 - Use case: Find notes in either of two specific genres
 
-### 28) Mixed Label and Note Properties OR Logic
+### 8) Mixed Label and Note Properties OR Logic
 - Composed query: Find archived notes OR text notes
 ```
 ~(note.isArchived = true OR note.type = 'text')
@@ -143,7 +143,7 @@ towers ~(#book OR #author)
 ```
 - Use case: Find notes that are either archived or text type
 
-### 29) Mixed Attributes AND Note Properties Cross-Type Query
+### 9) Mixed Attributes AND Note Properties Cross-Type Query
 - Composed query: Find book notes with high label count
 ```
 towers #book AND note.labelCount > 3
@@ -192,7 +192,7 @@ The MCP automatically enhances relation searches to ensure proper TriliumNext sy
 ~template.title = 'Board'
 ```
 
-### 31) Basic Relation Search - Find notes with author relation
+### 10) Basic Relation Search - Find notes with author relation
 - Composed query: Find all notes that have an "author" relation
 ```
 ~author
@@ -207,7 +207,7 @@ The MCP automatically enhances relation searches to ensure proper TriliumNext sy
 ```
 - Use case: Find all notes that reference an author
 
-### 32) Relation with Property Search - Find notes by author's title
+### 11) Relation with Property Search - Find notes by author's title
 - Composed query: Find notes connected to authors containing "Tolkien"
 ```
 ~author.title *=* 'Tolkien'
@@ -222,7 +222,7 @@ The MCP automatically enhances relation searches to ensure proper TriliumNext sy
 ```
 - Use case: Find books/notes written by Tolkien
 
-### 33) Relation Value Comparison - Find notes by specific author ID
+### 12) Relation Value Comparison - Find notes by specific author ID
 - Composed query: Find notes connected to a specific author note
 ```
 ~author = 'authorNoteId123'
@@ -237,7 +237,7 @@ The MCP automatically enhances relation searches to ensure proper TriliumNext sy
 ```
 - Use case: Find all works by a specific author note
 
-### 34) Mixed Label and Relation Search
+### 13) Mixed Label and Relation Search
 - Composed query: Find books by Tolkien
 ```
 #book ~author.title *=* 'Tolkien'
@@ -253,7 +253,7 @@ The MCP automatically enhances relation searches to ensure proper TriliumNext sy
 ```
 - Use case: Find book notes authored by Tolkien
 
-### 35) Relation OR Logic - Find notes with multiple possible relations
+### 14) Relation OR Logic - Find notes with multiple possible relations
 - Composed query: Find notes with author OR editor relations
 ```
 ~(~author OR ~editor)
@@ -269,7 +269,7 @@ The MCP automatically enhances relation searches to ensure proper TriliumNext sy
 ```
 - Use case: Find notes that have either author or editor connections
 
-### 36) Complex Relation Property Search
+### 15) Complex Relation Property Search
 - Composed query: Find notes connected to authors with specific properties
 ```
 ~author.relations.publisher.title = 'Penguin Books'
@@ -284,7 +284,7 @@ The MCP automatically enhances relation searches to ensure proper TriliumNext sy
 ```
 - Use case: Find books by authors published by specific publishers
 
-### 37) Relation String Operations
+### 16) Relation String Operations
 - Composed query: Find notes with relations starting with "co-"
 ```
 ~collaborator =* 'co-'
@@ -299,7 +299,7 @@ The MCP automatically enhances relation searches to ensure proper TriliumNext sy
 ```
 - Use case: Find collaborative relationships
 
-### 38) Combined Keyword and Relation Search
+### 17) Combined Keyword and Relation Search
 - Composed query: Find Tolkien content with author relations
 ```
 tolkien ~author
@@ -315,7 +315,7 @@ tolkien ~author
 ```
 - Use case: Find Tolkien-related content that has author metadata
 
-### 39) Multiple Search Types with Default AND Logic
+### 18) Multiple Search Types with Default AND Logic
 - Composed query: Find books published in 1954 (demonstrates default AND behavior)
 ```
 #book #publicationYear = 1954
@@ -332,7 +332,7 @@ tolkien ~author
 - Use case: Find notes that have BOTH the book label AND publicationYear set to 1954
 - **Note**: When logic is not specified, default is AND (TriliumNext default behavior)
 
-### 40) Multiple Note Properties with Default AND Logic
+### 19) Multiple Note Properties with Default AND Logic
 - Composed query: Find text notes that are not archived and have content
 ```
 note.type = 'text' AND note.isArchived = false AND note.contentSize > 0

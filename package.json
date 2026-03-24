@@ -1,6 +1,6 @@
 {
   "name": "triliumnext-mcp",
-  "version": "0.3.16",
+  "version": "0.3.17",
   "description": "A model context protocol server for TriliumNext Notes",
   "type": "module",
   "bin": {
@@ -13,10 +13,10 @@
     "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
     "prepare": "npm run build",
     "watch": "tsc --watch",
-    "test": "npm run build && node --test tests/**/*.test.js",
-    "test:unit": "npm run build && node --test tests/unit/**/*.test.js",
-    "test:integration": "npm run build && node --test tests/integration/**/*.test.js",
-    "test:e2e": "npm run build && node --test tests/e2e/**/*.test.js",
+    "test": "npm run build && node --test tests",
+    "test:unit": "npm run build && node --test tests/unit",
+    "test:integration": "npm run build && node --test tests/integration",
+    "test:e2e": "npm run build && node --test tests/e2e",
     "check": "npm run test",
     "inspector": "npx @modelcontextprotocol/inspector build/index.js"
   },
@@ -24,7 +24,9 @@
     "@modelcontextprotocol/sdk": "^1.25.2",
     "axios": "^1.8.3",
     "marked": "^16.3.0",
-    "mime-db": "^1.54.0"
+    "mime-db": "^1.54.0",
+    "node-html-parser": "^7.1.0",
+    "safe-regex2": "^5.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.24",

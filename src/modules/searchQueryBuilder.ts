@@ -263,7 +263,7 @@ function isTemplateOrSystemRelation(property: string): boolean {
  */
 function validateNoteType(value: string): string {
   const validNoteTypes = [
-    'text', 'code', 'render', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView'
+    'text', 'code', 'canvas', 'render', 'search', 'relationMap', 'book', 'noteMap', 'mermaid', 'webView'
   ];
 
   if (!validNoteTypes.includes(value)) {

@@ -6,7 +6,7 @@ This document covers content searches (title and content), note property searche
 
 ## Content Search Examples
 
-### 11) Title contains "Tolkien"
+### 1) Title contains "Tolkien"
 - Composed query
 ```
 note.title *=* 'Tolkien'
@@ -21,7 +21,7 @@ note.title *=* 'Tolkien'
 ```
 - Use case: Find notes whose title contains "Tolkien" anywhere
 
-### 12) Title starts with "Project"
+### 2) Title starts with "Project"
 - Composed query
 ```
 note.title =* 'Project'
@@ -36,7 +36,7 @@ note.title =* 'Project'
 ```
 - Use case: Find all project-related notes by title prefix
 
-### 13) Title ends with "Notes"
+### 3) Title ends with "Notes"
 - Composed query
 ```
 note.title *= 'Notes'
@@ -51,7 +51,7 @@ note.title *= 'Notes'
 ```
 - Use case: Find all documents ending with "Notes"
 
-### 14) Title does not equal "Backup"
+### 4) Title does not equal "Backup"
 - Composed query
 ```
 note.title != 'Backup'
@@ -66,7 +66,7 @@ note.title != 'Backup'
 ```
 - Use case: Exclude backup-related notes from results
 
-### 15) Content contains "dead letter"
+### 5) Content contains "dead letter"
 - Composed query
 ```
 note.content *=* 'dead letter'
@@ -81,7 +81,7 @@ note.content *=* 'dead letter'
 ```
 - Use case: Find notes discussing dead letter patterns/queues
 
-### 16) Complex multi-property search: Title starts with "Meeting" AND content contains "agenda"
+### 6) Complex multi-property search: Title starts with "Meeting" AND content contains "agenda"
 - Composed query
 ```
 note.title =* 'Meeting' AND note.content *=* 'agenda'
@@ -97,7 +97,7 @@ note.title =* 'Meeting' AND note.content *=* 'agenda'
 ```
 - Use case: Find meeting notes that contain agenda items
 
-### 17) Advanced combination: Keyword + mixed criteria with OR logic
+### 7) Advanced combination: Keyword + mixed criteria with OR logic
 - Composed query
 ```
 setup guide ~(note.dateCreated >= '2024-01-01' OR note.title =* 'Tutorial' OR note.content *=* 'steps')
@@ -115,7 +115,7 @@ setup guide ~(note.dateCreated >= '2024-01-01' OR note.title =* 'Tutorial' OR no
 ```
 - Use case: Find recent tutorial guides with step-by-step instructions (matches any of the criteria)
 
-### 18) Content search: Notes containing specific phrases
+### 8) Content search: Notes containing specific phrases
 - Composed query
 ```
 note.content *=* 'machine learning'
@@ -130,7 +130,7 @@ note.content *=* 'machine learning'
 ```
 - Use case: Find notes discussing machine learning concepts
 
-### 19) Complex mixed search with date and content OR logic
+### 9) Complex mixed search with date and content OR logic
 - Composed query
 ```
 note.dateCreated >= '2025-06-01' ~(note.title *=* 'n8n' OR note.content *=* 'n8n')
@@ -147,7 +147,7 @@ note.dateCreated >= '2025-06-01' ~(note.title *=* 'n8n' OR note.content *=* 'n8n
 ```
 - Use case: Find recent notes with n8n in title or content
 
-### 20) Combined full-text and content searches
+### 10) Combined full-text and content searches
 - Composed query
 ```
 machine learning note.title *= 'Notes' AND note.content *=* 'algorithm' limit 10
@@ -180,7 +180,7 @@ Trilium supports searching by built-in note properties using the `searchCriteria
 - **Hierarchy properties**: `parents.title`, `children.title`, `ancestors.title`, `parents.parents.title` - navigate note hierarchy relationships
 - **Operators**: `=`, `!=`, `>`, `<`, `>=`, `<=`, `contains`, `starts_with`, `ends_with`
 
-### 34) Find archived notes
+### 11) Find archived notes
 - Composed query
 ```
 note.isArchived = true
@@ -195,7 +195,7 @@ note.isArchived = true
 ```
 - Use case: Find all notes that have been archived
 
-### 35) Find non-archived notes
+### 12) Find non-archived notes
 - Composed query
 ```
 note.isArchived = false
@@ -210,7 +210,7 @@ note.isArchived = false
 ```
 - Use case: Exclude archived notes from search results
 
-### 36) Find protected notes
+### 13) Find protected notes
 - Composed query
 ```
 note.isProtected = true
@@ -225,7 +225,7 @@ note.isProtected = true
 ```
 - Use case: Find all password-protected notes
 
-### 37) Find text notes only
+### 14) Find text notes only
 - Composed query
 ```
 note.type = 'text'
@@ -240,7 +240,7 @@ note.type = 'text'
 ```
 - Use case: Filter to only text-type notes
 
-### 38) Find code notes
+### 15) Find code notes
 - Composed query
 ```
 note.type = 'code'
@@ -255,7 +255,7 @@ note.type = 'code'
 ```
 - Use case: Find all code notes for development references
 
-### 39) Find notes with many labels (more than 5)
+### 16) Find notes with many labels (more than 5)
 - Composed query
 ```
 note.labelCount > 5
@@ -270,7 +270,7 @@ note.labelCount > 5
 ```
 - Use case: Find heavily tagged notes for content organization review
 
-### 40) Find notes with specific label count
+### 17) Find notes with specific label count
 - Composed query
 ```
 note.ownedLabelCount = 3
@@ -285,7 +285,7 @@ note.ownedLabelCount = 3
 ```
 - Use case: Find notes with exactly 3 owned labels
 
-### 41) Find notes with many children (folders/books)
+### 18) Find notes with many children (folders/books)
 - Composed query
 ```
 note.childrenCount >= 10
@@ -300,7 +300,7 @@ note.childrenCount >= 10
 ```
 - Use case: Find folder-like notes that contain many sub-notes
 
-### 42) Find large content notes
+### 19) Find large content notes
 - Composed query
 ```
 note.contentSize > 50000
@@ -315,7 +315,7 @@ note.contentSize > 50000
 ```
 - Use case: Find notes with substantial content (larger than 50KB)
 
-### 43) Find notes with many revisions
+### 20) Find notes with many revisions
 - Composed query
 ```
 note.revisionCount >= 5
@@ -330,7 +330,7 @@ note.revisionCount >= 5
 ```
 - Use case: Find frequently edited notes with many revision history
 
-### 44) Combined note properties search
+### 21) Combined note properties search
 - Composed query
 ```
 note.type = 'text' AND note.labelCount > 0 AND note.isArchived = false
@@ -347,7 +347,7 @@ note.type = 'text' AND note.labelCount > 0 AND note.isArchived = false
 ```
 - Use case: Find active text notes that have been labeled/tagged
 
-### 45) Complex query with multiple property types
+### 22) Complex query with multiple property types
 - Composed query
 ```
 kubernetes note.type = 'text' AND note.labelCount >= 2 AND note.contentSize > 1000
@@ -365,7 +365,7 @@ kubernetes note.type = 'text' AND note.labelCount >= 2 AND note.contentSize > 10
 ```
 - Use case: Find substantial, well-tagged text notes about kubernetes
 
-### 46) Find notes without labels
+### 23) Find notes without labels
 - Composed query
 ```
 note.labelCount = 0
@@ -386,7 +386,7 @@ note.labelCount = 0
 
 These examples test OR logic for note properties searches using the unified `searchCriteria` parameter with per-item logic support.
 
-### 47) TriliumNext Example: Content OR Search
+### 24) TriliumNext Example: Content OR Search
 - TriliumNext native query (from docs)
 ```
 note.content *=* rings OR note.content *=* tolkien
@@ -403,7 +403,7 @@ note.content *=* rings OR note.content *=* tolkien
 ```
 - **Status**: ✅ IMPLEMENTED - searchCriteria parameter supports OR logic
 
-### 48) TriliumNext Example: Mixed Field OR Search
+### 25) TriliumNext Example: Mixed Field OR Search
 - TriliumNext native query pattern
 ```
 note.title *=* project OR note.content *=* documentation
@@ -420,7 +420,7 @@ note.title *=* project OR note.content *=* documentation
 ```
 - **Status**: ✅ IMPLEMENTED - searchCriteria parameter supports OR logic across different properties
 
-### 49) Boolean Expression with Parentheses (from TriliumNext docs)
+### 26) Boolean Expression with Parentheses (from TriliumNext docs)
 - TriliumNext native query (requires ~ prefix)
 ```
 ~author.title *= Tolkien OR (#publicationDate >= 1954 AND #publicationDate <= 1960)
@@ -428,7 +428,7 @@ note.title *=* project OR note.content *=* documentation
 - Expected behavior: Complex OR with grouped AND conditions
 - Note: Expressions starting with parentheses need "expression separator sign" (# or ~)
 
-### 50) Multiple Content OR Searches
+### 27) Multiple Content OR Searches
 - TriliumNext pattern for multiple OR conditions
 ```
 note.content *=* project OR note.content *=* documentation OR note.content *=* guide
@@ -445,7 +445,7 @@ note.content *=* project OR note.content *=* documentation OR note.content *=* g
 ```
 - **Status**: ✅ IMPLEMENTED - searchCriteria parameter supports multiple OR conditions
 
-### 51) Title OR Content Mixed Search
+### 28) Title OR Content Mixed Search
 - TriliumNext pattern
 ```
 note.title *=* meeting OR note.content *=* agenda OR note.title =* "Project"
@@ -462,7 +462,7 @@ note.title *=* meeting OR note.content *=* agenda OR note.title =* "Project"
 ```
 - **Status**: ✅ IMPLEMENTED - searchCriteria parameter supports mixed property OR logic
 
-### 52) Negation with OR Logic
+### 29) Negation with OR Logic
 - TriliumNext example with NOT
 ```
 towers #!book
