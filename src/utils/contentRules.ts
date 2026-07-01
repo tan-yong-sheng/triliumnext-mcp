@@ -311,17 +311,19 @@ export async function validateContentForNoteType(
 
     case 'code':
     case 'mermaid':
-      // Plain text required for code/mermaid notes
-      if (rules.requiresHtml === false && isLikelyHtml(textContent)) {
-        return {
-          valid: false,
-          content,
-          error: `${noteType} notes require plain text only, but HTML content was detected. ` +
-                 `Remove HTML tags and use plain text format. ` +
-                 `Expected format: ${rules.examples.join(', ')}`
-        };
-      }
-      break;
+      // Code/mermaid notes store their content verbatim as plain text. We must
+      // NOT reject content that merely "looks like" HTML: isLikelyHtml() also
+      // matches perfectly valid code such as JSX (<Button>), C++/Java generics
+      // (std::vector<int>, List<String>), XML, and HTML source itself — all of
+      // which are legitimate things to keep in a code note (and which Trilium's
+      // own UI accepts without complaint). Return the original, untrimmed content:
+      // leading/trailing whitespace is significant for code (e.g. Python
+      // indentation, YAML, intentional blank lines) and must be preserved.
+      return {
+        valid: true,
+        content,
+        corrected: false
+      };
 
   }
 
