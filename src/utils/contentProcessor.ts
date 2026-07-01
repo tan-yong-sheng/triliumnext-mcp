@@ -45,7 +45,13 @@ async function processTextContent(content: string, noteType?: string): Promise<P
     return { content: `<p>${trimmedContent}</p>` };
   }
 
-  // For everything else: pass through exactly as provided
+  // For code/mermaid notes: preserve content exactly, including leading/trailing
+  // whitespace which is often significant (Python indentation, YAML, etc).
+  if (noteType === 'code' || noteType === 'mermaid') {
+    return { content };
+  }
+
+  // For everything else: pass through as provided
   return { content: trimmedContent };
 }
 

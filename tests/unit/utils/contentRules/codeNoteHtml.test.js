@@ -10,6 +10,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert';
 
 import { validateContentForNoteType } from '../../../../build/utils/contentRules.js';
+import { processContent } from '../../../../build/utils/contentProcessor.js';
 
 describe('Content Rules: code/mermaid notes accept HTML-like content', () => {
   const htmlLikeCodeSamples = [
@@ -26,10 +27,25 @@ describe('Content Rules: code/mermaid notes accept HTML-like content', () => {
       it(`accepts ${label} in a ${noteType} note`, async () => {
         const result = await validateContentForNoteType(content, noteType);
         assert.strictEqual(result.valid, true, result.error);
-        // Content must round-trip verbatim (trimmed), never mangled or wrapped.
+        // Content must round-trip verbatim, never mangled or wrapped.
         assert.strictEqual(result.content, content);
       });
     }
+
+    it(`preserves leading/trailing whitespace in a ${noteType} note (validation)`, async () => {
+      const content = '\n  const x = 1;\n    return x;\n';
+      const result = await validateContentForNoteType(content, noteType);
+      assert.strictEqual(result.valid, true);
+      // Whitespace is significant for code and must not be trimmed.
+      assert.strictEqual(result.content, content);
+    });
+
+    it(`preserves leading/trailing whitespace in a ${noteType} note (processing)`, async () => {
+      const content = '\n  const x = 1;\n    return x;\n';
+      const result = await processContent(content, noteType);
+      assert.strictEqual(result.error, undefined);
+      assert.strictEqual(result.content, content);
+    });
   }
 
   it('still accepts plain code', async () => {

@@ -316,8 +316,14 @@ export async function validateContentForNoteType(
       // matches perfectly valid code such as JSX (<Button>), C++/Java generics
       // (std::vector<int>, List<String>), XML, and HTML source itself — all of
       // which are legitimate things to keep in a code note (and which Trilium's
-      // own UI accepts without complaint). Content is passed through as-is below.
-      break;
+      // own UI accepts without complaint). Return the original, untrimmed content:
+      // leading/trailing whitespace is significant for code (e.g. Python
+      // indentation, YAML, intentional blank lines) and must be preserved.
+      return {
+        valid: true,
+        content,
+        corrected: false
+      };
 
   }
 
