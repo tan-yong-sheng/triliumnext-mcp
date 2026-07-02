@@ -7,7 +7,6 @@ build/
 .claude/*
 !.claude/rules/
 !.claude/skills/
-!.claude/settings.local.json
 
 .agents/*
 !.agents/rules/
